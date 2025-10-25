@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실기 점수 계산 테스터 (U_ID: 3)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h1, h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .control-group { margin-bottom: 20px; padding: 15px; background: #fafafa; border-radius: 6px; border: 1px solid #eee; }
+        .control-group label { font-weight: bold; margin-right: 10px; font-size: 14px; display: inline-block; min-width: 100px; }
+        .control-group input[type="text"], .control-group select, .control-group input[type="number"], .control-group input[type="password"] { /* Added password type */
+            padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; margin-right: 10px; width: 150px;
+        }
+        button {
+            padding: 10px 20px; font-size: 16px; font-weight: bold; color: #fff; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff;
+        }
+        button:hover { background-color: #0056b3; }
+
+        #resultArea { margin-top: 30px; background: #e9ecef; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; }
+        #resultArea h2 { margin-top: 0; }
+        #calculationLog { white-space: pre-wrap; font-family: monospace; font-size: 13px; max-height: 400px; overflow-y: auto; background: #fff; padding: 10px; border: 1px solid #ccc; }
+        .note { font-size: 12px; color: #666; margin-top: 10px; }
+        .error { color: #dc3545; font-weight: bold; }
+        .success { color: #28a745; font-weight: bold; }
+        .hidden { display: none !important; }
+
+        /* Login Modal Styles */
+        #loginModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        #loginBox {
+            background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 300px;
+        }
+        #loginBox h2 { margin-top: 0; }
+        #loginBox input { width: 93%; margin-bottom: 15px; }
+        #loginBox button { width: 100%; }
+        #loginMessage { color: #dc3545; font-size: 14px; margin-top: 10px; height: 20px; }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div id="loginModal" class="hidden">
+        <div id="loginBox">
+            <h2>테스터 로그인</h2>
+            <form id="loginForm">
+                <label for="loginId">아이디:</label>
+                <input type="text" id="loginId" required>
+                <label for="loginPw">비밀번호:</label>
+                <input type="password" id="loginPw" required>
+                <button type="submit" style="background-color: #007bff;">로그인</button>
+                <div id="loginMessage"></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
+        <h1>실기 점수 계산 테스터 (U_ID: 3)</h1>
+
+        <div class="control-group">
+            <label for="uid">U_ID:</label>
+            <input type="text" id="uid" value="3" disabled>
+        </div>
+        <div class="control-group">
+            <label for="year">학년도:</label>
+            <input type="text" id="year" value="2026" disabled> </div>
+        <div class="control-group">
+            <label for="gender">성별:</label>
+            <select id="gender">
+                <option value="남">남</option>
+                <option value="여">여</option>
+            </select>
+        </div>
+
+        <h2>실기 기록 입력</h2>
+        <div id="practicalInputs">
+            <p class="note">로그인 후 실기 종목이 로드됩니다.</p>
+            </div>
+
+        <button id="calculateButton">점수 계산하기</button>
+
+        <div id="resultArea" style="display: none;">
+            <h2>계산 결과</h2>
+            <p><strong>최종 합산 점수 (수능+실기): <span id="totalScore" class="success"></span></strong></p>
+            <p>수능 반영 점수: <span id="suneungPart"></span></p>
+            <p>실기 반영 점수: <span id="practicalPart"></span></p>
+            <h3>계산 로그</h3>
+            <div id="calculationLog"></div>
+        </div>
+        <p id="errorMessage" class="error"></p>
+
+    </div>
+
+    <script>
+        const JUNGSI_API_URL = 'https://supermax.kr/jungsi';
+        // 🚨 네 26susi 로그인 API 주소로 수정!
+        const LOGIN_API_URL = 'https://supermax.kr/26susi/login'; 
+        const TOKEN_STORAGE_KEY = 'jungsi_tester_jwt_token'; // 에디터와 다른 키 사용
+
+        // 토큰 관리 함수
+        const getToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
+        const setToken = (token) => localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        const removeToken = () => localStorage.removeItem(TOKEN_STORAGE_KEY);
+
+        // UI 상태 관리 함수
+        function showLoginModal() {
+            $('#loginModal').removeClass('hidden');
+            $('#mainContainer').hide();
+        }
+        function showApp() {
+            $('#loginModal').addClass('hidden');
+            $('#mainContainer').show();
+        }
+
+        // 인증된 fetch 함수
+        async function fetchWithAuth(url, options = {}) {
+            const token = getToken();
+            if (!token) {
+                showLoginModal(); // 토큰 없으면 로그인 창으로
+                throw new Error('인증 토큰 없음');
+            }
+            const headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+            try {
+                const response = await fetch(url, { ...options, headers });
+                if (response.status === 401 || response.status === 403) {
+                    removeToken(); // 잘못된 토큰 삭제
+                    showLoginModal(); // 로그인 창으로
+                    throw new Error('인증 실패 또는 토큰 만료');
+                }
+                return response;
+            } catch (error) {
+                $('#errorMessage').text(`네트워크 오류: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // 로그인 처리 함수
+        async function handleLogin(event) {
+            event.preventDefault();
+            const id = $('#loginId').val();
+            const pw = $('#loginPw').val();
+            const loginMessage = $('#loginMessage');
+            loginMessage.text('로그인 중...');
+
+            try {
+                const res = await fetch(LOGIN_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userid: id, password: pw }) // ⭐️ body 키 확인!
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    loginMessage.text('✅ 로그인 성공!');
+                    setToken(data.token); // Bearer 없이 저장
+                    setTimeout(() => {
+                        showApp();
+                        loadPracticalEvents(); // 로그인 성공 후 종목 로드
+                    }, 500);
+                } else {
+                    loginMessage.text(data.message || '로그인 실패');
+                }
+            } catch (err) {
+                loginMessage.text('로그인 서버 접속 실패.');
+            }
+        }
+
+        // 실기 종목 로드 및 Input 생성
+        async function loadPracticalEvents() {
+            const U_ID = $('#uid').val();
+            const year = $('#year').val();
+            const practicalInputsDiv = $('#practicalInputs');
+            practicalInputsDiv.html('<p>실기 종목 로딩 중...</p>');
+
+            try {
+                const response = await fetchWithAuth(`${JUNGSI_API_URL}/practical-scores/${U_ID}/${year}`);
+                const data = await response.json();
+
+                if (data.success && data.scores && data.scores.length > 0) {
+                    const eventNames = [...new Set(data.scores.map(s => s.종목명))];
+                    practicalInputsDiv.empty();
+                    eventNames.forEach(eventName => {
+                        const group = $('<div class="control-group"></div>');
+                        const label = $(`<label for="event_${eventName}">${eventName}:</label>`);
+                        const input = $(`<input type="text" id="event_${eventName}" data-event-name="${eventName}" placeholder="기록 입력">`);
+                        group.append(label).append(input);
+                        practicalInputsDiv.append(group);
+                    });
+                } else if (data.success) {
+                    practicalInputsDiv.html('<p class="note">실기 배점표 데이터 없음.</p>');
+                } else {
+                    practicalInputsDiv.html(`<p class="error">실기 종목 로드 실패: ${data.message}</p>`);
+                }
+            } catch (error) {
+                // fetchWithAuth에서 에러 처리
+                 practicalInputsDiv.html(`<p class="error">실기 종목 로드 중 오류.</p>`);
+            }
+        }
+        
+        // 계산 실행 함수
+        async function calculateScore() {
+            const U_ID = $('#uid').val();
+            const year = $('#year').val();
+            const gender = $('#gender').val();
+            
+            const practicals = [];
+            $('#practicalInputs input').each(function() {
+                const eventName = $(this).data('event-name');
+                const value = $(this).val().trim();
+                if (value !== '') {
+                    practicals.push({ event: eventName, value: value });
+                }
+            });
+
+            const studentScoresPayload = {
+                gender: gender,
+                practicals: practicals,
+                subjects: [] // 수능 점수 없음
+            };
+
+             $('#errorMessage').text('');
+             $('#resultArea').hide();
+             $('#calculateButton').text('계산 중...').prop('disabled', true);
+
+            try {
+                const response = await fetchWithAuth(`${JUNGSI_API_URL}/calculate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ U_ID, year, studentScores: studentScoresPayload })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    $('#totalScore').text(data.result.totalScore);
+                    $('#suneungPart').text(data.result.suneungPart);
+                    $('#practicalPart').text(data.result.practicalPart);
+                    $('#calculationLog').text(data.result.calculationLog.join('\n'));
+                    $('#resultArea').show();
+                } else {
+                     $('#errorMessage').text(`계산 실패: ${data.message}`);
+                }
+            } catch (error) {
+                // fetchWithAuth에서 에러 처리
+            } finally {
+                 $('#calculateButton').text('점수 계산하기').prop('disabled', false);
+            }
+        }
+
+        $(document).ready(function() {
+            // 로그인 폼 리스너
+            $('#loginForm').on('submit', handleLogin);
+            // 계산 버튼 리스너
+            $('#calculateButton').on('click', calculateScore);
+
+            // 페이지 로드 시 인증 상태 확인
+            if (getToken()) {
+                showApp();
+                loadPracticalEvents(); // 토큰 있으면 바로 종목 로드
+            } else {
+                showLoginModal();
+            }
+        });
+
+    </script>
+</body>
+</html>

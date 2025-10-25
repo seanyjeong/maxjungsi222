@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>정시 계산 엔진 디버거</title>
+  <style>
+    body { font-family: sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: 20px auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    h1 { color: #333; }
+    .controls { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
+    button { background-color: #dc3545; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: 700; }
+    button:hover { background-color: #c82333; }
+    #results-container { margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+
+    /* 필터 버튼 스타일 */
+    .filter-group { display: flex; gap: 5px; border: 1px solid #ccc; border-radius: 8px; padding: 4px; }
+    .filter-group button {
+      background-color: #f8f9fa;
+      color: #333;
+      padding: 8px 14px;
+      font-size: 0.9em;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+    .filter-group button:hover { background-color: #e2e6ea; }
+    .filter-group button.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+    }
+    /* ▼▼▼ [추가] 필터 개수 배지 스타일 */
+    .filter-count {
+      margin-left: 6px;
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 0.9em;
+    }
+    button.active .filter-count {
+      background-color: #fff;
+      color: #007bff;
+    }
+
+    .result-card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      transition: background-color 0.3s;
+    }
+    .result-card.correct { background: #e7f1ff; }   /* 파랑계열 */
+    .result-card.incorrect { background: #fdecea; } /* 붉은계열 */
+
+    .result-card h3 { background-color: #f8f9fa; padding: 10px 15px; margin: 0; font-size: 1.05em; border-bottom: 1px solid #ddd; display:flex; justify-content:space-between; gap:10px; }
+    .total-score { font-size: 2em; font-weight: bold; color: #007bff; text-align: center; padding: 14px; }
+    .breakdown-table { width: 100%; border-collapse: collapse; }
+    .breakdown-table td { padding: 6px 12px; border-top: 1px solid #eee; }
+    .breakdown-table td:first-child { font-weight: bold; }
+    .breakdown-table td:last-child { text-align: right; }
+    .message { margin-top: 15px; font-weight: bold; min-height: 20px; padding: 10px; border-radius: 4px; }
+    .message.info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; }
+
+    /* 계산 로그 */
+    .calculation-log { background-color: #272822; color: #f8f8f2; padding: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; border-radius: 0 0 10px 10px; }
+    .calculation-log h4 { margin: 0 0 10px 0; color: #a6e22e; border-bottom: 1px solid #555; padding-bottom: 5px; }
+
+    /* 판정 & 메모 UI */
+    .judge { display: flex; align-items: center; gap: 12px; padding: 10px 15px; border-top: 1px solid #eee; }
+    .judge .status { display: flex; gap: 8px; }
+    .judge textarea { width: 100%; min-height: 70px; resize: vertical; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95em; }
+    .judge .row { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .small { font-size: 0.85em; color: #666; }
+    .save-row { display:flex; justify-content: flex-end; gap:10px; align-items:center; padding: 8px 15px; border-top: 1px dashed #eee; }
+    .badge { padding:2px 8px; border-radius:999px; background:#eee; font-size: 12px; }
+    .badge.ok { background:#e7f7ee; color:#0f5132; }
+    .badge.ng { background:#fdecea; color:#842029; }
+    .badge.unknown { background:#eef1ff; color:#1d3c78; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>정시 계산 엔진 디버거</h1>
+    <p>아래 버튼을 누르면, 미리 입력된 학생 점수로 '규칙이 저장된 모든 학교'의 계산 결과를 한 번에 확인하고, <b>맞는지/틀린지 판정 + 메모</b>를 남길 수 있습니다.</p>
+    <div class="controls">
+      <button id="run-debug-btn">🔴 디버깅 시작</button>
+      <div id="filter-controls" class="filter-group">
+        <button data-filter="all" class="active">전체 <span class="filter-count" id="count-all">0</span></button>
+        <button data-filter="Y">맞음 <span class="filter-count" id="count-Y">0</span></button>
+        <button data-filter="N">틀림 <span class="filter-count" id="count-N">0</span></button>
+        <button data-filter="?">미확인 <span class="filter-count" id="count-?">0</span></button>
+      </div>
+      <label class="small">학년도:
+        <input id="year-input" type="number" min="2024" max="2030" value="2026" style="padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
+      </label>
+    </div>
+    <div id="message-area" class="message info hidden"></div>
+    <div id="results-container"></div>
+  </div>
+
+  <script>
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const resultsContainer = document.getElementById('results-container');
+    const runBtn = document.getElementById('run-debug-btn');
+    const messageArea = document.getElementById('message-area');
+    const yearInput = document.getElementById('year-input');
+    const filterControls = document.getElementById('filter-controls');
+
+    let currentFilter = 'all'; // 현재 필터 상태 저장
+
+    const getToken = () => localStorage.getItem('jwt_token');
+
+    const studentScoresForDebug = {
+      "subjects": [
+        { "name": "국어", "subject": "화법과작문", "std": 124, "percentile": 88, "grade": 3 },
+        { "name": "수학", "subject": "확률과통계", "std": 125, "percentile": 90, "grade": 2 },
+        { "name": "영어", "grade": 2 },
+        { "name": "한국사", "grade": 1 },
+        { "name": "탐구", "subject": "세계사", "std": 63, "percentile": 85, "grade": 3 },
+        { "name": "탐구", "subject": "정치와법", "std": 64, "percentile": 91, "grade": 2 }
+      ]
+    };
+
+    let notesMap = {}; // { U_ID: {is_correct, memo, updated_at} }
+
+    // ▼▼▼ [추가] 필터별 개수 업데이트 함수
+    function updateFilterCounts() {
+      const cards = document.querySelectorAll('.result-card');
+      let countY = 0;
+      let countN = 0;
+      let countUnknown = 0;
+
+      cards.forEach(card => {
+        if (card.classList.contains('correct')) {
+          countY++;
+        } else if (card.classList.contains('incorrect')) {
+          countN++;
+        } else {
+          countUnknown++;
+        }
+      });
+
+      document.getElementById('count-all').textContent = cards.length;
+      document.getElementById('count-Y').textContent = countY;
+      document.getElementById('count-N').textContent = countN;
+      document.getElementById('count-?').textContent = countUnknown;
+    }
+
+    // 필터링 적용 함수
+    function applyFilter() {
+      const cards = document.querySelectorAll('.result-card');
+      cards.forEach(card => {
+        let cardStatus = '?';
+        if (card.classList.contains('correct')) cardStatus = 'Y';
+        else if (card.classList.contains('incorrect')) cardStatus = 'N';
+
+        if (currentFilter === 'all' || currentFilter === cardStatus) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    async function fetchDebugNotes(year) {
+      const res = await fetch(`${SVR_JUNGSI}/jungsi/debug-notes?year=${year}`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'debug-notes 로딩 실패');
+      notesMap = data.notes || {};
+    }
+
+    async function saveDebugNote(U_ID, year, is_correct, memo) {
+      const res = await fetch(`${SVR_JUNGSI}/jungsi/debug-notes/set`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ U_ID, year, is_correct, memo })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'debug-notes 저장 실패');
+      return true;
+    }
+
+    function badgeForStatus(s) {
+      if (s === 'Y') return '<span class="badge ok">맞음</span>';
+      if (s === 'N') return '<span class="badge ng">틀림</span>';
+      return '<span class="badge unknown">미확인</span>';
+    }
+
+    async function runDebugger() {
+      const YEAR = parseInt(yearInput.value, 10) || 2026;
+      messageArea.textContent = `[${YEAR}] 규칙 로드 중...`;
+      messageArea.className = 'message info';
+      messageArea.classList.remove('hidden');
+      resultsContainer.innerHTML = '';
+
+      try {
+        await fetchDebugNotes(YEAR);
+
+        const res = await fetch(`${SVR_JUNGSI}/jungsi/schools/${YEAR}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || '학교 목록 로딩 실패');
+
+        const saved = data.schools.filter(s => s.계산유형 === '특수공식' || s.selection_rules || s.bonus_rules || s.score_config);
+        if (!saved.length) { messageArea.textContent = '규칙 저장된 학교 없음.'; return; }
+
+        messageArea.textContent = `${saved.length}개 계산 중...`;
+
+        const results = await Promise.all(saved.map(school =>
+          fetch(`${SVR_JUNGSI}/jungsi/calculate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+            body: JSON.stringify({ U_ID: school.U_ID, year: YEAR, studentScores: studentScoresForDebug })
+          }).then(r => r.json())
+        ));
+
+        resultsContainer.innerHTML = '';
+        saved.forEach((school, idx) => {
+          const r = results[idx];
+          const note = notesMap[school.U_ID] || { is_correct: '?', memo: '' };
+          const cardClass = note.is_correct === 'Y' ? 'correct' : (note.is_correct === 'N' ? 'incorrect' : '');
+          let html = `<div class="result-card ${cardClass}" data-uid="${school.U_ID}">
+            <h3><span>[${school.U_ID}] ${school.대학명} - ${school.학과명}</span>
+            <span class="small">${badgeForStatus(note.is_correct)}</span></h3>`;
+
+          if (r.success) {
+            const calc = r.result;
+            html += `<div class="total-score">${calc.totalScore}</div><table class="breakdown-table">`;
+            for (const [k,v] of Object.entries(calc.breakdown)) {
+              const val = (typeof v === 'number') ? v.toFixed(3) : (Number(v)||0).toFixed(3);
+              html += `<tr><td>${k}</td><td>${val}</td></tr>`;
+            }
+            html += '</table>';
+            html += `
+              <div class="judge">
+                <div class="row">
+                  <div class="status">
+                    <label><input type="radio" name="status-${school.U_ID}" value="Y" ${note.is_correct==='Y'?'checked':''}> 맞음</label>
+                    <label><input type="radio" name="status-${school.U_ID}" value="N" ${note.is_correct==='N'?'checked':''}> 틀림</label>
+                    <label><input type="radio" name="status-${school.U_ID}" value="?" ${note.is_correct==='?'?'checked':''}> 미확인</label>
+                  </div>
+                  <textarea id="memo-${school.U_ID}" placeholder="메모">${note.memo||''}</textarea>
+                </div>
+              </div>
+              <div class="save-row">
+                <span class="small">최근: ${note.updated_at ? new Date(note.updated_at).toLocaleString() : '-'}</span>
+                <button data-action="save" data-uid="${school.U_ID}">💾 저장</button>
+              </div>`;
+            if (calc.calculationLog)
+              html += `<div class="calculation-log"><h4>계산 과정</h4>${calc.calculationLog.map(l=>l.replace(/</g,'&lt;')).join('\n')}</div>`;
+          } else {
+            html += `<p style="padding:20px;color:red;">계산 실패: ${r.message}</p>`;
+          }
+          html += '</div>';
+          resultsContainer.insertAdjacentHTML('beforeend', html);
+        });
+        messageArea.textContent = '모든 계산 완료 ✅';
+        updateFilterCounts(); // <-- [수정] 개수 업데이트
+        applyFilter(); // 계산 완료 후 필터 적용
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // 저장 이벤트
+    resultsContainer.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action="save"]');
+      if (!btn) return;
+      const uid = btn.getAttribute('data-uid');
+      const YEAR = parseInt(yearInput.value,10)||2026;
+      const status = document.querySelector(`input[name="status-${uid}"]:checked`)?.value || '?';
+      const memo = document.getElementById(`memo-${uid}`)?.value || '';
+      btn.disabled = true; const prev = btn.textContent; btn.textContent = '저장중...';
+      try {
+        await saveDebugNote(uid, YEAR, status, memo);
+        
+        const card = document.querySelector(`.result-card[data-uid="${uid}"]`);
+        const header = card.querySelector('h3 .small');
+        header.innerHTML = badgeForStatus(status);
+        card.classList.remove('correct','incorrect');
+        if (status==='Y') card.classList.add('correct');
+        else if (status==='N') card.classList.add('incorrect');
+        
+        updateFilterCounts(); // <-- [수정] 개수 업데이트
+        applyFilter(); // 저장 후 필터 다시 적용
+
+        btn.textContent='저장됨 ✔';
+        setTimeout(()=>{btn.textContent=prev;btn.disabled=false;},800);
+      } catch(err){alert('저장 실패:'+err.message);btn.textContent=prev;btn.disabled=false;}
+    });
+
+    // 필터 버튼 클릭 이벤트
+    filterControls.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-filter]');
+      if (!btn) return;
+
+      currentFilter = btn.getAttribute('data-filter');
+      filterControls.querySelector('button.active').classList.remove('active');
+      btn.classList.add('active');
+      applyFilter();
+    });
+
+    runBtn.addEventListener('click', runDebugger);
+
+    if (!getToken()) {
+      alert('로그인이 필요합니다. 규칙 설정 페이지(/setting)에서 로그인해주세요.');
+      messageArea.textContent='로그인이 필요합니다.'; messageArea.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

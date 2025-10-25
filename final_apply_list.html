@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>지점 최종 수합 LIST</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb; --primary-dark:#1d4ed8;
+            --light-bg: #f8fafc; --card-bg: #ffffff;
+            --border-color: #e2e8f0; --text-primary:#1e293b; --text-secondary:#475569;
+            --success-color:#10b981; --danger-color:#ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--light-bg); padding: 20px; margin: 0; line-height: 1.5; font-size: 13px; }
+        .container { max-width: 95%; margin: 0 auto; }
+
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--card-bg); padding: 16px 18px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 16px; }
+        .header h1 { font-size: 1.6rem; color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 10px; }
+        .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--light-bg); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .chip label { font-size: .9rem; color: var(--text-secondary); white-space: nowrap; }
+        select { padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; font-size: .9rem; min-width: 140px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: none; border-radius: 6px; font-weight: 500; font-size: .8rem; cursor: pointer; transition: .2s; }
+        .btn-save { background: var(--success-color); color: #fff; }
+        .btn-save:hover:not(:disabled) { background: #059669; }
+        .btn-save:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        /* Filter Bar */
+        .filter-search-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--card-bg); padding: 12px 16px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 16px; }
+        .filter-buttons { display: flex; gap: 8px; }
+        .filter-buttons .btn { background: #fff; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 10px; font-size: 0.85rem; }
+        .filter-buttons .btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); font-weight: 600; }
+        .search-input { display: none; }
+
+        /* Table */
+        .table-container { overflow-x: auto; background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: center; white-space: nowrap; font-size: 0.85rem; vertical-align: middle; }
+        th { background: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: 0; z-index: 1;}
+        tbody tr:hover { background-color: #f0f9ff; }
+        td.student-name { font-weight: 600; }
+        td.uni-dept { text-align: left; white-space: normal; min-width: 180px;}
+        td.uni-dept span { font-size: 0.9em; color: var(--text-secondary); display: block; }
+        .loading-row td, .empty-row td { text-align: center; padding: 40px; color: var(--text-secondary); font-style: italic; }
+
+        /* Input Fields */
+        td input[type="date"], td input[type="text"] {
+            width: 120px; padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9em; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        td input[type="text"] { width: 80px; text-align: center; }
+        td input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        tr.dirty td { background-color: #fffbeb !important; }
+
+        /* Message Area */
+        #message-area { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: 500; display: none; text-align: center; }
+        #message-area.error { color: var(--danger-color); background-color: #fee2e2; }
+        #message-area.success { color: var(--success-color); background-color: #d1fae5; }
+        #message-area.info { color: #075985; background-color: #e0f2fe; }
+
+        /* Toast Popup */
+        .toast-popup { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); color: white; padding: 10px 18px; border-radius: 20px; font-size: .9rem; z-index: 1000; opacity: 0; transition: opacity .5s ease; white-space: nowrap; }
+        .toast-popup.show { opacity: 1; }
+        .toast-popup.error { background-color: rgba(220, 38, 38, 0.9); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-calendar-alt"></i> 지점 최종 수합 LIST (실기 일정)</h1>
+        <div class="header-controls">
+            <div class="chip">
+                <label for="year-select"><i class="fas fa-calendar-alt"></i> 학년도</label>
+                <select id="year-select">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-area"></div>
+
+    <div class="filter-search-bar">
+        <div class="filter-buttons">
+            <button class="btn active" data-gun-filter="all">전체</button>
+            <button class="btn" data-gun-filter="가">가군</button>
+            <button class="btn" data-gun-filter="나">나군</button>
+            <button class="btn" data-gun-filter="다">다군</button>
+        </div>
+        <div class="search-input"> </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>학생명</th>
+                    <th>대학/학과</th>
+                    <th>군</th>
+                    <th>실기 날짜</th>
+                    <th>실기 시간 (HH:MM)</th>
+                    <th>저장</th>
+                </tr>
+            </thead>
+            <tbody id="apply-list-tbody">
+                <tr class="loading-row"><td colspan="6">학년도를 선택하면 최종 지원 목록을 불러옵니다.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin.html';
+    const yearSelect = document.getElementById('year-select');
+    const tbody = document.getElementById('apply-list-tbody');
+    const messageArea = document.getElementById('message-area');
+    const filterButtons = document.querySelectorAll('.filter-buttons .btn');
+
+    let currentApplyListData = [];
+    let currentGunFilter = 'all';
+
+    // --- 인증 ---
+    const handleAuthError = () => {
+        console.error("Authentication Error detected. Redirecting to login page.");
+        alert('인증 만료. 로그인 페이지로 이동합니다.');
+        window.top.location.href = LOGIN_PAGE;
+    };
+    const getToken = () => localStorage.getItem('jwt_token');
+
+    // --- Helper 함수 ---
+    const showMessage = (msg, level = 'info') => {
+        messageArea.textContent = msg;
+        messageArea.className = level;
+        messageArea.style.display = msg ? 'block' : 'none';
+        if (level === 'info') {
+            setTimeout(() => { if (messageArea.textContent === msg) messageArea.style.display = 'none'; }, 3000);
+        }
+    };
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.className = `toast-popup ${isError ? 'error' : ''}`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 500);
+        }, 3000);
+    }
+    
+    // ⭐️⭐️⭐️ [수정] formatDate 함수 (시간대 문제 해결) ⭐️⭐️⭐️
+    const formatDate = (dateString) => {
+         if (!dateString) {
+             console.log("formatDate: Input is null/empty.");
+             return '';
+         }
+         try {
+             // 1. "YYYY-MM-DD" 형식 문자열 처리 (시간대 없이)
+             // DB에서 DATE 타입으로 저장된 값이 "YYYY-MM-DD" 문자열로만 올 경우
+             if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                 console.log(`formatDate: Input is simple date string: "${dateString}". Using as-is.`);
+                 const d = new Date(dateString + 'T00:00:00'); // 로컬 시간 자정으로 해석
+                 if (isNaN(d.getTime())) { // 혹시 모르니 유효성 검사
+                      console.warn("formatDate: Simple date string was invalid:", dateString);
+                      return '';
+                 }
+                 return dateString; // "YYYY-MM-DD"
+             }
+
+             // 2. "YYYY-MM-DDTHH:mm:ss.sssZ" (UTC) 또는 DATETIME 형식 문자열 처리
+             // DB에서 DATETIME 또는 TIMESTAMP로 저장된 값이 UTC 문자열로 올 경우
+             const date = new Date(dateString);
+             if (isNaN(date.getTime())) {
+                 console.warn("formatDate: Invalid Date object from string:", dateString);
+                 return '';
+             }
+
+             // 3. Date 객체에서 *로컬* 년/월/일 추출
+             // new Date('2026-01-05T15:00:00.000Z') -> KST 2026-01-06 00:00:00
+             const year = date.getFullYear(); // 2026
+             const month = String(date.getMonth() + 1).padStart(2, '0'); // 1
+             const day = String(date.getDate()).padStart(2, '0'); // 6
+             
+             const result = `${year}-${month}-${day}`;
+             console.log(`formatDate: Input="${dateString}", Parsed as Date object, Output (local)="${result}"`);
+             return result;
+
+         } catch (e) {
+             console.error("formatDate error:", dateString, e);
+             return '';
+         }
+    };
+
+    // --- 데이터 로딩 함수 ---
+    const loadApplyList = async () => {
+        const year = yearSelect.value;
+        tbody.innerHTML = `<tr class="loading-row"><td colspan="6"><i class="fas fa-spinner fa-spin"></i> ${year}학년도 최종 지원 목록 로딩 중...</td></tr>`;
+        showMessage('');
+        currentApplyListData = [];
+
+        const initialToken = getToken();
+        if (!initialToken) { handleAuthError(); return; }
+        console.log("loadApplyList (Initial Check): Token found.");
+
+        try {
+            const currentToken = getToken();
+            if (!currentToken) throw new Error('로그인 만료');
+
+            const apiUrl = `${SVR_JUNGSI}/jungsi/branch-final-applies/${year}`;
+            console.log("loadApplyList: Calling API:", apiUrl);
+
+            const res = await fetch(apiUrl, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+            console.log(`loadApplyList: API 응답 상태 코드: ${res.status}`);
+
+            if (res.status === 401 || res.status === 403) {
+                 console.error(`loadApplyList: 서버로부터 인증 오류 응답 (${res.status})`);
+                 let errorData = { message: '알 수 없는 인증 오류' };
+                 try { errorData = await res.json(); console.error(" -> 서버 응답 내용:", errorData); } catch (jsonError) { console.error(" -> 서버 응답 본문 파싱 실패:", jsonError); try { const textResponse = await res.text(); console.error(" -> 서버 응답 텍스트:", textResponse.substring(0, 500)); } catch(_) {} }
+                 const serverMessage = errorData.message || (res.status === 401 ? '인증되지 않음' : '접근 권한 없음');
+                 throw new Error(`인증 오류: ${serverMessage}`);
+            }
+
+            if (!res.ok) {
+                 let errorMsg = `HTTP 오류: ${res.status} ${res.statusText}`;
+                 try { const errorData = await res.json(); errorMsg = errorData.message || errorMsg; } catch (_) {}
+                 console.error(`loadApplyList: API 요청 실패 (${res.status}) - ${errorMsg}`);
+                 throw new Error(errorMsg);
+            }
+
+            let data;
+            try { data = await res.json(); } catch (jsonError) {
+                 console.error("loadApplyList: JSON 파싱 오류:", jsonError);
+                 let responseText = '';
+                 try { responseText = await res.text(); console.error(" -> 수신된 응답 텍스트 (앞부분):", responseText.substring(0, 500)); } catch(_) {}
+                 throw new Error('서버 응답 형식 오류');
+            }
+
+            if (data.success && data.list) {
+                currentApplyListData = data.list;
+                filterAndRenderTable();
+            } else {
+                 console.warn("loadApplyList: API 응답 data.success가 false임:", data.message);
+                throw new Error(data.message || '목록 로딩 실패');
+            }
+        } catch (e) {
+            console.error('최종 지원 목록 로딩 중 에러 발생:', e);
+            tbody.innerHTML = `<tr class="loading-row"><td colspan="6" style="color:red;">오류: ${e.message}</td></tr>`;
+            showMessage(`목록 로딩 오류: ${e.message}`, 'error');
+
+            if (e.message && (e.message.includes('인증') || e.message.includes('로그인') || e.message.includes('만료') || e.message.includes('권한'))) {
+                 console.log(" -> 인증 관련 오류로 판단되어 로그인 페이지로 이동합니다.");
+                 handleAuthError();
+            } else {
+                 console.log(" -> 인증 외 다른 오류로 판단되어 로그인 페이지 이동은 하지 않습니다.");
+            }
+        }
+    };
+
+    // --- 필터링 및 테이블 렌더링 함수 ---
+    const filterAndRenderTable = () => {
+        console.log(`Filtering data for gun: ${currentGunFilter}`);
+        const filteredList = currentApplyListData.filter(item => {
+            return currentGunFilter === 'all' || (item.모집군 && item.모집군 === currentGunFilter);
+        });
+        renderTable(filteredList);
+    };
+
+    // --- 테이블 렌더링 함수 ---
+    const renderTable = (list) => {
+        tbody.innerHTML = '';
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="6">조건에 맞는 최종 지원 내역이 없습니다.</td></tr>`;
+            return;
+        }
+        list.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.dataset.applyId = item.최종지원_ID;
+
+            // ⭐️ 수정된 formatDate 함수 사용
+            const formattedDate = formatDate(item.실기날짜);
+            const timeValue = item.실기시간 || '';
+            console.log(`Rendering row ID ${item.최종지원_ID}: DB Date='${item.실기날짜}', Formatted Date='${formattedDate}', Time='${timeValue}'`); // 렌더링 시 값 확인
+
+            tr.innerHTML = `
+                <td class="student-name">${item.student_name}</td>
+                <td class="uni-dept">${item.대학명}<span>${item.학과명}</span></td>
+                <td>${item.모집군}</td>
+                <td><input type="date" class="schedule-date" value="${formattedDate}"></td>
+                <td><input type="text" class="schedule-time" value="${timeValue}" placeholder="HH:MM"></td>
+                <td>
+                    <button type="button" class="btn btn-save save-row-btn" disabled>
+                        <i class="fas fa-save"></i> 저장
+                    </button>
+                </td>
+            `;
+
+            const dateInput = tr.querySelector('.schedule-date');
+            const timeInput = tr.querySelector('.schedule-time');
+            const saveButton = tr.querySelector('.save-row-btn');
+
+            const handleInputChange = () => {
+                tr.classList.add('dirty');
+                saveButton.disabled = false;
+            };
+
+            dateInput.addEventListener('input', handleInputChange);
+            timeInput.addEventListener('input', handleInputChange);
+            saveButton.addEventListener('click', handleSaveRow);
+
+            tbody.appendChild(tr);
+        });
+    };
+
+    // --- 행 저장 함수 ---
+    const handleSaveRow = async (event) => {
+        const button = event.target.closest('button');
+        const tr = button.closest('tr');
+        const applyId = tr.dataset.applyId;
+        const dateInput = tr.querySelector('.schedule-date');
+        const timeInput = tr.querySelector('.schedule-time');
+
+        const dateValue = dateInput.value; // "YYYY-MM-DD"
+        const timeValue = timeInput.value; // "HH:MM"
+
+        const timeRegex = /^\d{2}:\d{2}$/;
+        if (timeValue && !timeRegex.test(timeValue)) {
+            showToast('시간 형식을 HH:MM 으로 입력해주세요 (예: 09:30).', true);
+            timeInput.focus();
+            return;
+        }
+
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        showMessage('');
+
+        try {
+            const currentToken = getToken();
+            if (!currentToken) throw new Error('로그인 만료');
+
+            const saveApiUrl = `${SVR_JUNGSI}/jungsi/update-apply-schedule`;
+            console.log("handleSaveRow: Calling API:", saveApiUrl);
+
+            const res = await fetch(saveApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentToken}`
+                },
+                body: JSON.stringify({
+                    최종지원_ID: applyId,
+                    실기날짜: dateValue || null, // "YYYY-MM-DD" 또는 null
+                    실기시간: timeValue || null
+                })
+            });
+            console.log(`handleSaveRow: API 응답 상태 코드: ${res.status}`);
+
+            if (res.status === 401 || res.status === 403) {
+                 console.error(`handleSaveRow: 서버로부터 인증 오류 응답 (${res.status})`);
+                 let errorData = { message: '알 수 없는 인증 오류' };
+                 try { errorData = await res.json(); console.error(" -> 서버 응답 내용:", errorData); } catch (_) {}
+                 throw new Error(`인증 오류: ${errorData.message || (res.status === 401 ? '인증되지 않음' : '접근 권한 없음')}`);
+            }
+
+             if (!res.ok) {
+                 let errorMsg = `HTTP 오류: ${res.status} ${res.statusText}`;
+                 try { const errorData = await res.json(); errorMsg = errorData.message || errorMsg; } catch (_) {}
+                 console.error(`handleSaveRow: API 요청 실패 (${res.status}) - ${errorMsg}`);
+                 throw new Error(errorMsg);
+             }
+
+            let data;
+            try { data = await res.json(); } catch (jsonError) {
+                console.error("handleSaveRow: JSON 파싱 오류:", jsonError);
+                 let responseText = '';
+                 try { responseText = await res.text(); console.error(" -> 수신된 응답 텍스트 (앞부분):", responseText.substring(0, 500)); } catch(_) {}
+                 throw new Error('서버 응답 형식 오류');
+            }
+
+            if (data.success) {
+                showToast('저장되었습니다.', false);
+                tr.classList.remove('dirty');
+                button.disabled = true;
+                // ⭐️⭐️⭐️ 저장 후 날짜/시간 값 유지 (수정) ⭐️⭐️⭐️
+                dateInput.value = dateValue; // ★★★ formatDate() 제거 ★★★
+                timeInput.value = timeValue;
+
+                // ⭐️ 캐시 데이터 업데이트 (페이지 새로고침 없이 다음 필터링/정렬에 반영)
+                const itemInCache = currentApplyListData.find(item => item.최종지원_ID == applyId);
+                if(itemInCache) {
+                    itemInCache.실기날짜 = dateValue || null; // ⭐️ "YYYY-MM-DD" 문자열로 캐시 업데이트
+                    itemInCache.실기시간 = timeValue || null;
+                }
+
+            } else {
+                 console.warn("handleSaveRow: API 응답 data.success가 false임:", data.message);
+                throw new Error(data.message || '저장 실패');
+            }
+
+        } catch (e) {
+            console.error('실기 일정 저장 오류:', e);
+            showToast(`저장 실패: ${e.message}`, true);
+            button.disabled = false;
+
+            if (e.message && (e.message.includes('인증') || e.message.includes('로그인') || e.message.includes('만료') || e.message.includes('권한'))) {
+                 console.log(" -> 인증 관련 오류로 판단되어 로그인 페이지로 이동합니다.");
+                 handleAuthError();
+            } else {
+                 console.log(" -> 인증 외 다른 오류로 판단되어 로그인 페이지 이동은 하지 않습니다.");
+            }
+        } finally {
+            button.innerHTML = '<i class="fas fa-save"></i> 저장';
+        }
+    };
+
+    // --- 이벤트 리스너 ---
+    yearSelect.addEventListener('change', loadApplyList);
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            currentGunFilter = button.dataset.gunFilter;
+            filterAndRenderTable();
+        });
+    });
+
+    // --- 페이지 초기 로드 ---
+    loadApplyList();
+
+});
+</script>
+
+</body>
+</html>

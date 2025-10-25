@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>정시 학생 명단 관리</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 95%;
+            margin: 0 auto;
+        }
+
+        /* 헤더 스타일 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .login-info { /* 숨김 처리 유지 */
+            display: none;
+        }
+
+        .year-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        .year-selector label {
+            white-space: nowrap; /* '대상 학년도:' 텍스트 줄바꿈 방지 */
+        }
+
+        .year-selector select {
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        /* 카드 스타일 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 테이블 스타일 */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* ⭐️ 테이블 레이아웃 고정 */
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left; /* 기본 왼쪽 정렬 */
+            white-space: nowrap; /* 줄바꿈 방지 */
+            overflow: hidden; /* 내용 넘치면 숨김 */
+            text-overflow: ellipsis; /* 넘치는 내용은 ... 처리 */
+        }
+        
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+
+
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* 입력 필드 스타일 */
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        /* ⭐️ 전화번호 입력 필드 스타일 추가 */
+        input[name="phone_number"] {
+             font-family: monospace; /* 숫자 가독성 좋게 */
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        /* ... (다른 버튼 스타일은 동일) ... */
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-success:hover { background-color: #0da271; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
+        .btn-outline:hover { background-color: #f8fafc; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+
+
+        /* 메시지 스타일 */
+        .message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 500;
+            text-align: center;
+        }
+        .message.success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .message.error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        /* 액션 버튼 스타일 */
+        .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center; /* 버튼 가운데 정렬 */
+        }
+
+        /* 수정 모드 스타일 */
+        .editing {
+            background-color: #f0f9ff !important;
+        }
+        /* ⭐️ 수정 모드 시 select 가운데 정렬 */
+        .editing td:nth-child(4) select,
+        .editing td:nth-child(5) select,
+        .editing td:nth-child(6) select {
+            text-align: center;
+            /* text-align-last 속성은 표준이 아님 - 옵션 길이에 따라 다를 수 있음 */
+        }
+/* ⭐️ [수정] 컬럼 너비 비율 및 최소 너비 설정 */
+        th:nth-child(1), td:nth-child(1) { width: 18%; min-width: 100px; } /* 이름 */
+        th:nth-child(2), td:nth-child(2) { width: 25%; min-width: 120px; } /* 학교명 */
+        /* 전화번호/구분 컬럼이 없으므로 주석 처리 또는 삭제
+        th:nth-child(3), td:nth-child(3) { width: 18%; min-width: 110px; } /* 전화번호 */
+        /* th:nth-child(4), td:nth-child(4) { width: 12%; min-width: 70px; text-align: center; } /* 구분 */
+        */
+        th:nth-child(3), td:nth-child(3) { width: 10%; min-width: 50px; text-align: center; } /* 학년 */ /* ⭐️ 인덱스 수정됨 */
+        th:nth-child(4), td:nth-child(4) { width: 10%; min-width: 50px; text-align: center; } /* 성별 */ /* ⭐️ 인덱스 수정됨 */
+        th:nth-child(5), td:nth-child(5) { width: 15%; min-width: 120px; text-align: center; } /* 관리 */ /* ⭐️ 인덱스 수정됨, 최소 너비 확보 */
+
+        /* ⭐️ [추가] 관리(actions) td 안의 버튼 정렬 */
+        td.actions {
+             white-space: nowrap; /* 버튼 줄바꿈 방지 */
+        }
+
+        /* 반응형 스타일 */
+
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .header-info { width: 100%; justify-content: space-between; }
+            .card-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .button-group { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+
+            /* ⭐️ 작은 화면 테이블 스크롤 */
+            .table-container {
+                overflow-x: scroll; /* 가로 스크롤 활성화 */
+                -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+            }
+            table {
+                 min-width: 700px; /* 테이블 최소 너비 지정 */
+                 table-layout: auto; /* 작은 화면에서는 자동 레이아웃 */
+            }
+             th, td { white-space: nowrap; } /* 작은 화면에서도 줄바꿈 방지 */
+             /* 작은 화면 컬럼 너비 재조정 (선택 사항) */
+             th:nth-child(1), td:nth-child(1) { min-width: 80px; } /* 이름 */
+             th:nth-child(2), td:nth-child(2) { min-width: 100px; } /* 학교명 */
+             th:nth-child(3), td:nth-child(3) { min-width: 120px; } /* 전화번호 */
+             th:nth-child(4), td:nth-child(4) { min-width: 80px; } /* 구분 */
+             th:nth-child(5), td:nth-child(5) { min-width: 50px; } /* 학년 */
+             th:nth-child(6), td:nth-child(6) { min-width: 50px; } /* 성별 */
+             th:nth-child(7), td:nth-child(7) { min-width: 100px; } /* 관리 */
+        }
+
+        /* 아이콘 스타일 */
+        .icon {
+            font-size: 1.2rem;
+        }
+
+        /* 학생 수 카운트 */
+        .student-count {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-user-graduate icon"></i> 정시 학생 명단 관리</h1>
+        <div class="header-info">
+            <div class="login-info">
+                <i class="fas fa-building"></i> 로그인 지점: <span id="branch-name-display">...</span>
+            </div>
+            <div class="year-selector">
+                <label for="year-select">대상 학년도:</label>
+                <select id="year-select">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-user-plus icon"></i> 학생 추가</h2>
+        </div>
+
+        <div class="table-container">
+            <table id="add-student-table">
+                <thead>
+                    <tr>
+                        <th>이름</th>
+                        <th>학교명</th>
+                        <th>전화번호</th> <th>연락처 구분</th> <th>학년</th>
+                        <th>성별</th>
+                        <th>삭제</th>
+                    </tr>
+                </thead>
+                <tbody id="add-student-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="button-group">
+            <button type="button" id="add-row-btn" class="btn btn-outline">
+                <i class="fas fa-plus"></i> 행 추가
+            </button>
+            <button type="button" id="add-students-btn" class="btn btn-primary">
+                <i class="fas fa-list"></i> 명단 추가
+            </button>
+        </div>
+
+        <p id="add-message" class="message" style="display: none;"></p> </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-users icon"></i> 등록된 학생 목록
+                <span class="student-count" id="student-count">0</span>
+            </h2>
+        </div>
+
+        <div class="table-container">
+            <table id="student-table">
+                <thead>
+                    <tr>
+                        <th>이름</th>
+                        <th>학교명</th>
+                        <th>전화번호</th> <th>연락처 구분</th> <th>학년</th>
+                        <th>성별</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="student-tbody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px;"> 학생 목록을 불러오는 중...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 서버 주소 및 로그인 페이지
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin.html'; // .html 확장자 확인
+
+    // HTML 요소
+    const branchNameDisplay = document.getElementById('branch-name-display');
+    const yearSelect = document.getElementById('year-select');
+    const addStudentTbody = document.getElementById('add-student-tbody');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const addStudentsBtn = document.getElementById('add-students-btn');
+    const addMessageEl = document.getElementById('add-message');
+    const studentTbody = document.getElementById('student-tbody');
+    const studentCountEl = document.getElementById('student-count');
+
+    let userBranchName = '';
+    let existingStudents = [];
+
+    // --- 인증 게이트 및 지점명 표시 ---
+    const getToken = () => localStorage.getItem('jwt_token');
+    const token = getToken();
+    if (!token) { alert('로그인이 필요합니다.'); window.location.href = LOGIN_PAGE; return; }
+    try {
+        const payloadBase64Url = token.split('.')[1]; const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const binaryString = atob(payloadBase64); const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+        const decodedString = new TextDecoder().decode(bytes); const decodedPayload = JSON.parse(decodedString);
+        if (decodedPayload && decodedPayload.branch) { userBranchName = decodedPayload.branch; /* branchNameDisplay.textContent = userBranchName; */ } // 지점명 표시 제거
+        else { throw new Error('토큰에 지점 정보 없음'); }
+    } catch (e) { console.error('토큰 처리 실패:', e); /* branchNameDisplay.textContent = '오류'; */ alert('인증 정보 오류.'); window.location.href = LOGIN_PAGE; return; }
+
+    // --- API 호출 함수 (인증 오류 처리 강화) ---
+    const apiCall = async (url, options = {}) => {
+        const currentToken = getToken();
+        if (!currentToken) {
+            alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+            window.location.href = LOGIN_PAGE;
+            throw new Error('로그인 만료'); // 함수 실행 중단
+        }
+        options.headers = { ...options.headers, 'Authorization': `Bearer ${currentToken}` };
+
+        try {
+            const response = await fetch(url, options);
+            if (response.status === 401 || response.status === 403) {
+                alert('인증 오류가 발생했습니다. 다시 로그인해주세요.');
+                localStorage.removeItem('jwt_token'); // 만료된 토큰 제거
+                window.location.href = LOGIN_PAGE;
+                throw new Error('인증 오류'); // 함수 실행 중단
+            }
+             // 204 No Content는 body가 없으므로 바로 성공 처리
+             if (response.status === 204) {
+                 return { success: true };
+             }
+             // 다른 오류 상태 처리
+             if (!response.ok) {
+                 let errorMsg = `HTTP 오류 ${response.status}`;
+                 try {
+                     const errorData = await response.json();
+                     errorMsg = errorData.message || errorMsg;
+                 } catch (_) { /* JSON 파싱 실패 시 무시 */ }
+                 throw new Error(errorMsg);
+             }
+             // 성공 시 JSON 파싱
+             return await response.json();
+        } catch (error) {
+             console.error('API 호출 실패:', url, error);
+             // 네트워크 오류 등 fetch 자체 실패 처리
+             if (error.message !== '로그인 만료' && error.message !== '인증 오류') {
+                  throw new Error(error.message || '네트워크 오류 또는 서버 응답 없음');
+             }
+             throw error; // 인증 오류는 그대로 전파
+        }
+    };
+
+
+    // --- 학생 입력 행 추가 함수 ---
+    const addStudentInputRow = () => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" name="student_name" required placeholder="홍길동" /></td>
+            <td><input type="text" name="school_name" placeholder="맥스고" /></td>
+            <td><input type="text" name="phone_number" placeholder="010-1234-5678" /></td> <td> <select name="phone_owner">
+                    <option value="학생">학생</option>
+                    <option value="학부모">학부모</option>
+                </select>
+            </td>
+            <td>
+                <select name="grade" required>
+                    <option value="3">3</option>
+                    <option value="N">N</option>
+                    <option value="2">2</option>
+                </select>
+            </td>
+            <td>
+                <select name="gender" required>
+                    <option value="남">남</option>
+                    <option value="여">여</option>
+                </select>
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm delete-row-btn"> <i class="fas fa-times"></i> </button>
+            </td>
+        `;
+        tr.querySelector('.delete-row-btn').addEventListener('click', () => tr.remove()); // 이벤트 리스너 클래스명에 맞게 수정
+        addStudentTbody.appendChild(tr);
+    };
+    addStudentInputRow(); // 초기 행
+    addRowBtn.addEventListener('click', addStudentInputRow); // 행 추가 버튼
+
+    // --- 메시지 표시 함수 ---
+    const showMessage = (element, text, type) => {
+        element.textContent = text;
+        element.className = `message ${type}`; // success or error
+        element.style.display = 'block';
+        // 일정 시간 후 메시지 숨김 (선택 사항)
+        // setTimeout(() => { element.style.display = 'none'; }, 5000);
+    };
+
+
+    // --- 학생 목록 불러오기 함수 ---
+    const loadStudentList = async () => {
+        const selectedYear = yearSelect.value;
+        studentTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">${selectedYear}학년도 목록 로딩중... <i class="fas fa-spinner fa-spin"></i></td></tr>`; // colspan 수정
+        studentCountEl.textContent = '0';
+        existingStudents = [];
+        try {
+            const data = await apiCall(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${selectedYear}`);
+            if (data.success && data.students) {
+                existingStudents = data.students;
+                renderStudentList(data.students);
+            } else {
+                studentTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">목록 로딩 실패: ${data.message || '알 수 없는 오류'}</td></tr>`; // colspan 수정
+            }
+        } catch (err) {
+            // apiCall 함수 내에서 인증 오류는 처리되므로 여기서는 일반 오류만 처리
+            console.error('목록 로딩 오류:', err);
+            studentTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">오류 발생: ${err.message}</td></tr>`; // colspan 수정
+        }
+    };
+
+
+    // --- 학생 목록 테이블 렌더링 함수 ---
+    const renderStudentList = (students) => {
+        studentTbody.innerHTML = '';
+        studentCountEl.textContent = students.length;
+        if (students.length === 0) {
+            studentTbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px;">등록된 학생 없음.</td></tr>'; // colspan 수정
+            return;
+        }
+
+        students.forEach(student => {
+            const tr = document.createElement('tr');
+            tr.dataset.studentId = student.student_id;
+
+            const deleteHandler = async () => { /* ... 이전 코드와 동일 ... */ }; // 내용은 동일
+            const editHandler = () => {
+                const currentlyEditing = studentTbody.querySelector('tr.editing');
+                if (currentlyEditing && currentlyEditing !== tr) {
+                    alert('먼저 다른 학생의 수정을 완료하거나 취소해주세요.'); return;
+                }
+                tr.classList.add('editing');
+                const nameTd=tr.querySelector('[data-field="student_name"]');
+                const schoolTd=tr.querySelector('[data-field="school_name"]');
+                const phoneTd=tr.querySelector('[data-field="phone_number"]'); // ⭐️ 추가
+                const ownerTd=tr.querySelector('[data-field="phone_owner"]'); // ⭐️ 추가
+                const gradeTd=tr.querySelector('[data-field="grade"]');
+                const genderTd=tr.querySelector('[data-field="gender"]');
+                const actionsTd=tr.querySelector('.actions');
+
+                const originalData = {
+                    name: nameTd.textContent,
+                    school: schoolTd.textContent,
+                    phone: phoneTd.textContent, // ⭐️ 추가
+                    owner: ownerTd.textContent, // ⭐️ 추가
+                    grade: gradeTd.textContent,
+                    gender: genderTd.textContent
+                };
+
+                nameTd.innerHTML=`<input type="text" value="${originalData.name}" required>`;
+                schoolTd.innerHTML=`<input type="text" value="${originalData.school}">`;
+                phoneTd.innerHTML=`<input type="text" name="phone_number" value="${originalData.phone}" placeholder="010-1234-5678">`; // ⭐️ 추가
+                ownerTd.innerHTML=`<select><option value="학생" ${originalData.owner==='학생'?'selected':''}>학생</option><option value="학부모" ${originalData.owner==='학부모'?'selected':''}>학부모</option></select>`; // ⭐️ 추가
+                gradeTd.innerHTML=`<select><option value="3" ${originalData.grade==='3'?'selected':''}>3</option><option value="N" ${originalData.grade==='N'?'selected':''}>N</option><option value="2" ${originalData.grade==='2'?'selected':''}>2</option></select>`;
+                genderTd.innerHTML=`<select><option value="남" ${originalData.gender==='남'?'selected':''}>남</option><option value="여" ${originalData.gender==='여'?'selected':''}>여</option></select>`;
+                actionsTd.innerHTML=`<button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button> <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>`;
+
+                const cancelHandler = () => {
+                    tr.classList.remove('editing');
+                    nameTd.textContent = originalData.name;
+                    schoolTd.textContent = originalData.school;
+                    phoneTd.textContent = originalData.phone; // ⭐️ 추가
+                    ownerTd.textContent = originalData.owner; // ⭐️ 추가
+                    gradeTd.textContent = originalData.grade;
+                    genderTd.textContent = originalData.gender;
+                    actionsTd.innerHTML = `<button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button> <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>`;
+                    tr.querySelector('.edit-btn').addEventListener('click', editHandler);
+                    tr.querySelector('.delete-btn').addEventListener('click', deleteHandler);
+                };
+
+                const saveHandler = async () => {
+                    const studentId = tr.dataset.studentId;
+                    const updatedData = {
+                        student_name: nameTd.querySelector('input').value.trim(),
+                        school_name: schoolTd.querySelector('input').value.trim() || null, // 빈칸이면 null
+                        phone_number: phoneTd.querySelector('input').value.trim() || null, // ⭐️ 추가 (빈칸이면 null)
+                        phone_owner: ownerTd.querySelector('select').value, // ⭐️ 추가
+                        grade: gradeTd.querySelector('select').value,
+                        gender: genderTd.querySelector('select').value
+                    };
+                    if (!updatedData.student_name) { alert('학생 이름은 필수 항목입니다.'); return; }
+                    actionsTd.innerHTML = '저장중...';
+                    try {
+                        const result = await apiCall(`${SVR_JUNGSI}/jungsi/students/update/${studentId}`, {
+                            method:'PUT',
+                            headers:{'Content-Type':'application/json'},
+                            body: JSON.stringify(updatedData)
+                        });
+
+                        if(result.success){
+                            tr.classList.remove('editing');
+                            nameTd.textContent = updatedData.student_name;
+                            schoolTd.textContent = updatedData.school_name || ''; // null이면 빈칸 표시
+                            phoneTd.textContent = updatedData.phone_number || ''; // ⭐️ 추가 (null이면 빈칸 표시)
+                            ownerTd.textContent = updatedData.phone_owner; // ⭐️ 추가
+                            gradeTd.textContent = updatedData.grade;
+                            genderTd.textContent = updatedData.gender;
+                            actionsTd.innerHTML = `<button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button> <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>`;
+                            tr.querySelector('.edit-btn').addEventListener('click', editHandler);
+                            tr.querySelector('.delete-btn').addEventListener('click', deleteHandler);
+
+                            // 로컬 데이터 업데이트
+                            const studentIndex = existingStudents.findIndex(s => s.student_id == studentId);
+                            if (studentIndex > -1) {
+                                // 기존 scores 정보 유지하면서 업데이트
+                                existingStudents[studentIndex] = {
+                                    ...existingStudents[studentIndex], // scores 등 기존 정보 보존
+                                    student_name: updatedData.student_name,
+                                    school_name: updatedData.school_name,
+                                    phone_number: updatedData.phone_number,
+                                    phone_owner: updatedData.phone_owner,
+                                    grade: updatedData.grade,
+                                    gender: updatedData.gender
+                                };
+                            }
+                        } else {
+                            alert(`수정 실패: ${result.message||'알 수 없는 오류'}`);
+                            actionsTd.innerHTML=`<button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button> <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>`;
+                            actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
+                            actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
+                        }
+                    } catch(err){
+                         alert(`오류 발생: ${err.message}`);
+                         actionsTd.innerHTML=`<button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button> <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>`;
+                         actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
+                         actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
+                         // 인증 오류는 apiCall에서 처리
+                    }
+                }; // End of saveHandler
+
+                actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
+                actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
+            }; // End of editHandler
+
+            // 초기 HTML 렌더링
+            tr.innerHTML = `
+                <td data-field="student_name">${student.student_name || ''}</td>
+                <td data-field="school_name">${student.school_name || ''}</td>
+                <td data-field="phone_number">${student.phone_number || ''}</td> <td data-field="phone_owner" style="text-align: center;">${student.phone_owner || '학생'}</td> <td data-field="grade" style="text-align: center;">${student.grade || ''}</td> <td data-field="gender" style="text-align: center;">${student.gender || ''}</td> <td class="actions">
+                    <button type="button" class="btn btn-primary btn-sm edit-btn"> <i class="fas fa-edit"></i> </button>
+                    <button type="button" class="btn btn-danger btn-sm delete-btn"> <i class="fas fa-trash"></i> </button>
+                </td>
+            `;
+
+            // 초기 이벤트 연결
+            tr.querySelector('.edit-btn').addEventListener('click', editHandler);
+            tr.querySelector('.delete-btn').addEventListener('click', deleteHandler);
+
+            studentTbody.appendChild(tr);
+        }); // End of forEach student
+    }; // End of renderStudentList
+
+
+    // --- 학년도 변경 시 학생 목록 다시 로딩 ---
+    yearSelect.addEventListener('change', loadStudentList);
+
+    // --- 페이지 로드 시 학생 목록 자동 로딩 ---
+    loadStudentList();
+
+    // --- 학생 명단 추가 버튼 이벤트 ---
+    addStudentsBtn.addEventListener('click', async () => {
+        const rows = addStudentTbody.querySelectorAll('tr');
+        if (rows.length === 0) {
+            alert('추가할 학생 정보를 입력해주세요.'); return;
+        }
+
+        showMessage(addMessageEl, '명단 추가 처리 중...', 'info'); // 메시지 표시
+        addStudentsBtn.disabled = true;
+        const studentsToAdd = [];
+        let isValid = true;
+        const potentialDuplicates = [];
+        const selectedYear = yearSelect.value;
+
+        rows.forEach(tr => {
+            const nameInput = tr.querySelector('input[name="student_name"]');
+            const schoolInput = tr.querySelector('input[name="school_name"]');
+            const phoneInput = tr.querySelector('input[name="phone_number"]'); // ⭐️ 추가
+            const ownerSelect = tr.querySelector('select[name="phone_owner"]'); // ⭐️ 추가
+            const gradeSelect = tr.querySelector('select[name="grade"]');
+            const genderSelect = tr.querySelector('select[name="gender"]');
+
+            const name = nameInput.value.trim();
+            const school = schoolInput.value.trim() || null; // 빈칸이면 null
+            const phone = phoneInput.value.trim() || null; // ⭐️ 추가 (빈칸이면 null)
+            const owner = ownerSelect.value; // ⭐️ 추가
+            const grade = gradeSelect.value;
+            const gender = genderSelect.value;
+
+            // 이름 유효성 검사
+            if (!name) {
+                isValid = false;
+                nameInput.style.borderColor = 'red';
+            } else {
+                nameInput.style.borderColor = ''; // 초기화
+            }
+
+            if (name) { // 이름이 있어야 추가 목록에 포함
+                const studentData = {
+                    student_name: name,
+                    school_name: school,
+                    phone_number: phone, // ⭐️ 추가
+                    phone_owner: owner, // ⭐️ 추가
+                    grade: grade,
+                    gender: gender
+                };
+                studentsToAdd.push(studentData);
+
+                // 중복 가능성 체크 (이름만으로 체크 - 필요시 기준 강화)
+                const isDuplicate = existingStudents.some(existing => existing.student_name === name);
+                if (isDuplicate) {
+                    potentialDuplicates.push(name);
+                }
+            }
+        }); // End of rows.forEach
+
+        if (!isValid) {
+            showMessage(addMessageEl, '학생 이름은 필수 입력 항목입니다.', 'error');
+            addStudentsBtn.disabled = false;
+            return;
+        }
+
+        if (studentsToAdd.length === 0) {
+            showMessage(addMessageEl, '추가할 유효한 학생 정보가 없습니다.', 'error');
+            addStudentsBtn.disabled = false;
+            return;
+        }
+
+        // 중복 경고 및 확인
+        if (potentialDuplicates.length > 0) {
+            const uniqueDuplicateNames = [...new Set(potentialDuplicates)];
+            const confirmationMessage = `다음 학생(들)은 이미 목록에 있는 이름과 같습니다:\n\n[ ${uniqueDuplicateNames.join(', ')} ]\n\n그래도 추가하시겠습니까? (동명이인일 수 있습니다)`;
+            if (!confirm(confirmationMessage)) {
+                showMessage(addMessageEl, '명단 추가가 취소되었습니다.', 'info');
+                addStudentsBtn.disabled = false;
+                return;
+            }
+        }
+
+        // 서버로 전송
+        try {
+            const data = await apiCall(`${SVR_JUNGSI}/jungsi/students/bulk-add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 학년도: selectedYear, students: studentsToAdd })
+            });
+
+            if (data.success) {
+                let successMsg = `총 ${data.insertedCount || 0}명의 학생을 추가했습니다.`;
+                if (data.errors && data.errors.length > 0) {
+                    successMsg += ` (${data.errors.length}명 오류 발생)`;
+                    // 오류 상세 내용 로깅 (선택 사항)
+                    console.warn('추가 오류 발생 학생:', data.errors);
+                }
+                showMessage(addMessageEl, successMsg, 'success');
+                addStudentTbody.innerHTML = ''; // 입력 테이블 초기화
+                addStudentInputRow(); // 새 입력 행 추가
+                loadStudentList(); // 학생 목록 새로고침
+            } else {
+                showMessage(addMessageEl, `명단 추가 실패: ${data.message || '알 수 없는 서버 오류'}`, 'error');
+            }
+        } catch (err) {
+            // apiCall 내부에서 인증 오류는 처리됨
+            console.error('명단 추가 API 호출 오류:', err);
+            showMessage(addMessageEl, `오류 발생: ${err.message}`, 'error');
+        } finally {
+            addStudentsBtn.disabled = false;
+        }
+    }); // End of addStudentsBtn click listener
+
+}); // End of DOMContentLoaded
+</script>
+
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>정시 가채점 일괄 입력/변환</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- ⭐️ [수정] score_input.html 스타일 적용 --- */
+        :root {
+          --primary-color: #2563eb; --primary-dark:#1d4ed8;
+          --light-bg: #f8fafc; --card-bg: #ffffff;
+          --border-color: #e2e8f0; --text-primary:#1e293b; --text-secondary:#475569;
+          --success-color:#10b981; --danger-color:#ef4444; --warning-color:#f59e0b;
+          --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light-bg); color: var(--text-primary); margin: 0; padding: 20px; font-size: 13.5px; }
+        .container { max-width: 95%; margin: 0 auto; }
+        /* ⭐️ Header 스타일 수정 */
+        .header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom:1px solid var(--border-color); gap:16px; flex-wrap: wrap; }
+        .header h1 { font-size: 1.7rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center; gap: 10px; margin: 0; }
+        .controls { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+
+        /* ⭐️ [수정] .chip 스타일 (counsel.html 처럼) */
+        .chip {
+            display: inline-flex; /* 한 줄로 배치 */
+            align-items: center; /* 세로 중앙 정렬 */
+            gap: 6px;
+            background: var(--card-bg); /* 배경 흰색 */
+            padding: 8px 12px; /* 패딩 조정 */
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); /* 그림자 추가 */
+            white-space: nowrap; /* 내부 요소 줄바꿈 방지 */
+            /* min-width 제거 (자동 너비) */
+        }
+        .chip label {
+            font-size: .9rem;
+            color: var(--text-secondary);
+            margin-right: 0;
+            flex-shrink: 0; /* 라벨 줄어들지 않게 */
+        }
+        .chip select {
+            min-width: 80px; /* 셀렉트 최소 너비 조정 */
+            padding: 4px 8px;
+            font-size: 0.9rem;
+            flex-grow: 1; /* 남은 공간 차지 */
+        }
+        .chip i { color: var(--text-secondary); }
+
+
+        select { padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:#fff; font-size: 0.9rem; } /* 기본 select 크기 조정 */
+        .card { background: var(--card-bg); box-shadow: var(--shadow); border-radius:12px; padding:18px; margin-bottom:18px; }
+
+        .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer; transition:.15s; font-size: 0.9rem; }
+        .btn-success { background: var(--success-color); color:#fff; }
+        .btn-success:disabled { background:#9ca3af; cursor:not-allowed; }
+        .btn-outline { background: #fff; color: var(--text-secondary); border:1px solid var(--border-color); font-size: 0.9rem;}
+        .btn-primary { background-color: var(--primary-color); color: white; } /* Save 버튼용 */
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-primary:disabled { background:#9ca3af; cursor:not-allowed; }
+
+
+        .message { margin-top: 10px; font-weight:600; }
+        .message.success { color: var(--success-color); }
+        .message.error { color: var(--danger-color); }
+
+        .table-wrap { overflow-x: auto; border:1px solid var(--border-color); border-radius:10px; }
+        table {
+            width:100%;
+            border-collapse: collapse;
+        }
+
+        /* th, td 기본 스타일 */
+        th, td {
+            padding: 7px 4px;
+            vertical-align: middle;
+            font-size: 0.9rem;
+            text-align: center;
+            border: none;
+        }
+
+        /* 헤더 그라데이션 */
+        th {
+            background-color: #f0f9ff; /* fallback */
+            background-image: linear-gradient(to bottom, #f0f9ff, #f8fcff); /* sky-50 ~ lighter */
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            font-weight: 600;
+        }
+
+
+        /* 2줄 헤더의 2번째 줄(하위) 스타일 */
+        thead tr:nth-child(2) th {
+            top: 36px; /* 첫 행 높이에 맞춰 조정 필요 */
+            z-index: 1;
+            filter: brightness(102%);
+        }
+
+        /* colgroup 스타일 */
+        col.col-name { width: 85px; }
+        col.col-info { width: 50px; }
+        col.col-subj { width: 95px; } /* 선택과목 */
+        col.col-raw { width: 65px; } /* 원점수 */
+        col.col-score { width: 55px; } /* 표/백/등 */
+
+        input[type="number"], select {
+            width: 95%; /* 셀 너비에 맞춤 */
+            padding: 6px;
+            border:1px solid var(--border-color);
+            border-radius:6px;
+            text-align: center;
+            font-size: 0.95em;
+            box-sizing: border-box; /* 패딩 포함 너비 계산 */
+        }
+        select.subject { /* 선택과목 드롭다운 */
+            width: 95%;
+        }
+
+        /* 짝수 데이터 행 배경색 */
+        tbody tr:nth-child(even) td {
+          background-color: #f8fafc; /* slate-50 */
+        }
+
+        .sticky-tools { display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; flex-wrap: wrap; gap:10px;}
+        .hint { font-size: .85rem; color: var(--text-secondary); }
+        .nowrap { white-space: nowrap; }
+        tr.dirty td { background-color: #fffbeb; } /* 변경된 행 강조 */
+        td span.score-display { display: block; min-height: 1.1em; font-weight: 500; color: #333; padding: 4px 0; } /* 점수 표시 span */
+
+
+        /* 토스트 팝업 스타일 */
+        .toast-popup {
+          position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+          background-color: rgba(0, 0, 0, 0.75); color: white; padding: 12px 20px;
+          border-radius: 20px; font-size: 0.95rem; font-weight: 500; z-index: 1000;
+          opacity: 0; transition: opacity 0.5s ease; white-space: nowrap;
+        }
+        .toast-popup.show { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-edit icon"></i> 정시 가채점 일괄 입력</h1>
+        <div class="controls">
+            <div class="chip">
+                <label for="year-select"><i class="fas fa-calendar-alt"></i> 대상 학년도</label>
+                <select id="year-select">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            <button class="btn btn-outline" id="reload-btn"><i class="fas fa-rotate"></i> 새로고침</button>
+            <button type="button" id="save-all-btn" class="btn btn-primary" disabled><i class="fas fa-save"></i> 전체 저장 및 변환</button> </div>
+    </div>
+
+    <div class="card">
+        <div class="sticky-tools">
+             <div class="hint">원점수 입력 시 예상 표준점수, 백분위, 등급이 자동 변환되어 표시됩니다. (영어/한국사는 등급만)</div>
+             <div class="hint">**변경된 행만 저장**됩니다.</div>
+        </div>
+        <div class="table-container">
+            <table id="score-table">
+                <colgroup>
+                    <col class="col-name"> <col class="col-info"> <col class="col-info">
+                    <col class="col-raw"> <col class="col-score"> <col class="col-subj"> <col class="col-raw"> <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-subj"> <col class="col-raw"> <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-raw"> <col class="col-score"> <col class="col-subj"> <col class="col-raw"> <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-subj"> <col class="col-raw"> <col class="col-score"> <col class="col-score"> <col class="col-score"> </colgroup>
+                <thead>
+                    <tr>
+                        <th rowspan="2">이름</th> <th rowspan="2">학년</th> <th rowspan="2">성별</th>
+                        <th colspan="2">한국사</th>
+                        <th colspan="5">국어</th>
+                        <th colspan="5">수학</th>
+                        <th colspan="2">영어</th>
+                        <th colspan="5">탐구1</th>
+                        <th colspan="5">탐구2</th>
+                    </tr>
+                    <tr>
+                        <th>원점수</th><th>등급</th>
+                        <th>선택</th><th>원점수</th><th>표준</th><th>백분위</th><th>등급</th>
+                        <th>선택</th><th>원점수</th><th>표준</th><th>백분위</th><th>등급</th>
+                        <th>원점수</th><th>등급</th>
+                        <th>선택</th><th>원점수</th><th>표준</th><th>백분위</th><th>등급</th>
+                        <th>선택</th><th>원점수</th><th>표준</th><th>백분위</th><th>등급</th>
+                    </tr>
+                </thead>
+                <tbody id="score-tbody">
+                    <tr><td colspan="27" style="text-align: center; padding: 30px;">학생 목록을 불러오는 중...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p id="message" class="message"></p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 서버 주소 및 로그인 페이지
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin'; // 로그인 페이지 파일명 또는 경로
+
+    // HTML 요소
+    const yearSelect = document.getElementById('year-select');
+    const scoreTbody = document.getElementById('score-tbody');
+    const saveAllBtn = document.getElementById('save-all-btn');
+    const reloadBtn = document.getElementById('reload-btn'); // 새로고침 버튼
+    const messageEl = document.getElementById('message');
+
+    let userBranchName = ''; // 로그인 지점명 (필요시 사용)
+    const INQUIRY_SUBJECTS = { /* 이전과 동일 */ '사회탐구': ['생활과윤리','윤리와사상','한국지리','세계지리','동아시아사','세계사','정치와법','경제','사회문화'], '과학탐구': ['물리1','화학1','생명과학1','지구과학1', '물리2','화학2','생명과학2','지구과학2'] };
+
+    // --- 인증 ---
+    const getToken = () => localStorage.getItem('jwt_token');
+    const handleAuthError = () => { alert('인증 만료. 다시 로그인하세요.'); window.top.location.href = LOGIN_PAGE; };
+    const token = getToken();
+    if (!token) { handleAuthError(); return; }
+    try { /* 이전과 동일 */ const payloadBase64Url = token.split('.')[1]; const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/'); const decodedString = decodeURIComponent(atob(payloadBase64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); const decodedPayload = JSON.parse(decodedString); if (decodedPayload && decodedPayload.branch) { userBranchName = decodedPayload.branch; } else { throw new Error('토큰에 지점 정보 없음'); } } catch (e) { console.error('토큰 처리 실패:', e); alert('인증 정보 오류.'); window.location.href = LOGIN_PAGE; return; }
+
+
+    // --- 토스트/메시지 ---
+    function showToast(message) { /* 이전과 동일 */ const toast = document.createElement('div'); toast.textContent = message; toast.className = 'toast-popup'; document.body.appendChild(toast); setTimeout(() => { toast.classList.add('show'); }, 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => { if (document.body.contains(toast)) { document.body.removeChild(toast); } }, 500); }, 3000); }
+    const showMsg = (msg, ok=true) => { /* 이전과 동일 */ messageEl.textContent = msg || ''; messageEl.className = 'message ' + (ok ? 'success':'error'); };
+
+    // --- 학생 목록 및 성적 불러오기 ---
+    const loadStudentScores = async () => { /* 이전과 동일 */ const selectedYear = yearSelect.value; scoreTbody.innerHTML = `<tr><td colspan="27" style="text-align: center; padding: 30px;">${selectedYear}학년도 로딩중...</td></tr>`; showMsg(''); saveAllBtn.disabled = true; try { const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); const response = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${selectedYear}`, { headers: { 'Authorization': `Bearer ${currentToken}` } }); const data = await response.json(); if (response.status === 401 || response.status === 403) throw new Error('인증 오류'); if (data.success && data.students) { renderScoreTable(data.students); showMsg(`${selectedYear}학년도 ${data.students.length}명 로드 완료.`); saveAllBtn.disabled = data.students.length === 0; } else { scoreTbody.innerHTML = `<tr><td colspan="27" style="text-align: center; padding: 30px;">로딩 실패: ${data.message || '오류'}</td></tr>`; showMsg('학생 목록 로딩 실패', false); } } catch (err) { console.error('로딩 오류:', err); scoreTbody.innerHTML = `<tr><td colspan="27" style="text-align: center; padding: 30px;">오류: ${err.message}</td></tr>`; showMsg(`로딩 오류: ${err.message}`, false); if (err.message === '로그인 만료' || err.message === '인증 오류') { handleAuthError(); } } };
+
+    // --- 테이블 렌더링 ---
+    const renderScoreTable = (students) => { /* 이전과 동일 */ scoreTbody.innerHTML = ''; if (students.length === 0) { scoreTbody.innerHTML = '<tr><td colspan="27" style="text-align: center; padding: 30px;">해당 학년도 학생 없음.</td></tr>'; return; } students.forEach((student, index) => { const scores = student.scores || {}; const tr = document.createElement('tr'); tr.dataset.studentId = student.student_id; let inquiryOptionsHtml = '<option value="">- 선택 -</option>'; for (const groupLabel in INQUIRY_SUBJECTS) { inquiryOptionsHtml += `<optgroup label="${groupLabel}">`; INQUIRY_SUBJECTS[groupLabel].forEach(subj => { inquiryOptionsHtml += `<option value="${subj}">${subj}</option>`; }); inquiryOptionsHtml += `</optgroup>`; } tr.innerHTML = ` <td class="nowrap">${student.student_name}</td> <td>${student.grade || '-'}</td> <td>${student.gender || '-'}</td> <td><input type="number" name="한국사_원점수" min="0" max="50"></td> <td><span class="score-display score-hist-grade"></span></td> <td><select name="국어_선택과목" class="subject"><option value="화법과작문">화법과작문</option><option value="언어와매체">언어와매체</option></select></td> <td><input type="number" name="국어_원점수" min="0" max="100"></td> <td><span class="score-display score-kor-std"></span></td> <td><span class="score-display score-kor-pct"></span></td> <td><span class="score-display score-kor-grade"></span></td> <td><select name="수학_선택과목" class="subject"><option value="확률과통계">확률과통계</option><option value="미적분">미적분</option><option value="기하">기하</option></select></td> <td><input type="number" name="수학_원점수" min="0" max="100"></td> <td><span class="score-display score-math-std"></span></td> <td><span class="score-display score-math-pct"></span></td> <td><span class="score-display score-math-grade"></span></td> <td><input type="number" name="영어_원점수" min="0" max="100"></td> <td><span class="score-display score-eng-grade"></span></td> <td><select name="탐구1_선택과목" class="subject">${inquiryOptionsHtml}</select></td> <td><input type="number" name="탐구1_원점수" min="0" max="50"></td> <td><span class="score-display score-inq1-std"></span></td> <td><span class="score-display score-inq1-pct"></span></td> <td><span class="score-display score-inq1-grade"></span></td> <td><select name="탐구2_선택과목" class="subject">${inquiryOptionsHtml}</select></td> <td><input type="number" name="탐구2_원점수" min="0" max="50"></td> <td><span class="score-display score-inq2-std"></span></td> <td><span class="score-display score-inq2-pct"></span></td> <td><span class="score-display score-inq2-grade"></span></td> `; if (index % 2 === 1) { tr.style.backgroundColor = "#f8fafc"; } populateRowData(tr, scores); tr.querySelectorAll('input, select').forEach(input => { input.addEventListener('change', () => { tr.classList.add('dirty'); }); }); scoreTbody.appendChild(tr); }); };
+
+    // --- 데이터 채우기 ---
+    const populateRowData = (tr, scores) => { /* 이전과 동일 */ if (!tr || !scores) return; tr.querySelector('[name="한국사_원점수"]').value = scores.한국사_원점수 ?? ''; tr.querySelector('.score-hist-grade').textContent = scores.한국사_등급 ?? ''; tr.querySelector('[name="국어_선택과목"]').value = scores.국어_선택과목 || '화법과작문'; tr.querySelector('[name="국어_원점수"]').value = scores.국어_원점수 ?? ''; tr.querySelector('.score-kor-std').textContent = scores.국어_표준점수 ?? ''; tr.querySelector('.score-kor-pct').textContent = scores.국어_백분위 ?? ''; tr.querySelector('.score-kor-grade').textContent = scores.국어_등급 ?? ''; tr.querySelector('[name="수학_선택과목"]').value = scores.수학_선택과목 || '확률과통계'; tr.querySelector('[name="수학_원점수"]').value = scores.수학_원점수 ?? ''; tr.querySelector('.score-math-std').textContent = scores.수학_표준점수 ?? ''; tr.querySelector('.score-math-pct').textContent = scores.수학_백분위 ?? ''; tr.querySelector('.score-math-grade').textContent = scores.수학_등급 ?? ''; tr.querySelector('[name="영어_원점수"]').value = scores.영어_원점수 ?? ''; tr.querySelector('.score-eng-grade').textContent = scores.영어_등급 ?? ''; tr.querySelector('[name="탐구1_선택과목"]').value = scores.탐구1_선택과목 || ''; tr.querySelector('[name="탐구1_원점수"]').value = scores.탐구1_원점수 ?? ''; tr.querySelector('.score-inq1-std').textContent = scores.탐구1_표준점수 ?? ''; tr.querySelector('.score-inq1-pct').textContent = scores.탐구1_백분위 ?? ''; tr.querySelector('.score-inq1-grade').textContent = scores.탐구1_등급 ?? ''; tr.querySelector('[name="탐구2_선택과목"]').value = scores.탐구2_선택과목 || ''; tr.querySelector('[name="탐구2_원점수"]').value = scores.탐구2_원점수 ?? ''; tr.querySelector('.score-inq2-std').textContent = scores.탐구2_표준점수 ?? ''; tr.querySelector('.score-inq2-pct').textContent = scores.탐구2_백분위 ?? ''; tr.querySelector('.score-inq2-grade').textContent = scores.탐구2_등급 ?? ''; tr.classList.remove('dirty'); };
+
+    // --- 이벤트 리스너 ---
+    yearSelect.addEventListener('change', loadStudentScores);
+    reloadBtn.addEventListener('click', loadStudentScores);
+
+    // --- ⭐️ 전체 저장 버튼 이벤트 (변경된 행만 저장) ⭐️ ---
+    saveAllBtn.addEventListener('click', async () => {
+        // ⭐️ 수정: .dirty 클래스가 있는 행만 선택
+        const dirtyRows = scoreTbody.querySelectorAll('tr.dirty[data-student-id]');
+        if (dirtyRows.length === 0) {
+            alert('변경된 내용이 없습니다.'); // 사용자에게 알림
+            return;
+        }
+
+        showMsg('저장 중...');
+        saveAllBtn.disabled = true;
+
+        const studentScoresData = [];
+        dirtyRows.forEach(tr => { // ⭐️ dirtyRows 사용
+            const student_id = parseInt(tr.dataset.studentId);
+            const scores = {
+                한국사_원점수: parseInt(tr.querySelector('[name="한국사_원점수"]').value) || null,
+                국어_선택과목: tr.querySelector('[name="국어_선택과목"]').value, 국어_원점수: parseInt(tr.querySelector('[name="국어_원점수"]').value) || null,
+                수학_선택과목: tr.querySelector('[name="수학_선택과목"]').value, 수학_원점수: parseInt(tr.querySelector('[name="수학_원점수"]').value) || null,
+                영어_원점수: parseInt(tr.querySelector('[name="영어_원점수"]').value) || null,
+                탐구1_선택과목: tr.querySelector('[name="탐구1_선택과목"]').value || null, 탐구1_원점수: parseInt(tr.querySelector('[name="탐구1_원점수"]').value) || null,
+                탐구2_선택과목: tr.querySelector('[name="탐구2_선택과목"]').value || null, 탐구2_원점수: parseInt(tr.querySelector('[name="탐구2_원점수"]').value) || null,
+            };
+            // 탐구 중복 처리
+             if (scores.탐구1_선택과목 && scores.탐구1_선택과목 === scores.탐구2_선택과목) {
+                 console.warn(`학생 ID ${student_id}: 탐구 과목 중복 (${scores.탐구1_선택과목}). 탐구2 초기화.`);
+                 scores.탐구2_선택과목 = null; scores.탐구2_원점수 = null;
+                 // UI 반영 (선택적)
+                 // tr.querySelector('[name="탐구2_선택과목"]').value = '';
+                 // tr.querySelector('[name="탐구2_원점수"]').value = '';
+             }
+            studentScoresData.push({ student_id, scores });
+        });
+
+        const selectedYear = yearSelect.value;
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+            const response = await fetch(`${SVR_JUNGSI}/jungsi/students/scores/bulk-set-wide`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                body: JSON.stringify({ 학년도: selectedYear, 입력유형: 'raw', studentScores: studentScoresData }) // ⭐️ 변경된 학생 데이터만 전송
+            });
+            const data = await response.json();
+            if (response.status === 401 || response.status === 403) throw new Error('인증 오류');
+
+            if (data.success) {
+                // ⭐️ 성공 시 토스트 팝업 사용
+                showToast(`${selectedYear}학년도 ${data.updatedData?.length || 0}명 저장/변환 완료.`);
+                showMsg(''); // 기존 메시지 영역 비우기
+                // 변환된 데이터로 테이블 업데이트
+                if (data.updatedData) {
+                    data.updatedData.forEach(updatedStudent => {
+                        const tr = scoreTbody.querySelector(`tr[data-student-id="${updatedStudent.student_id}"]`);
+                        if (tr) {
+                            populateRowData(tr, updatedStudent); // 업데이트된 데이터로 행 다시 채우기
+                        }
+                    });
+                }
+                 // ⭐️ 저장 성공 시 모든 dirty 클래스 제거
+                 scoreTbody.querySelectorAll('tr.dirty').forEach(row => row.classList.remove('dirty'));
+
+            } else {
+                showMsg(`저장 실패: ${data.message || '오류'}`, false); // 실패 시 기존 영역 사용
+            }
+        } catch (err) {
+            console.error('일괄 저장 오류:', err);
+            showMsg(`오류: ${err.message}`, false); // 실패 시 기존 영역 사용
+            if (err.message === '로그인 만료' || err.message === '인증 오류') { handleAuthError(); }
+        } finally {
+            saveAllBtn.disabled = false;
+        }
+    });
+
+    // --- 페이지 로드 시 초기 실행 ---
+    loadStudentScores();
+
+});
+</script>
+
+</body>
+</html>

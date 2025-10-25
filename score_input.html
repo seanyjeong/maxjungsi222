@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>수능 성적표 일괄 입력</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root {
+      --primary-color: #2563eb; --primary-dark:#1d4ed8;
+      --light-bg: #f8fafc; --card-bg: #ffffff;
+      --border-color: #e2e8f0; --text-primary:#1e293b; --text-secondary:#475569;
+      --success-color:#10b981; --danger-color:#ef4444; --warning-color:#f59e0b;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light-bg); color: var(--text-primary); margin: 0; padding: 20px; font-size: 13.5px; }
+    .container { max-width: 95%; margin: 0 auto; }
+    .header { display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom:1px solid var(--border-color); gap:16px; flex-wrap: wrap; }
+    .header h1 { font-size: 1.7rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+    .controls { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+    .controls .year-selector { background: var(--card-bg); padding:8px 12px; border-radius: 8px; box-shadow: var(--shadow); }
+    .controls label { margin-right: 6px; color: var(--text-secondary); font-size: .9rem; white-space: nowrap; }
+    select { padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:#fff; }
+    .card { background: var(--card-bg); box-shadow: var(--shadow); border-radius:12px; padding:18px; margin-bottom:18px; }
+
+    .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:none; border-radius:8px; font-weight:600; cursor:pointer; transition:.15s; }
+    .btn-success { background: var(--success-color); color:#fff; }
+    .btn-success:disabled { background:#9ca3af; cursor:not-allowed; }
+    .btn-outline { background: #fff; color: var(--text-secondary); border:1px solid var(--border-color); }
+    .message { margin-top: 10px; font-weight:600; }
+    .message.success { color: var(--success-color); }
+    .message.error { color: var(--danger-color); }
+
+    .table-wrap { overflow-x: auto; border:1px solid var(--border-color); border-radius:10px; }
+    table {
+        width:100%;
+        border-collapse: collapse;
+    }
+    
+    /* th, td 기본 스타일 */
+    th, td {
+        padding: 7px 4px;
+        vertical-align: middle;
+        font-size: 0.9rem;
+        text-align: center;
+        border: none;
+    }
+    
+    /* 헤더 그라데이션 */
+    th {
+        background-color: #f0f9ff; /* fallback */
+        background-image: linear-gradient(to bottom, #f0f9ff, #f8fcff); /* sky-50 ~ lighter */
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        font-weight: 600;
+        /* border-bottom 제거 (thead에서 관리) */
+    }
+    
+    /* 헤더(thead)와 바디(tbody) 구분선 제거 */
+
+    
+    /* 2줄 헤더의 2번째 줄(하위) 스타일 */
+    thead tr:nth-child(2) th {
+        top: 36px;
+        z-index: 1;
+        /* border-bottom 제거 */
+        filter: brightness(102%); /* 1행보다 살짝 밝게 */
+    }
+
+    /* colgroup */
+    col.col-name { width: 90px; }
+    col.col-info { width: 60px; }
+    col.col-subj { width: 110px; }
+    col.col-score { width: 70px; }
+
+    input[type="number"], select.score {
+        width: 95%;
+        padding: 6px;
+        border:1px solid var(--border-color);
+        border-radius:6px;
+        text-align: center;
+        font-size: 0.95em;
+    }
+    select.subject {
+        width: 95%;
+    }
+    
+    /* 짝수 데이터 행 배경색 */
+    tbody tr:nth-child(even) td {
+      background-color: #f8fafc; /* slate-50 */
+    }
+    
+    .badge { padding:2px 8px; border-radius: 999px; font-size: .75rem; background:#eef2ff; color:#3730a3; margin-left:6px; }
+    .status-ok { color: var(--success-color); }
+    .status-raw { color: var(--warning-color); }
+    .status-none { color: #64748b; }
+    .sticky-tools { display:flex; justify-content: space-between; align-items:center; margin: 10px 0; flex-wrap: wrap; gap:10px;}
+    .hint { font-size: .85rem; color: var(--text-secondary); }
+    .nowrap { white-space: nowrap; }
+
+    /* ⭐️ [추가] 토스트 팝업 스타일 */
+    .toast-popup {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      white-space: nowrap;
+    }
+
+    .toast-popup.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-clipboard-check"></i> 수능 성적표 일괄 입력</h1>
+      <div class="controls">
+        <div class="year-selector">
+          <label for="year-select">학년도</label>
+          <select id="year-select">
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+        <button class="btn btn-outline" id="reload-btn"><i class="fas fa-rotate"></i> 학생/성적 새로고침</button>
+        <button class="btn btn-success" id="save-btn" disabled><i class="fas fa-save"></i> 전체 저장(오피셜)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sticky-tools">
+        <div class="hint">수능성적 입력은 <b>원점수 칸이 없습니다</b>. 영어/한국사는 <b>등급만</b> 입력합니다. </div>
+        <div class="hint">행 우측 상태: <span class="status-ok">✅ 공식</span> / <span class="status-raw">⚠️ 가채점</span> / <span class="status-none">— 미입력</span></div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="score-table">
+          <colgroup>
+            <col class="col-name"> <col class="col-info"> <col class="col-info"> <col class="col-score"> <col class="col-subj">  <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-subj">  <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-subj">  <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-subj">  <col class="col-score"> <col class="col-score"> <col class="col-score"> <col class="col-info">  </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2">이름</th>
+              <th rowspan="2">학교</th>
+              <th rowspan="2">성별</th>
+              <th colspan="1">한국사</th>
+              <th colspan="4">국어</th>
+              <th colspan="4">수학</th>
+              <th colspan="1">영어</th>
+              <th colspan="4">탐구1</th>
+              <th colspan="4">탐구2</th>
+              <th rowspan="2">상태</th>
+            </tr>
+            <tr>
+              <th>등급</th>
+              <th>선택</th>
+              <th>표점</th>
+              <th>백분위</th>
+              <th>등급</th>
+              <th>선택</th>
+              <th>표점</th>
+              <th>백분위</th>
+              <th>등급</th>
+              <th>등급</th>
+              <th>선택</th>
+              <th>표점</th>
+              <th>백분위</th>
+              <th>등급</th>
+              <th>선택</th>
+              <th>표점</th>
+              <th>백분위</th>
+              <th>등급</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div id="message" class="message"></div>
+    </div>
+  </div>
+
+  <script>
+    // ============ 환경 상수 ============
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin.html';
+
+    // ============ DOM ============
+    const yearSelect = document.getElementById('year-select');
+    const reloadBtn = document.getElementById('reload-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const tbody = document.getElementById('tbody');
+    const messageEl = document.getElementById('message');
+
+    // ============ 상태 ============
+    let students = [];
+    let scoresMap = {};
+
+    // ============ 유틸 ============
+    const getToken = () => localStorage.getItem('jwt_token');
+    const handleAuthError = () => { alert('인증 만료. 다시 로그인하세요.'); window.top.location.href = LOGIN_PAGE; };
+    const showMsg = (msg, ok=true) => { messageEl.textContent = msg || ''; messageEl.className = 'message ' + (ok ? 'success':'error'); };
+    const val = (v) => (v==null ? '' : v);
+
+    // ⭐️ [추가] 토스트 팝업 표시 함수
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.className = 'toast-popup';
+      document.body.appendChild(toast);
+
+      // Fade in
+      setTimeout(() => {
+        toast.classList.add('show');
+      }, 10); // Short delay to trigger transition
+
+      // Fade out and remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          if (document.body.contains(toast)) { // Remove only if it still exists
+             document.body.removeChild(toast);
+          }
+        }, 500); // Wait for fade out transition
+      }, 3000);
+    }
+
+    const SUBJECTS_KOR = ['화법과작문','언어와매체'];
+    const SUBJECTS_MATH = ['확률과통계','미적분','기하'];
+    const SUBJECTS_INQ = [
+      '생활과윤리','윤리와사상','한국지리','세계지리','동아시아사','세계사','정치와법','경제','사회문화',
+      '생명과학1','생명과학2','화학1','화학2','물리1','물리2','지구과학1','지구과학2'
+    ];
+    const GRADES = ['','1','2','3','4','5','6','7','8','9'];
+
+    function optionHtml(list, sel) {
+      return list.map(x => `<option value="${x}" ${String(sel||'')===String(x)?'selected':''}>${x||'-'}</option>`).join('');
+    }
+    function numInput(v) { return (v==null || v==='' ? '' : Number(v)); }
+
+    // 행 렌더
+    function renderRows() {
+      tbody.innerHTML = '';
+      const year = yearSelect.value;
+
+      students.forEach((s, index) => {
+        const rows = scoresMap[s.student_id] || [];
+        const official = rows.find(r => r.입력유형==='official');
+        const r = official || {};
+        const status = official ? '<span class="status-ok">✅</span>'
+                      : rows.find(r => r.입력유형==='raw') ? '<span class="status-raw">⚠️</span>'
+                      : '<span class="status-none">—</span>';
+
+        const tr = document.createElement('tr');
+        tr.dataset.sid = s.student_id;
+        
+        // 짝수 행 배경색
+        if (index % 2 === 1) {
+            tr.style.backgroundColor = "#f8fafc";
+        }
+
+        tr.innerHTML = `
+          <td class="nowrap"><strong>${s.student_name}</strong></td>
+          <td>${val(s.school_name)}</td>
+          <td>${val(s.gender) || '-'}</td>
+
+          <td><select class="score hist_grade">${optionHtml(GRADES, r.한국사_등급)}</select></td>
+
+          <td><select class="subject kor">${optionHtml(['',...SUBJECTS_KOR], r.국어_선택과목)}</select></td>
+          <td><input type="number" class="score mini kor_std" value="${val(r.국어_표준점수)}" /></td>
+          <td><input type="number" class="score mini kor_pct" value="${val(r.국어_백분위)}" /></td>
+          <td><select class="score kor_grade">${optionHtml(GRADES, r.국어_등급)}</select></td>
+
+          <td><select class="subject math">${optionHtml(['',...SUBJECTS_MATH], r.수학_선택과목)}</select></td>
+          <td><input type="number" class="score mini math_std" value="${val(r.수학_표준점수)}" /></td>
+          <td><input type="number" class="score mini math_pct" value="${val(r.수학_백분위)}" /></td>
+          <td><select class="score math_grade">${optionHtml(GRADES, r.수학_등급)}</select></td>
+
+          <td><select class="score eng_grade">${optionHtml(GRADES, r.영어_등급)}</select></td>
+
+          <td><select class="subject inq1">${optionHtml(['',...SUBJECTS_INQ], r.탐구1_선택과목)}</select></td>
+          <td><input type="number" class="score mini inq1_std" value="${val(r.탐구1_표준점수)}" /></td>
+          <td><input type="number" class="score mini inq1_pct" value="${val(r.탐구1_백분위)}" /></td>
+          <td><select class="score inq1_grade">${optionHtml(GRADES, r.탐구1_등급)}</select></td>
+
+          <td><select class="subject inq2">${optionHtml(['',...SUBJECTS_INQ], r.탐구2_선택과목)}</select></td>
+          <td><input type="number" class="score mini inq2_std" value="${val(r.탐구2_표준점수)}" /></td>
+          <td><input type="number" class="score mini inq2_pct" value="${val(r.탐구2_백분위)}" /></td>
+          <td><select class="score inq2_grade">${optionHtml(GRADES, r.탐구2_등급)}</select></td>
+
+          <td>${status}</td>
+        `;
+        
+        // 탐구1/탐구2 중복 방지
+        tr.querySelector('.inq1').addEventListener('change', (e)=>{
+          const v1 = e.target.value;
+          const inq2Sel = tr.querySelector('.inq2');
+          if (v1 && v1 === inq2Sel.value) inq2Sel.value = '';
+        });
+        tr.querySelector('.inq2').addEventListener('change', (e)=>{
+          const v2 = e.target.value;
+          const inq1Sel = tr.querySelector('.inq1');
+          if (v2 && v2 === inq1Sel.value) inq1Sel.value = '';
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      saveBtn.disabled = students.length === 0;
+    }
+
+    async function loadStudentsAndScores() {
+      const year = yearSelect.value;
+      showMsg('로딩 중...', true);
+
+      try {
+        const token = getToken(); if (!token) return handleAuthError();
+
+        // 1) 학생 목록(지점 기준)
+        const resSt = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resSt.status === 401 || resSt.status === 403) return handleAuthError();
+        const dataSt = await resSt.json();
+        students = (dataSt.students || []).sort((a,b)=>a.student_name.localeCompare(b.student_name,'ko'));
+
+        // 2) 해당 학생들의 기존 성적(official/raw 모두)
+        scoresMap = {};
+        if (students.length > 0) {
+          const ids = students.map(s => s.student_id);
+          const resSc = await fetch(`${SVR_JUNGSI}/jungsi/scores/list`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year, student_ids: ids })
+          });
+          if (resSc.status === 401 || resSc.status === 403) return handleAuthError();
+          const dataSc = await resSc.json();
+          scoresMap = dataSc.data || {};
+        }
+
+        renderRows();
+        showMsg(''); // 로딩 성공 시 메시지 영역 비우기
+      } catch (e) {
+        console.error(e);
+        showMsg('로딩 실패', false);
+      }
+    }
+
+    // 저장(오피셜 업서트)
+    async function saveAll() {
+      const year = yearSelect.value;
+      const token = getToken(); if (!token) return handleAuthError();
+
+      const items = [];
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const sid = Number(tr.dataset.sid);
+        
+        const histGrade= tr.querySelector('.hist_grade')?.value || null;
+        const korSubj = tr.querySelector('.kor')?.value || null;
+        const korStd  = numInput(tr.querySelector('.kor_std')?.value);
+        const korPct  = numInput(tr.querySelector('.kor_pct')?.value);
+        const korGrade= tr.querySelector('.kor_grade')?.value || null;
+        const mathSubj = tr.querySelector('.math')?.value || null;
+        const mathStd  = numInput(tr.querySelector('.math_std')?.value);
+        const mathPct  = numInput(tr.querySelector('.math_pct')?.value);
+        const mathGrade= tr.querySelector('.math_grade')?.value || null;
+        const engGrade = tr.querySelector('.eng_grade')?.value || null;
+        const inq1Subj = tr.querySelector('.inq1')?.value || null;
+        const inq1Std  = numInput(tr.querySelector('.inq1_std')?.value);
+        const inq1Pct  = numInput(tr.querySelector('.inq1_pct')?.value);
+        const inq1Grade= tr.querySelector('.inq1_grade')?.value || null;
+        const inq2Subj = tr.querySelector('.inq2')?.value || null;
+        const inq2Std  = numInput(tr.querySelector('.inq2_std')?.value);
+        const inq2Pct  = numInput(tr.querySelector('.inq2_pct')?.value);
+        const inq2Grade= tr.querySelector('.inq2_grade')?.value || null;
+
+        const hasAny = korSubj || mathSubj || engGrade || histGrade || inq1Subj || inq2Subj || korStd || korPct || korGrade || mathStd || mathPct || mathGrade || inq1Std || inq1Pct || inq1Grade || inq2Std || inq2Pct || inq2Grade;
+        if (!hasAny) return;
+
+        items.push({
+          student_id: sid,
+          입력유형: 'official',
+          한국사_등급: histGrade ? Number(histGrade) : null,
+          국어_선택과목: korSubj, 국어_표준점수: korStd || null, 국어_백분위:  korPct || null, 국어_등급:    korGrade ? Number(korGrade) : null,
+          수학_선택과목: mathSubj, 수학_표준점수: mathStd || null, 수학_백분위:  mathPct || null, 수학_등급:    mathGrade ? Number(mathGrade) : null,
+          영어_등급: engGrade ? Number(engGrade) : null,
+          탐구1_선택과목: inq1Subj, 탐구1_표준점수: inq1Std || null, 탐구1_백분위:  inq1Pct || null, 탐구1_등급:    inq1Grade ? Number(inq1Grade) : null,
+          탐구2_선택과목: inq2Subj, 탐구2_표준점수: inq2Std || null, 탐구2_백분위:  inq2Pct || null, 탐구2_등급:    inq2Grade ? Number(inq2Grade) : null,
+        });
+      });
+
+      if (items.length === 0) {
+        showMsg('저장할 데이터가 없습니다.', false);
+        return;
+      }
+
+      saveBtn.disabled = true;
+      showMsg('저장 중...', true); // 저장 중 메시지는 하단에 잠시 표시
+      try {
+        const res = await fetch(`${SVR_JUNGSI}/jungsi/scores/officialize-bulk`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ year, items })
+        });
+        if (res.status === 401 || res.status === 403) return handleAuthError();
+        const data = await res.json();
+
+        // ⭐️ [수정] 성공 시 토스트 팝업 호출
+        if (data.success) {
+          showToast(`${items.length}명이 입력/수정되었습니다.`);
+          showMsg(''); // 기존 메시지 영역 비우기
+          await loadStudentsAndScores();
+        } else {
+          showMsg(data.message || '저장 실패', false); // 실패 시 기존 영역에 표시
+        }
+      } catch (e) {
+        console.error(e);
+        showMsg('저장 중 오류', false);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    }
+
+    // 이벤트
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = getToken(); if (!token) return handleAuthError();
+      await loadStudentsAndScores();
+    });
+    yearSelect.addEventListener('change', loadStudentsAndScores);
+    reloadBtn.addEventListener('click', loadStudentsAndScores);
+    saveBtn.addEventListener('click', saveAll);
+  </script>
+</body>
+</html>

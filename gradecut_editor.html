@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>예상 등급컷 입력 (등급컷 기준)</title>
+    <style>
+        :root { --primary-color:#007bff; --border-color:#dee2e6; --bg-color:#f8f9fa; --danger-color: #dc3545; }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:20px; background:#f4f4f4; color:#212529; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+        h1, h2 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .config-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px; align-items: end; /* 버튼 높이 맞춤 */ }
+        label { font-weight: bold; margin-bottom: 8px; display: block; }
+        select, input[type="text"] { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--border-color); box-sizing: border-box; font-size: 1em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: center; }
+        th { background: var(--bg-color); font-size: 0.9em; width: 15%; } /* 등급 라벨 너비 고정 */
+        td { background: #fff; }
+        td input[type="number"] { width: 80px; padding: 8px; text-align: center; border: 1px solid var(--border-color); border-radius: 3px; }
+        .button-container { margin-top: 25px; display: flex; justify-content: flex-end; } /* 저장 버튼 오른쪽 정렬 */
+        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.95em; }
+        .save-btn { background: var(--primary-color); color: #fff; font-size: 1.1em; padding: 12px 25px; }
+        .load-btn { background-color: #6c757d; color: white; width: 100%; /* 버튼 너비 맞춤 */ }
+        .message { margin-top: 20px; font-weight: bold; min-height: 20px; font-size: 1.1em; text-align: center; }
+        .message.success { color: #28a745; }
+        .message.error { color: var(--danger-color); }
+        .login-info { text-align: right; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>예상 등급컷 입력 (등급컷 기준)</h1>
+    <div class="login-info">
+        로그인 지점: <span id="branch-name-display">...</span>
+    </div>
+
+    <form id="gradecut-form">
+        <section class="config-section">
+            <div>
+                <label for="year-select">학년도</label>
+                <select id="year-select" name="year">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            <div>
+                <label for="exam-type-select">모형</label>
+                <select id="exam-type-select" name="exam_type">
+                    <option value="수능">수능</option>
+                    <option value="9월">9월 모의평가</option>
+                    <option value="6월">6월 모의평가</option>
+                </select>
+            </div>
+            <div>
+                <label for="subject-select">선택과목명</label>
+                <select id="subject-select" name="subject" required>
+                    <option value="">-- 과목 선택 --</option>
+                    </select>
+            </div>
+            <div>
+               <button type="button" id="load-cuts-btn" class="load-btn">💾 불러오기</button>
+            </div>
+        </section>
+
+        <h2>등급컷 데이터 입력</h2>
+        <table id="fixed-cuts-table">
+            <thead>
+                <tr>
+                    <th>구분</th>
+                    <th>원점수 (컷)</th>
+                    <th>표준점수</th>
+                    <th>백분위</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-grade="1" data-type="max">
+                    <th>만점</th>
+                    <td><input type="number" name="raw_max" required></td>
+                    <td><input type="number" name="std_max" required></td>
+                    <td><input type="number" name="pct_max" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="1" data-type="cutoff">
+                    <th>1등급</th>
+                    <td><input type="number" name="raw_1" required></td>
+                    <td><input type="number" name="std_1" required></td>
+                    <td><input type="number" name="pct_1" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="2" data-type="cutoff">
+                    <th>2등급</th>
+                    <td><input type="number" name="raw_2" required></td>
+                    <td><input type="number" name="std_2" required></td>
+                    <td><input type="number" name="pct_2" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="3" data-type="cutoff">
+                    <th>3등급</th>
+                    <td><input type="number" name="raw_3" required></td>
+                    <td><input type="number" name="std_3" required></td>
+                    <td><input type="number" name="pct_3" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="4" data-type="cutoff">
+                    <th>4등급</th>
+                    <td><input type="number" name="raw_4" required></td>
+                    <td><input type="number" name="std_4" required></td>
+                    <td><input type="number" name="pct_4" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="5" data-type="cutoff">
+                    <th>5등급</th>
+                    <td><input type="number" name="raw_5" required></td>
+                    <td><input type="number" name="std_5" required></td>
+                    <td><input type="number" name="pct_5" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="6" data-type="cutoff">
+                    <th>6등급</th>
+                    <td><input type="number" name="raw_6" required></td>
+                    <td><input type="number" name="std_6" required></td>
+                    <td><input type="number" name="pct_6" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="7" data-type="cutoff">
+                    <th>7등급</th>
+                    <td><input type="number" name="raw_7" required></td>
+                    <td><input type="number" name="std_7" required></td>
+                    <td><input type="number" name="pct_7" required min="0" max="100"></td>
+                </tr>
+                <tr data-grade="8" data-type="cutoff">
+                    <th>8등급</th>
+                    <td><input type="number" name="raw_8" required></td>
+                    <td><input type="number" name="std_8" required></td>
+                    <td><input type="number" name="pct_8" required min="0" max="100"></td>
+                </tr>
+                 <tr data-grade="9" data-type="cutoff">
+                    <th>9등급</th>
+                    <td><input type="number" name="raw_9" value="0" required></td> <td><input type="number" name="std_9" required></td>
+                    <td><input type="number" name="pct_9" value="0" required min="0" max="100"></td> </tr>
+            </tbody>
+        </table>
+
+        <div class="button-container">
+            <button type="submit" class="save-btn">💾 전체 저장</button>
+        </div>
+
+        <p id="message" class="message"></p>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 서버 주소 및 로그인 페이지
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin';
+
+    // HTML 요소
+    const branchNameDisplay = document.getElementById('branch-name-display');
+    const yearSelect = document.getElementById('year-select');
+    const examTypeSelect = document.getElementById('exam-type-select');
+    const subjectSelect = document.getElementById('subject-select');
+    const loadCutsBtn = document.getElementById('load-cuts-btn');
+    const fixedTableBody = document.querySelector('#fixed-cuts-table tbody');
+    const gradecutForm = document.getElementById('gradecut-form');
+    const messageEl = document.getElementById('message');
+
+    // --- 엑셀 붙여넣기 기능 ---
+    fixedTableBody.addEventListener('paste', (e) => {
+        // 붙여넣기 기본 동작 방지
+        e.preventDefault();
+
+        // 1. 클립보드 데이터 가져오기 (텍스트 형식)
+        const clipboardData = (e.clipboardData || window.clipboardData).getData('text');
+        
+        // 2. 붙여넣기 시작할 인풋(e.target) 찾기
+        const startInput = e.target.closest('input[type="number"]');
+        if (!startInput) return; // 인풋이 아니면 무시
+
+        // 3. 테이블의 모든 인풋 목록을 배열로 가져오기 (DOM 순서대로)
+        const allInputs = Array.from(fixedTableBody.querySelectorAll('input[type="number"]'));
+        
+        // 4. 시작 인덱스 찾기
+        let startIndex = allInputs.indexOf(startInput);
+        if (startIndex === -1) return;
+
+        // 5. 클립보드 데이터를 줄(\n)과 칸(\t)으로 분리
+        const rows = clipboardData.trim().split('\n');
+        
+        // 엑셀의 여러 행을 붙여넣기 위해, 테이블의 현재 행 시작 인덱스를 추적
+        let currentInputRowIndex = startIndex; 
+
+        for (const row of rows) {
+            const cells = row.split('\t'); // 탭으로 구분된 셀 데이터
+            
+            // 현재 테이블 행에서 열(column)을 순회하기 위한 인덱스
+            let tempColIndex = currentInputRowIndex; 
+
+            for (const cell of cells) {
+                // 현재 인덱스에 해당하는 인풋이 테이블에 존재하는지 확인
+                if (allInputs[tempColIndex]) {
+                    // 값을 채우고, 다음 열(input)로 인덱스 이동
+                    allInputs[tempColIndex].value = cell.trim();
+                    tempColIndex++;
+                } else {
+                    // 이 행에 더 이상 채울 인풋이 없으면(예: 3칸 넘음) 중단
+                    break;
+                }
+            }
+            
+            // 엑셀의 다음 행(row)을 처리하기 위해,
+            // 테이블의 다음 행(row)의 시작 인덱스로 이동
+            // (한 행에 3개의 인풋이 있으므로 +3)
+            // (주의: tempColIndex가 아니라 currentInputRowIndex 기준으로 +3)
+            
+            // 현재 행의 시작 인덱스에서 3을 더해 다음 행의 시작 인덱스를 계산
+            const currentRow = allInputs[currentInputRowIndex].closest('tr');
+            const inputsInRow = currentRow.querySelectorAll('input[type="number"]').length; // 보통 3
+            currentInputRowIndex += inputsInRow; 
+            
+            // 테이블의 끝을 넘어가면 전체 중단
+            if (currentInputRowIndex >= allInputs.length) {
+                break;
+            }
+        }
+    });
+    // --- 엑셀 붙여넣기 기능 끝 ---
+
+
+    // 과목 목록 (optgroup 구조)
+    const SUBJECT_GROUPS = [
+        { label: '국어 선택', options: ['화법과작문', '언어와매체'] },
+        { label: '수학 선택', options: ['확률과통계', '미적분', '기하'] },
+        { label: '사회탐구', options: ['생활과윤리','윤리와사상','한국지리','세계지리','동아시아사','세계사','정치와법','경제','사회문화'] },
+        { label: '과학탐구', options: ['물리1','화학1','생명과학1','지구과학1', '물리2','화학2','생명과학2','지구과학2'] }
+    ];
+
+    // --- 인증 게이트 및 지점명 표시 ---
+    const getToken = () => localStorage.getItem('jwt_token');
+    const token = getToken();
+
+    if (!token) {
+        alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+        window.location.href = LOGIN_PAGE;
+        return;
+    }
+
+    try {
+        // JWT Payload 디코딩 (Base64 URL -> Base64 -> JSON)
+        const payloadBase64Url = token.split('.')[1];
+        const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decodedPayload = JSON.parse(decodeURIComponent(atob(payloadBase64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')));
+
+        if (decodedPayload && decodedPayload.branch) {
+            branchNameDisplay.textContent = decodedPayload.branch;
+        } else {
+            branchNameDisplay.textContent = '정보 없음';
+            console.warn('토큰에 지점 정보(branch)가 없습니다.');
+        }
+    } catch (e) {
+        console.error('토큰 디코딩 실패:', e);
+        branchNameDisplay.textContent = '오류';
+        alert('인증 정보 오류. 다시 로그인해주세요.');
+        window.location.href = LOGIN_PAGE;
+        return;
+    }
+
+    // --- 과목 선택 옵션 동적 생성 (optgroup 사용) ---
+    SUBJECT_GROUPS.forEach(group => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = group.label;
+        group.options.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            optgroup.appendChild(option);
+        });
+        subjectSelect.appendChild(optgroup);
+    });
+
+    // --- 입력 필드 초기화 함수 ---
+    const clearInputFields = () => {
+        fixedTableBody.querySelectorAll('input[type="number"]').forEach(input => {
+            // 9등급 원점수/백분위는 기본값 유지
+            if (input.name !== 'raw_9' && input.name !== 'pct_9') {
+                 input.value = '';
+            } else if (input.name === 'raw_9') {
+                 input.value = '0'; // 9등급 원점수 기본값 0 설정
+            } else if (input.name === 'pct_9') {
+                 input.value = '0'; // 9등급 백분위 기본값 0 설정
+            }
+        });
+         // 만점 행 초기화 추가
+        fixedTableBody.querySelector('input[name="raw_max"]').value = '';
+        fixedTableBody.querySelector('input[name="std_max"]').value = '';
+        fixedTableBody.querySelector('input[name="pct_max"]').value = '';
+    };
+
+    // --- 등급컷 불러오기 버튼 이벤트 ---
+    loadCutsBtn.addEventListener('click', async () => {
+        const year = yearSelect.value;
+        const examType = examTypeSelect.value;
+        const subject = subjectSelect.value;
+
+        if (!subject) {
+            alert('과목을 선택해주세요.');
+            return;
+        }
+
+        messageEl.textContent = '불러오는 중...';
+        messageEl.className = 'message';
+        clearInputFields(); // 불러오기 전 필드 초기화
+
+        try {
+            const response = await fetch(`${SVR_JUNGSI}/jungsi/grade-cuts/get?year=${year}&exam_type=${examType}&subject=${subject}`, {
+                headers: { 'Authorization': `Bearer ${getToken()}` }
+            });
+            const data = await response.json();
+
+            if (response.status === 401 || response.status === 403) {
+                 alert('인증 오류. 다시 로그인해주세요.');
+                 window.location.href = LOGIN_PAGE;
+                 return;
+            }
+
+            if (data.success && data.cuts.length > 0) {
+                // 서버 데이터는 원점수 내림차순 정렬 상태
+                const cutsFromServer = data.cuts;
+
+                // 1. 만점 데이터 채우기 (가장 높은 원점수 기준)
+                const maxScoreData = cutsFromServer[0];
+                if (maxScoreData) {
+                    fixedTableBody.querySelector('input[name="raw_max"]').value = maxScoreData.원점수;
+                    fixedTableBody.querySelector('input[name="std_max"]').value = maxScoreData.표준점수;
+                    fixedTableBody.querySelector('input[name="pct_max"]').value = maxScoreData.백분위;
+                }
+
+                // 2. 등급컷 데이터 채우기 (각 등급의 가장 낮은 원점수 기준)
+                for (let grade = 1; grade <= 9; grade++) {
+                    // 해당 등급 데이터 중 가장 낮은 원점수(마지막 요소)를 찾음
+                    const gradeCutData = cutsFromServer.filter(c => c.등급 === grade).pop();
+
+                    if (gradeCutData) {
+                        // 9등급 데이터는 기본값이 있으므로, 불러온 값이 있으면 덮어쓰기
+                        fixedTableBody.querySelector(`input[name="raw_${grade}"]`).value = gradeCutData.원점수;
+                        fixedTableBody.querySelector(`input[name="std_${grade}"]`).value = gradeCutData.표준점수;
+                        fixedTableBody.querySelector(`input[name="pct_${grade}"]`).value = gradeCutData.백분위;
+                    }
+                    // 데이터가 없으면 초기화된 상태 유지 (9등급 제외)
+                }
+
+                messageEl.textContent = '등급컷을 불러왔습니다.';
+                messageEl.className = 'message success';
+            } else if (data.success && data.cuts.length === 0) {
+                 // 데이터가 없을 때도 필드는 초기화된 상태이므로 메시지만 표시
+                 messageEl.textContent = '저장된 등급컷 데이터가 없습니다. 새로 입력해주세요.';
+                 messageEl.className = 'message';
+            } else {
+                 messageEl.textContent = data.message || '불러오기 실패';
+                 messageEl.className = 'message error';
+            }
+        } catch (err) {
+            console.error('등급컷 불러오기 오류:', err);
+            messageEl.textContent = '서버 통신 오류.';
+            messageEl.className = 'message error';
+        }
+    });
+
+    // --- 폼 제출 (저장) 이벤트 ---
+    gradecutForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        messageEl.textContent = '저장 중...';
+        messageEl.className = 'message';
+
+        const year = yearSelect.value;
+        const examType = examTypeSelect.value;
+        const subject = subjectSelect.value;
+
+        if (!subject) {
+            alert('과목을 선택해주세요.');
+            messageEl.textContent = '';
+            return;
+        }
+
+        const cutsData = []; // API로 보낼 최종 배열
+        let isValid = true;
+
+        // 고정 테이블에서 데이터 읽기
+        const rows = fixedTableBody.querySelectorAll('tr[data-grade]');
+        rows.forEach(tr => {
+            const grade = parseInt(tr.dataset.grade);
+            const type = tr.dataset.type; // 'max' or 'cutoff'
+            let rawInput, stdInput, pctInput;
+
+            // 타입에 따라 input 요소 찾기
+            if (type === 'max') {
+                rawInput = tr.querySelector('input[name="raw_max"]');
+                stdInput = tr.querySelector('input[name="std_max"]');
+                pctInput = tr.querySelector('input[name="pct_max"]');
+            } else { // cutoff
+                rawInput = tr.querySelector(`input[name="raw_${grade}"]`);
+                stdInput = tr.querySelector(`input[name="std_${grade}"]`);
+                pctInput = tr.querySelector(`input[name="pct_${grade}"]`);
+            }
+
+            // 값 읽기 (빈 문자열이면 null 처리)
+            const rawScore = rawInput.value === '' ? null : parseInt(rawInput.value);
+            const stdScore = stdInput.value === '' ? null : parseInt(stdInput.value);
+            const percentile = pctInput.value === '' ? null : parseInt(pctInput.value);
+
+            // 필수 값 유효성 검사 (null 체크)
+            if (rawScore === null || stdScore === null || percentile === null) {
+                isValid = false;
+            }
+
+            // 유효한 경우에만 cutsData 배열에 추가
+            if (rawScore !== null && stdScore !== null && percentile !== null) {
+                 cutsData.push({
+                     원점수: rawScore,
+                     표준점수: stdScore,
+                     백분위: percentile,
+                     등급: grade // 해당 행의 등급 값 사용
+                 });
+            }
+        });
+
+        if (!isValid) {
+            alert('만점 및 모든 등급컷의 원점수, 표준점수, 백분위를 입력해주세요.');
+            messageEl.textContent = '입력값을 확인해주세요.';
+            messageEl.className = 'message error';
+            return;
+        }
+
+        // 서버 API로 전송
+        try {
+            const currentToken = getToken();
+            if (!currentToken) {
+                alert('로그인 세션 만료. 다시 로그인해주세요.');
+                window.location.href = LOGIN_PAGE;
+                return;
+            }
+
+            const response = await fetch(`${SVR_JUNGSI}/jungsi/grade-cuts/set-bulk`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentToken}`
+                },
+                body: JSON.stringify({
+                    year: year,
+                    exam_type: examType,
+                    subject: subject,
+                    cuts: cutsData // 가공된 데이터 배열 전송
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.status === 401 || response.status === 403) {
+                 alert('인증 오류. 다시 로그인해주세요.');
+                 window.location.href = LOGIN_PAGE;
+                 return;
+            }
+
+            if (data.success) {
+                messageEl.textContent = `[${year} ${examType} ${subject}] 등급컷이 저장되었습니다.`;
+                messageEl.className = 'message success';
+            } else {
+                messageEl.textContent = data.message || '저장 실패';
+                messageEl.className = 'message error';
+            }
+        } catch (err) {
+            console.error('등급컷 저장 오류:', err);
+            messageEl.textContent = '서버 통신 오류.';
+            messageEl.className = 'message error';
+        }
+    });
+
+    // 테이블 input 요소 이름 자동 설정 및 required 속성 추가 (페이지 로드 시)
+    fixedTableBody.querySelectorAll('tr[data-grade]').forEach(tr => {
+        const grade = tr.dataset.grade;
+        const type = tr.dataset.type;
+        const inputs = tr.querySelectorAll('input[type="number"]');
+
+        // input name 설정
+        if (type === 'max') {
+            inputs[0].name = 'raw_max'; inputs[1].name = 'std_max'; inputs[2].name = 'pct_max';
+        } else if (grade) {
+            inputs[0].name = `raw_${grade}`; inputs[1].name = `std_${grade}`; inputs[2].name = `pct_${grade}`;
+            // 9등급 기본값 설정
+            if (grade === '9') {
+                if (!inputs[0].value) inputs[0].value = '0'; // 원점수 0
+                if (!inputs[2].value) inputs[2].value = '0'; // 백분위 0
+            }
+        }
+        // 모든 input 필드를 필수로 설정
+        inputs.forEach(input => input.required = true);
+    });
+
+});
+</script>
+
+</body>
+</html>

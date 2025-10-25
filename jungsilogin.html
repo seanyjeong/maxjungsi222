@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>정시 엔진 로그인</title>
+  <style>
+    :root { --primary-color:#007bff; --border-color:#dee2e6; --bg-color:#f8f9fa; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      margin:0;
+      background-color: var(--bg-color);
+    }
+    .login-container {
+      background:#fff;
+      padding:40px;
+      border-radius:8px;
+      width:100%;
+      max-width:400px;
+      box-shadow:0 5px 15px rgba(0,0,0,.1);
+    }
+    h2 {
+      text-align:center;
+      margin-top:0;
+      margin-bottom:25px;
+    }
+    input[type="text"], input[type="password"], button {
+      width:100%;
+      padding:12px;
+      margin-bottom:15px;
+      border-radius:5px;
+      border:1px solid var(--border-color);
+      box-sizing:border-box;
+      font-size:1em;
+    }
+    button {
+      background:var(--primary-color);
+      color:#fff;
+      cursor:pointer;
+      border:none;
+      font-weight:bold;
+      transition:background-color .2s;
+    }
+    button:hover { opacity:.9; }
+    .message {
+      margin-top:15px;
+      font-weight:bold;
+      min-height:20px;
+      font-size:1.05em;
+      text-align:center;
+    }
+    .message.success { color:#28a745; }
+    .message.error { color:#dc3545; }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>정시 엔진 로그인</h2>
+    <form id="login-form">
+      <input type="text" id="userid" placeholder="아이디" required />
+      <input type="password" id="password" placeholder="비밀번호" required />
+      <button type="submit" id="login-btn">로그인</button>
+    </form>
+    <p id="login-message" class="message"></p>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 26수시 서버 (인증 전용)
+    const SVR_26SUSI = 'http://supermax.kr:8080';
+    
+    // --- ⭐️ 수정된 부분 ⭐️ ---
+    // 1. URL에서 ?redirect= 파라미터 값(돌아갈 주소)을 읽어옴
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectParam = urlParams.get('redirect');
+    
+    // 2. 돌아갈 주소가 있으면 그 주소를 사용하고, 없으면 'index.html'을 기본값으로 사용
+    const REDIRECT_ON_SUCCESS = redirectParam || 'index.html'; 
+    // --- ⭐️ 수정 끝 ⭐️ ---
+
+    const loginForm = document.getElementById('login-form');
+    const loginBtn = document.getElementById('login-btn');
+    const loginMessage = document.getElementById('login-message');
+
+    // 로컬 스토리지에 토큰 저장 함수 (동일)
+    const setToken = (token) => {
+        try {
+            localStorage.setItem('jwt_token', token);
+            return true;
+        } catch (e) {
+            console.error('LocalStorage 저장 실패:', e);
+            return false;
+        }
+    };
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userid = document.getElementById('userid').value;
+        const password = document.getElementById('password').value;
+        
+        loginMessage.textContent = '로그인 중...';
+        loginMessage.className = 'message';
+        loginBtn.disabled = true;
+
+        try {
+            const response = await fetch(`${SVR_26SUSI}/26susi/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userid, password })
+            });
+            const data = await response.json();
+
+            if (data.success && data.token) {
+                if (setToken(data.token)) {
+                    loginMessage.textContent = '로그인 성공! 잠시 후 이동합니다...';
+                    loginMessage.className = 'message success';
+                    
+                    // --- ⭐️ 수정된 부분 ⭐️ ---
+                    // 1초 후, 아까 URL 파라미터에서 읽어온 페이지(REDIRECT_ON_SUCCESS)로 이동
+                    setTimeout(() => {
+                        window.location.href = REDIRECT_ON_SUCCESS;
+                    }, 1000);
+                    // --- ⭐️ 수정 끝 ⭐️ ---
+
+                } else {
+                    loginMessage.textContent = '로그인에 성공했으나 토큰 저장에 실패했습니다.';
+                    loginMessage.className = 'message error';
+                    loginBtn.disabled = false;
+                }
+            } else {
+                loginMessage.textContent = data.message || '아이디 또는 비밀번호를 확인하세요.';
+                loginMessage.className = 'message error';
+                loginBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('로그인 서버 연결 실패:', error);
+            loginMessage.textContent = '로그인 서버에 연결할 수 없습니다.';
+            loginMessage.className = 'message error';
+            loginBtn.disabled = false;
+        }
+    });
+});
+</script>
+</body>
+</html>

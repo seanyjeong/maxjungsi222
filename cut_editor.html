@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>정시 컷 점수 편집기</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb; --primary-dark:#1d4ed8;
+            --light-bg: #f8fafc; --card-bg: #ffffff;
+            --border-color: #e2e8f0; --text-primary:#1e293b; --text-secondary:#475569;
+            --success-color:#10b981; --danger-color:#ef4444; --warning-color:#f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--light-bg); padding: 20px; margin: 0; line-height: 1.5; font-size: 13px; }
+        .container { max-width: 98%; margin: 0 auto; }
+
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--card-bg); padding: 16px 18px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 16px; }
+        .header h1 { font-size: 1.6rem; color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 10px; }
+        .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--light-bg); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .chip label { font-size: .9rem; color: var(--text-secondary); white-space: nowrap; }
+        select { padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; font-size: .9rem; min-width: 140px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: none; border-radius: 6px; font-weight: 500; font-size: .85rem; cursor: pointer; transition: .2s; }
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-save { background: var(--success-color); color: #fff; padding: 10px 16px; font-size: 0.9rem; }
+        .btn-save:hover { background: #059669; }
+        .btn-save:disabled { background: #9ca3af; cursor: not-allowed; }
+        .btn-outline { background: #fff; color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+        /* Filter/Search */
+        .filter-search-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--card-bg); padding: 12px 16px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 16px; }
+        .filter-buttons { display: flex; gap: 8px; }
+        .filter-buttons .btn { padding: 6px 10px; font-size: 0.85rem; }
+        .filter-buttons .btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); font-weight: 600; }
+        .search-input { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; background: #fff; }
+        .search-input i { color: var(--text-secondary); font-size: 0.9rem; }
+        .search-input input { border: none; outline: none; font-size: 0.9rem; padding: 2px 0; width: 200px; }
+
+        /* Table */
+        .table-container { overflow-x: auto; background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 6px; border-bottom: 1px solid var(--border-color); text-align: center; white-space: nowrap; font-size: 0.85rem; }
+        th { background: #f8fafc; font-weight: 600; color: var(--text-secondary); position: sticky; top: 0; z-index: 1;}
+        tbody tr:hover { background-color: #f0f9ff; }
+        td.uni-dept { text-align: left; white-space: normal; min-width: 200px; font-weight: 500; }
+        td.uni-dept span { font-size: 0.9em; color: var(--text-secondary); display: block; }
+        .loading-row td { text-align: center; padding: 40px; color: var(--text-secondary); font-style: italic; }
+
+        /* Input Fields */
+        td input[type="number"] { width: 75px; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9em; text-align: right; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+         td span.readonly-score {
+             display: inline-block; width: 75px; padding: 5px; font-size: 0.9em; text-align: right;
+             color: var(--text-secondary); background-color: #f9fafb; border: 1px solid transparent;
+             border-radius: 4px; box-sizing: border-box; min-height: 29.6px;
+         }
+        td input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        tr.dirty td { background-color: #fffbeb; }
+
+        /* Message Area */
+        #message-area { margin-top: 15px; text-align: center; padding: 10px; border-radius: 6px; font-weight: 500; display: none; }
+        #message-area.error { color: var(--danger-color); background-color: #fee2e2; }
+        #message-area.success { color: var(--success-color); background-color: #d1fae5; }
+
+        /* Toast Popup */
+        .toast-popup {
+          position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+          background-color: rgba(0, 0, 0, 0.75); color: white; padding: 12px 20px;
+          border-radius: 20px; font-size: 0.95rem; font-weight: 500; z-index: 1000;
+          opacity: 0; transition: opacity 0.5s ease; white-space: nowrap;
+        }
+        .toast-popup.show { opacity: 1; }
+        .toast-popup.error { background-color: rgba(220, 38, 38, 0.9); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-bullseye"></i> 정시 컷 점수 편집기</h1>
+        <div class="header-controls">
+            <div class="chip">
+                <label for="year-select"><i class="fas fa-calendar-alt"></i> 학년도</label>
+                <select id="year-select">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+            <button type="button" id="save-cutoffs-btn" class="btn btn-save" disabled>
+                <i class="fas fa-save"></i> 변경된 컷 점수 저장
+            </button>
+        </div>
+    </div>
+
+    <div id="message-area"></div>
+
+    <div class="filter-search-bar">
+        <div class="filter-buttons">
+            <button class="btn btn-outline active" data-gun-filter="all">전체</button>
+            <button class="btn btn-outline" data-gun-filter="가">가군</button>
+            <button class="btn btn-outline" data-gun-filter="나">나군</button>
+            <button class="btn btn-outline" data-gun-filter="다">다군</button>
+        </div>
+        <div class="search-input">
+            <i class="fas fa-search"></i>
+            <input type="search" id="search-input" placeholder="대학, 학과 검색...">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>대학/학과</th>
+                    <th>모집인원</th> <th>수능%</th>
+                    <th>내신%</th>
+                    <th>실기%</th>
+                    <th>수능컷(지점)</th>
+                    <th>총점컷(지점)</th>
+                    <th>수능컷(맥스)</th>
+                    <th>총점컷(맥스)</th>
+                    <th>25년총점컷(맥스)</th>
+                </tr>
+            </thead>
+            <tbody id="cutoff-tbody">
+                 <tr class="loading-row"><td colspan="11">데이터 로딩 중...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin.html';
+    const yearSelect = document.getElementById('year-select');
+    const tbody = document.getElementById('cutoff-tbody');
+    const saveBtn = document.getElementById('save-cutoffs-btn');
+    const messageArea = document.getElementById('message-area');
+    const filterButtons = document.querySelectorAll('.filter-buttons .btn');
+    const searchInput = document.getElementById('search-input');
+
+    let userRole = '';
+    let userBranch = '';
+    let allCutoffData = [];
+    let currentGunFilter = 'all';
+    let currentSearchTerm = '';
+
+    const handleAuthError = () => { alert('인증 만료.'); window.top.location.href = LOGIN_PAGE; };
+    const getToken = () => localStorage.getItem('jwt_token');
+    const token = getToken();
+    if (!token) { handleAuthError(); return; }
+
+    try {
+        const payloadBase64Url = token.split('.')[1];
+        const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const binaryString = atob(payloadBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+        const decodedString = new TextDecoder().decode(bytes);
+        const payload = JSON.parse(decodedString);
+
+        console.log("Decoded JWT Payload (cut_editor.html):", payload);
+
+        userRole = (payload.userid === 'admin') ? 'admin' : 'branch';
+        userBranch = payload.branch || '';
+        console.log(`User Role: ${userRole}, Branch: ${userBranch}`);
+
+    } catch (e) { console.error('Token decode error:', e); handleAuthError(); return; }
+
+    const isAdmin = () => userRole === 'admin';
+
+    const showMessage = (msg, isError = false) => { messageArea.textContent = msg; messageArea.className = isError ? 'error' : 'success'; messageArea.style.display = msg ? 'block' : 'none'; setTimeout(() => { if(messageArea.textContent === msg) messageArea.style.display = 'none'; }, 4000); };
+
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.className = `toast-popup ${isError ? 'error' : ''}`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 500);
+        }, 3000);
+    }
+
+    const val = (v, fallback = '-') => (v === null || v === undefined || v === '' ? fallback : v); // ⭐️ fallback '-'로 변경
+    const formatPercent = (v) => (v !== null && v !== undefined && v !== '') ? `${v}%` : '-';
+
+    const loadCutoffs = async () => {
+        const year = yearSelect.value;
+         // ⭐️ 로딩 행 colspan 수정
+        tbody.innerHTML = `<tr class="loading-row"><td colspan="11"><i class="fas fa-spinner fa-spin"></i> ${year}학년도 컷 점수 로딩 중...</td></tr>`;
+        saveBtn.disabled = true;
+        allCutoffData = [];
+        showMessage('');
+
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/cutoffs/${year}`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+            if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+            const data = await res.json();
+
+            if (data.success && data.cutoffs) {
+                allCutoffData = data.cutoffs;
+                 // *** 로그 추가 ***: API 응답 데이터 확인
+                 console.log(`[${year}] Received Cutoff Data:`, allCutoffData);
+                renderTable();
+                showToast(`${year}학년도 ${allCutoffData.length}개 학과 로드 완료.`);
+                saveBtn.disabled = false;
+            } else {
+                 // ⭐️ 로딩 실패 colspan 수정
+                tbody.innerHTML = `<tr class="loading-row"><td colspan="11">데이터 로딩 실패: ${data.message || '오류'}</td></tr>`;
+                showMessage('컷 점수 로딩 실패.', true);
+            }
+        } catch (e) {
+            console.error('컷 점수 로딩 오류:', e);
+             // ⭐️ 로딩 오류 colspan 수정
+            tbody.innerHTML = `<tr class="loading-row"><td colspan="11">오류: ${e.message}</td></tr>`;
+            showMessage(`컷 점수 로딩 오류: ${e.message}`, true);
+            if (e.message.includes('인증')) handleAuthError();
+        }
+    };
+
+    const renderTable = () => {
+        tbody.innerHTML = '';
+        const searchTerm = currentSearchTerm.toLowerCase();
+        const filteredData = allCutoffData.filter(item => {
+             const gunMatch = currentGunFilter === 'all' || (item.군 && item.군.startsWith(currentGunFilter));
+             const searchMatch = !searchTerm ||
+                                 (item.대학명 && item.대학명.toLowerCase().includes(searchTerm)) ||
+                                 (item.학과명 && item.학과명.toLowerCase().includes(searchTerm));
+            return gunMatch && searchMatch;
+        });
+
+
+        if (!filteredData || filteredData.length === 0) {
+             // ⭐️ 데이터 없음 colspan 수정
+            tbody.innerHTML = `<tr class="loading-row"><td colspan="11">조건에 맞는 데이터가 없습니다.</td></tr>`;
+            return;
+        }
+
+        const canEditBranch = !isAdmin();
+        const canEditMax = isAdmin();
+
+        console.log(`Rendering table, canEditBranch: ${canEditBranch}, canEditMax: ${canEditMax}`);
+
+        filteredData.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.dataset.uid = item.U_ID;
+
+            const branchSuneungInput = canEditBranch
+                ? `<input type="number" step="0.01" name="지점_수능컷" value="${val(item.지점_수능컷, '')}" placeholder="-">` // placeholder 추가
+                : `<span class="readonly-score">${val(item.지점_수능컷)}</span>`;
+            const branchTotalInput = canEditBranch
+                ? `<input type="number" step="0.01" name="지점_총점컷" value="${val(item.지점_총점컷, '')}" placeholder="-">` // placeholder 추가
+                : `<span class="readonly-score">${val(item.지점_총점컷)}</span>`;
+
+            const maxSuneungField = canEditMax
+                ? `<input type="number" step="0.01" name="맥스_수능컷" value="${val(item.맥스_수능컷, '')}" placeholder="-">` // placeholder 추가
+                : `<span class="readonly-score">${val(item.맥스_수능컷)}</span>`;
+            const maxTotalField = canEditMax
+                ? `<input type="number" step="0.01" name="맥스_총점컷" value="${val(item.맥스_총점컷, '')}" placeholder="-">` // placeholder 추가
+                : `<span class="readonly-score">${val(item.맥스_총점컷)}</span>`;
+            const total25Field = canEditMax
+                ? `<input type="number" step="0.01" name="25년총점컷" value="${val(item['25년총점컷'], '')}" placeholder="-">` // placeholder 추가
+                : `<span class="readonly-score">${val(item['25년총점컷'])}</span>`;
+
+             // *** 로그 추가 ***: 각 item의 모집인원 값 확인
+             console.log(`[U_ID: ${item.U_ID}] 모집인원: ${item.모집인원}`);
+
+             // ⭐️ tr.innerHTML 수정: 모집인원 컬럼 추가
+            tr.innerHTML = `
+                <td class="uni-dept"><strong>${item.대학명}</strong><span>${item.학과명}</span></td>
+                <td>${val(item.모집인원)}</td> <td>${formatPercent(item.수능비율)}</td>
+                <td>${formatPercent(item.내신비율)}</td>
+                <td>${formatPercent(item.실기비율)}</td>
+                <td>${branchSuneungInput}</td>
+                <td>${branchTotalInput}</td>
+                <td>${maxSuneungField}</td>
+                <td>${maxTotalField}</td>
+                <td>${total25Field}</td>
+            `;
+
+            tr.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', () => { tr.classList.add('dirty'); });
+                 input.addEventListener('keydown', (e) => {
+                     if (e.key === 'Enter') {
+                         e.preventDefault();
+                         const inputs = Array.from(tbody.querySelectorAll('input:not([type="hidden"]):not([disabled]):not([readonly])'));
+                         const currentIndex = inputs.indexOf(e.target);
+                         const nextInput = inputs[currentIndex + 1];
+                         if (nextInput) { nextInput.focus(); nextInput.select(); }
+                     }
+                 });
+            });
+
+            tbody.appendChild(tr);
+        });
+    };
+
+    saveBtn.addEventListener('click', async () => {
+        const dirtyRows = tbody.querySelectorAll('tr.dirty[data-uid]');
+        if (dirtyRows.length === 0) {
+            showToast('변경된 내용이 없습니다.');
+            return;
+        }
+
+        saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+        showMessage('');
+
+        const updates = [];
+        dirtyRows.forEach(tr => {
+            const U_ID = parseInt(tr.dataset.uid);
+            const updateItem = { U_ID };
+
+            if (!isAdmin()) {
+                const branchSuneungInput = tr.querySelector('input[name="지점_수능컷"]');
+                const branchTotalInput = tr.querySelector('input[name="지점_총점컷"]');
+                if (branchSuneungInput) updateItem.지점_수능컷 = branchSuneungInput.value;
+                if (branchTotalInput) updateItem.지점_총점컷 = branchTotalInput.value;
+            }
+
+            if (isAdmin()) {
+                const maxSuneungInput = tr.querySelector('input[name="맥스_수능컷"]');
+                const maxTotalInput = tr.querySelector('input[name="맥스_총점컷"]');
+                const total25Input = tr.querySelector('input[name="25년총점컷"]');
+                 if (maxSuneungInput) updateItem.맥스_수능컷 = maxSuneungInput.value;
+                 if (maxTotalInput) updateItem.맥스_총점컷 = maxTotalInput.value;
+                 if (total25Input) updateItem['25년총점컷'] = total25Input.value;
+            }
+            updates.push(updateItem);
+        });
+
+        console.log("Sending updates:", updates);
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/cutoffs/set`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }, body: JSON.stringify({ year: yearSelect.value, updates: updates }) });
+            if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || '저장 완료.');
+                dirtyRows.forEach(tr => tr.classList.remove('dirty'));
+
+                updates.forEach(update => {
+                    const itemInCache = allCutoffData.find(d => d.U_ID === update.U_ID);
+                    if(itemInCache) {
+                        if (!isAdmin()) {
+                            if (update.지점_수능컷 !== undefined) itemInCache.지점_수능컷 = update.지점_수능컷 === '' ? null : Number(update.지점_수능컷);
+                            if (update.지점_총점컷 !== undefined) itemInCache.지점_총점컷 = update.지점_총점컷 === '' ? null : Number(update.지점_총점컷);
+                        }
+                        if (isAdmin()) {
+                            if (update.맥스_수능컷 !== undefined) itemInCache.맥스_수능컷 = update.맥스_수능컷 === '' ? null : Number(update.맥스_수능컷);
+                            if (update.맥스_총점컷 !== undefined) itemInCache.맥스_총점컷 = update.맥스_총점컷 === '' ? null : Number(update.맥스_총점컷);
+                            if (update['25년총점컷'] !== undefined) itemInCache['25년총점컷'] = update['25년총점컷'] === '' ? null : Number(update['25년총점컷']);
+                        }
+                    }
+                });
+            } else { showMessage(`저장 실패: ${data.message || '오류'}`, true); }
+        } catch (e) { console.error('저장 오류:', e); showMessage(`저장 중 오류 발생: ${e.message}`, true); if (e.message.includes('인증')) handleAuthError(); }
+        finally { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 변경된 컷 점수 저장'; }
+    });
+
+    yearSelect.addEventListener('change', loadCutoffs);
+    filterButtons.forEach(button => { button.addEventListener('click', () => { filterButtons.forEach(btn => btn.classList.remove('active')); button.classList.add('active'); currentGunFilter = button.dataset.gunFilter; renderTable(); }); });
+    searchInput.addEventListener('input', () => {
+         clearTimeout(searchInput.timer);
+         searchInput.timer = setTimeout(() => {
+             currentSearchTerm = searchInput.value;
+             renderTable();
+         }, 300);
+    });
+
+    loadCutoffs();
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>최고표점 대량 편집기</title>
+<style>
+  body { font-family:sans-serif; background:#f4f7f6; margin:0; padding:20px; }
+  .container { max-width: 1600px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  h1 { margin-top:0; }
+  .controls { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap: wrap; }
+  select, input, button { padding:10px 12px; font-size:14px; border:1px solid #ccc; border-radius:6px; }
+  button { background:#0069d9; color:#fff; border:none; cursor:pointer; }
+  button:hover { background:#0053ad; }
+  .save { background:#28a745; }
+  .save:hover { background:#218838; }
+  .msg { margin-top:10px; font-weight:600; }
+  .grid { overflow:auto; }
+  table { border-collapse:collapse; min-width:1200px; }
+  th, td { border:1px solid #ddd; padding:8px; white-space:nowrap; text-align:center; }
+  th { background:#f7f7f7; position:sticky; top:0; }
+  input.score { width:100px; text-align:right; }
+  .hint { color:#666; font-size:13px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>최고표점 대량 편집기</h1>
+  <div class="controls">
+    <label>학년도</label>
+    <select id="year">
+      <option value="2026">2026</option>
+      <option value="2027">2027</option>
+      <option value="2028">2028</option>
+    </select>
+
+    <label>모형</label>
+    <select id="exam">
+      <option value="수능">수능</option>
+      <option value="9월">9월</option>
+      <option value="6월">6월</option>
+      <option value="3월">3월</option>
+    </select>
+
+    <button id="btnLoad">불러오기</button>
+    <button id="btnSave" class="save">저장</button>
+  </div>
+
+  <div class="hint">엑셀에서 1행에 과목 순서대로 최고점을 붙여넣으면 자동 채움(테이블 아무 셀에 붙여넣기).</div>
+  <div class="grid">
+    <table id="tbl">
+      <thead><tr id="hdr"></tr></thead>
+      <tbody><tr id="row"></tr></tbody>
+    </table>
+  </div>
+  <div id="msg" class="msg"></div>
+</div>
+
+<script>
+const SVR = 'https://supermax.kr';
+const getToken = () => localStorage.getItem('jwt_token');
+
+const subjectsDefault = [
+  '화법과작문','언어와매체',
+  '확률과통계','미적분','기하',
+  '생활과윤리','윤리와사상','한국지리','세계지리','동아시아사','세계사','정치와법','경제','사회문화',
+  '생명과학1','생명과학2','화학1','화학2','물리1','물리2','지구과학1','지구과학2'
+];
+
+const year = document.getElementById('year');
+const exam = document.getElementById('exam');
+const btnLoad = document.getElementById('btnLoad');
+const btnSave = document.getElementById('btnSave');
+const msg = document.getElementById('msg');
+const hdr = document.getElementById('hdr');
+const row = document.getElementById('row');
+const tbl = document.getElementById('tbl');
+
+let subjects = [...subjectsDefault];
+
+function authHdr() {
+  return { 'Authorization': `Bearer ${getToken()}` };
+}
+
+async function ensureSubjects() {
+  try {
+    const res = await fetch(`${SVR}/jungsi/topmax/subjects`, { headers: authHdr() });
+    const j = await res.json();
+    if (j.success && Array.isArray(j.subjects) && j.subjects.length) {
+      subjects = j.subjects;
+    }
+  } catch {}
+}
+
+function buildTable() {
+  hdr.innerHTML = '<th>과목</th>' + subjects.map(s=>`<th>${s}</th>`).join('');
+  row.innerHTML = '<td>최고점</td>' + subjects.map(s=>`<td><input class="score" data-subject="${s}" /></td>`).join('');
+}
+
+async function loadData() {
+  msg.textContent = `[${year.value}/${exam.value}] 불러오는 중...`;
+  const res = await fetch(`${SVR}/jungsi/topmax/${year.value}/${exam.value}`, { headers: authHdr() });
+  const j = await res.json();
+  if (!j.success) { msg.textContent = j.message || '로드 실패'; return; }
+
+  // 클리어
+  row.querySelectorAll('input.score').forEach(inp => inp.value = '');
+  // 채우기
+  Object.entries(j.data || {}).forEach(([sub, val]) => {
+    const inp = row.querySelector(`input[data-subject="${sub}"]`);
+    if (inp) inp.value = val;
+  });
+  msg.textContent = `[${year.value}/${exam.value}] 불러오기 완료`;
+}
+
+async function saveData() {
+  const scores = {};
+  row.querySelectorAll('input.score').forEach(inp => {
+    const v = inp.value.trim();
+    if (v !== '') scores[inp.dataset.subject] = Number(v);
+  });
+  msg.textContent = '저장 중...';
+  const res = await fetch(`${SVR}/jungsi/topmax/bulk-save`, {
+    method:'POST',
+    headers: { 'Content-Type':'application/json', ...authHdr() },
+    body: JSON.stringify({ year: year.value, exam: exam.value, scores })
+  });
+  const j = await res.json();
+  msg.textContent = j.message || (j.success ? '저장 완료' : '저장 실패');
+  if (j.success) {
+    // 저장 성공 시 입력칸 비우기 원하면 아래 주석 해제
+    // row.querySelectorAll('input.score').forEach(inp => inp.value = '');
+  }
+}
+
+// 엑셀 1행 붙여넣기 지원
+tbl.addEventListener('paste', e => {
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  if (!text) return;
+  e.preventDefault();
+  const tokens = text.trim().split(/\t|,|\s+/); // 탭 또는 공백/쉼표 구분
+  const inputs = Array.from(row.querySelectorAll('input.score'));
+  for (let i=0;i<inputs.length && i<tokens.length;i++) {
+    inputs[i].value = tokens[i];
+  }
+});
+
+btnLoad.addEventListener('click', loadData);
+btnSave.addEventListener('click', saveData);
+
+(async () => {
+  if (!getToken()) { alert('로그인이 필요합니다.'); return; }
+  await ensureSubjects();
+  buildTable();
+  await loadData();
+})();
+</script>
+</body>
+</html>

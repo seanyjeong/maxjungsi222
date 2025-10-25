@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>MAX 정시 엔진</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-primary);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden; /* Prevent body scroll */
+        }
+
+        nav.top-nav {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 clamp(10px, 2vw, 25px);
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .nav-left { display: flex; align-items: center; min-width: 0; overflow: hidden; } /* Added overflow */
+
+        .nav-brand {
+            font-size: clamp(1.2rem, 1.5vw, 1.4rem);
+            margin-right: clamp(15px, 2vw, 30px);
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .nav-menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: clamp(2px, 0.5vw, 5px);
+            min-width: 0; /* Allow shrinking */
+            overflow-x: auto; /* Allow horizontal scroll on small screens */
+            scrollbar-width: none; /* Hide scrollbar (Firefox) */
+            -ms-overflow-style: none; /* Hide scrollbar (IE/Edge) */
+        }
+        .nav-menu::-webkit-scrollbar { display: none; } /* Hide scrollbar (Chrome/Safari) */
+
+
+        .nav-menu > li {
+            position: relative;
+            flex-shrink: 0; /* Prevent menu items shrinking */
+        }
+
+        .nav-menu > li > a {
+            display: block;
+            padding: 20px clamp(10px, 1.2vw, 15px);
+            font-size: clamp(14px, 1.1vw, 16px);
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            transition: background-color 0.2s, color 0.2s;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .nav-menu > li:hover > a {
+            background-color: #f1f5f9;
+            color: var(--primary-dark);
+        }
+
+        .nav-menu > li > a.active {
+             background-color: #eef2ff;
+             color: var(--primary-dark);
+             box-shadow: inset 0 -2px 0 var(--primary-color);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 8px 8px;
+            box-shadow: var(--shadow);
+            min-width: 200px;
+            list-style: none;
+            margin: 0;
+            padding: 5px 0;
+            z-index: 1001;
+        }
+
+        .nav-menu > li:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-menu li a {
+            display: block;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .dropdown-menu li a:hover {
+            background-color: #f1f5f9;
+        }
+
+        .dropdown-menu li a.active {
+            background-color: #eef2ff;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: clamp(10px, 1.2vw, 15px);
+            white-space: nowrap;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .login-info {
+            font-size: clamp(13px, 1.1vw, 15px);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        #logout-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: clamp(7px, 0.8vw, 8px) clamp(10px, 1vw, 12px);
+            font-size: clamp(13px, 1vw, 14px);
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #logout-btn:hover { background: var(--primary-dark); }
+
+        #content-frame {
+            width: 100%;
+            height: calc(100vh - 60px);
+            margin-top: 60px;
+            border: none;
+            background-color: var(--light-bg);
+        }
+
+        .admin-only {
+            display: none;
+        }
+        body.is-admin .admin-only {
+            display: block; /* Use block or inline-block based on context */
+        }
+        /* MAX_LIVE 메뉴 스타일 */
+        .nav-menu > li > a#max-live-link {
+            color: #f59e0b;
+            font-weight: 700;
+            cursor: not-allowed;
+            text-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+        }
+        .nav-menu > li > a#max-live-link .coming-soon-text {
+            font-size: 0.8em;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-left: 4px;
+            text-shadow: none;
+        }
+        .nav-menu > li:hover > a#max-live-link {
+            background-color: #fffbeb;
+            color: #d97706;
+        }
+
+        /* ⭐️ [신규] 토스트 팝업 스타일 */
+        .toast-popup {
+            position: fixed;
+            bottom: 30px; /* Adjust as needed */
+            right: 30px; /* Position top-right */
+            transform: translateX(0); /* Remove horizontal centering */
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: .9rem;
+            z-index: 2000; /* Ensure it's above everything */
+            opacity: 0;
+            transition: opacity .5s ease, transform .5s ease;
+            white-space: nowrap;
+            transform: translateY(20px); /* Start slightly lower */
+        }
+        .toast-popup.show {
+            opacity: 1;
+            transform: translateY(0); /* Move to final position */
+        }
+        .toast-popup.error {
+            background-color: rgba(220, 38, 38, 0.9);
+        }
+        .toast-popup.reminder {
+            background-color: rgba(245, 158, 11, 0.9); /* --warning-color */
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 12px 22px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            /* Position top-right */
+            top: 80px; /* Below the nav bar */
+            bottom: auto; /* Override bottom positioning */
+            right: 30px;
+            left: auto; /* Override left positioning */
+            transform: translateX(0) translateY(-20px); /* Start slightly higher */
+        }
+        .toast-popup.reminder.show {
+             transform: translateX(0) translateY(0);
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <div class="nav-left">
+            <a href="#" class="nav-brand" id="brand-link"> <img src="https://github.com/seanyjeong/26maxsusi/blob/main/%EB%A7%A5%EC%8A%A4%EB%A1%9C%EA%B3%A0.png?raw=true" alt="MAX 로고" style="height: 40px; width: auto; vertical-align: middle; margin-right: 8px;"> 정시 엔진
+            </a>
+            <ul class="nav-menu">
+                <li>
+                    <a data-href="welcome.html">홈</a>
+                </li>
+                <li>
+                    <a href="#">학생관리</a>
+                    <ul class="dropdown-menu">
+                        <li><a data-href="add_student.html">인원추가 및 수정</a></li>
+                        <li><a data-href="gachaejeom.html">학생 가채점 입력</a></li>
+                        <li><a data-href="score_input.html">학생 성적표 입력</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">대학관리</a>
+                    <ul class="dropdown-menu">
+                        <li><a data-href="university_overview.html">대학별 점수 현황</a></li>
+                        <li><a data-href="calculator.html">전체 점수 계산기</a></li>
+                        <li><a data-href="counsel.html">개인별 상담</a></li>
+                        </ul>
+                </li>
+                <li>
+                    <a href="#">최종지원</a>
+                    <ul class="dropdown-menu">
+                        <li><a data-href="final_apply.html">최종 지원 수합</a></li>
+                        <li><a data-href="final_apply_list.html">최종 지원LIST(실기일정)</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a id="max-live-link">
+                        MAX_LIVE
+                        <span class="coming-soon-text">(추후공개예정)</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">설정</a>
+                    <ul class="dropdown-menu">
+                        <li><a data-href="cut_editor.html">컷 점수 편집기</a></li>
+                        <li class="admin-only"><a data-href="gradecut_editor.html">예상 등급컷 입력</a></li>
+                        <li class="admin-only"><a data-href="inquiry_conv_editor.html">탐구 변환표준 편집</a></li>
+                        <li class="admin-only"><a data-href="debug.html">엔진 디버거</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="nav-right">
+            <div class="login-info">
+                <i class="fas fa-building"></i> <span id="branch-name-display">...</span>
+            </div>
+            <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> 로그아웃</button>
+        </div>
+    </nav>
+
+    <iframe id="content-frame" name="content-frame" src="welcome.html"></iframe>
+
+<script>
+// ⭐️ [신규] 전역 토스트 함수
+window.showGlobalToast = (message, isError = false, isReminder = false) => {
+    // 이전 토스트 제거 (옵션: 동시에 여러 개 띄우려면 제거 안 함)
+    const existingToast = document.querySelector('.toast-popup');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.className = `toast-popup ${isError ? 'error' : ''} ${isReminder ? 'reminder' : ''}`;
+    document.body.appendChild(toast); // index.html의 body에 추가
+
+    // Fade in
+    setTimeout(() => { toast.classList.add('show'); }, 10);
+
+    // Fade out and remove
+    const duration = isReminder ? 5000 : 3000; // 알림은 5초, 일반은 3초
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 500); // CSS transition 시간과 일치
+    }, duration);
+};
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const LOGIN_PAGE = 'jungsilogin.html';
+
+    const getToken = () => localStorage.getItem('jwt_token');
+    const token = getToken();
+
+    // --- 인증 ---
+    if (!token) {
+        alert('로그인이 필요합니다.');
+        window.location.href = `${LOGIN_PAGE}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; // 현재 페이지로 리다이렉트
+        return;
+    }
+
+    const branchNameDisplay = document.getElementById('branch-name-display');
+    let userRole = 'branch'; // Default role
+
+    try {
+        const payloadBase64Url = token.split('.')[1];
+        const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const binaryString = atob(payloadBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const decodedString = new TextDecoder().decode(bytes);
+        const decodedPayload = JSON.parse(decodedString);
+
+        console.log("Decoded JWT Payload (index.html):", decodedPayload);
+
+        if (decodedPayload && decodedPayload.branch) {
+            branchNameDisplay.textContent = decodedPayload.branch + " 지점";
+        } else {
+            branchNameDisplay.textContent = '지점 정보 없음';
+        }
+
+        if (decodedPayload && decodedPayload.userid === 'admin') {
+            userRole = 'admin';
+            document.body.classList.add('is-admin');
+            console.log("Admin role detected. Adding 'is-admin' class.");
+        } else {
+            document.body.classList.remove('is-admin'); // Ensure class is removed if not admin
+            console.log("User role is not admin. UserID:", decodedPayload?.userid);
+        }
+
+    } catch (e) {
+        console.error('토큰 처리 실패:', e);
+        branchNameDisplay.textContent = '인증 오류';
+        localStorage.removeItem('jwt_token'); // Remove invalid token
+        alert('인증 정보에 문제가 있어 로그인 페이지로 이동합니다.');
+        window.location.href = LOGIN_PAGE;
+        return; // Stop further execution
+    }
+
+    // --- 로그아웃 ---
+    const logoutBtn = document.getElementById('logout-btn');
+    logoutBtn.addEventListener('click', () => {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            localStorage.removeItem('jwt_token');
+            alert('로그아웃 되었습니다.');
+            window.location.href = LOGIN_PAGE;
+        }
+    });
+
+    // --- 네비게이션 링크 설정 ---
+    const contentFrame = document.getElementById('content-frame');
+    const navLinks = document.querySelectorAll('.nav-menu a[data-href]');
+    const allMenuLinks = document.querySelectorAll('.nav-menu a'); // Includes top-level links without data-href
+
+    function setActiveLink(clickedLink) {
+        allMenuLinks.forEach(l => l.classList.remove('active'));
+
+        // Activate the clicked link itself
+        clickedLink.classList.add('active');
+
+        // If it's a dropdown item, also activate its parent top-level link
+        const parentDropdown = clickedLink.closest('ul.dropdown-menu');
+        if (parentDropdown) {
+            const topLevelLink = parentDropdown.parentElement?.querySelector('a:not([data-href])'); // Find parent 'a' without data-href
+            if (topLevelLink) {
+                topLevelLink.classList.add('active');
+            }
+        }
+    }
+
+
+    function setupNavLinks() {
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const pageUrl = this.getAttribute('data-href');
+                if (!pageUrl || !contentFrame) return;
+
+                // Check if current src is different before changing
+                // Avoids unnecessary reloads, especially for welcome.html
+                try {
+                    const currentSrc = contentFrame.contentWindow.location.pathname.split('/').pop();
+                    if (currentSrc !== pageUrl) {
+                         contentFrame.src = pageUrl;
+                    } else {
+                         console.log("Already on page:", pageUrl);
+                    }
+                } catch (e) {
+                     // Cross-origin frame error likely, just set src
+                     contentFrame.src = pageUrl;
+                }
+
+                setActiveLink(this); // Set active state
+            });
+        });
+    }
+
+    setupNavLinks();
+
+    // Set initial active link (Home)
+    const homeLink = document.querySelector('.nav-menu a[data-href="welcome.html"]');
+    if (homeLink) {
+        setActiveLink(homeLink); // Use the function to set initial state
+    }
+
+    // Brand link should also navigate to welcome.html and set active state
+    const brandLink = document.getElementById('brand-link');
+    if(brandLink) {
+        brandLink.addEventListener('click', (e) => {
+             e.preventDefault();
+             if (contentFrame) {
+                  // Check if already on welcome.html before setting src
+                  try {
+                      const currentSrc = contentFrame.contentWindow.location.pathname.split('/').pop();
+                      if (currentSrc !== 'welcome.html') {
+                           contentFrame.src = 'welcome.html';
+                      }
+                  } catch (e) {
+                       contentFrame.src = 'welcome.html';
+                  }
+             }
+             if (homeLink) setActiveLink(homeLink); // Activate home link
+        });
+    }
+
+});
+</script>
+</body>
+</html>

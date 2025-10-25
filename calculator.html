@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>정시 통합 계산기</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb; --light-bg: #f8fafc; --card-bg: #ffffff;
+            --border-color: #e2e8f0; --text-primary: #1e293b; --text-secondary: #475569;
+            --danger-color: #ef4444; --success-color: #10b981;
+        }
+        body { font-family: 'Pretendard', sans-serif; background-color: var(--light-bg); padding: 20px; }
+        .container { max-width: 95%; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { font-size: 1.8rem; color: var(--primary-color); }
+        .header-info { display: flex; gap: 20px; align-items: center; }
+        .login-info, .year-selector { background: var(--card-bg); padding: 8px 15px; border-radius: 8px; box-shadow: var(--shadow); }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 25px; margin-bottom: 30px; }
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+        th { background-color: #f1f5f9; padding: 12px 10px; text-align: center; font-size: 0.9rem; }
+        td { padding: 8px 5px; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 0.85rem; vertical-align: middle; }
+        td input[type="text"], td input[type="number"] { width: 90%; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px; text-align: center; }
+        
+        .score-cell { font-weight: bold; font-size: 0.95em; }
+        .score-suneung { color: var(--primary-color); }
+        .score-silgi { color: var(--success-color); }
+        .score-total { color: #d9480f; font-size: 1.05em; }
+        
+        .score-practical-event span, .score-silgi span {
+            display: inline-block;
+            font-size: 0.9em;
+            color: var(--danger-color);
+            font-weight: 500;
+            margin-left: 4px;
+        }
+        
+        #loading-message { text-align: center; padding: 20px; font-size: 1.2em; display: none; }
+        .sortable { cursor: pointer; }
+        .sortable:hover { background-color: #e2e8f0; }
+        
+        .student-name-cell { text-align: left; padding-left: 10px; }
+        .student-name-cell .student-info {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            display: block;
+        }
+        .login-info {
+            display: none;
+        }
+        .year-selector label {
+            white-space: nowrap; /* '대상 학년도:' 텍스트 줄바꿈 방지 */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-calculator"></i> 정시 통합 계산기</h1>
+        <div class="header-info">
+            <div class="login-info"><i class="fas fa-building"></i> <span id="branch-name-display">...</span></div>
+            <div class="year-selector">
+                <label for="year-select">학년도:</label>
+                <select id="year-select">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="controls-grid">
+            <div>
+                <label for="gun-select">군</label>
+                <select id="gun-select">
+                    <option value="">- 군 선택 -</option>
+                </select>
+            </div>
+            <div>
+                <label for="university-select">대학교</label>
+                <select id="university-select" disabled>
+                    <option value="">- 대학 선택 -</option>
+                </select>
+            </div>
+            <div>
+                <label for="department-select">학과</label>
+                <select id="department-select" disabled>
+                    <option value="">- 학과 선택 -</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-container">
+            <table id="results-table">
+                <thead id="results-thead">
+                </thead>
+                <tbody id="results-tbody">
+                </tbody>
+            </table>
+        </div>
+        <div id="loading-message">
+            계산 중...
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 서버 및 인증 ---
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin.html'; // ⭐️ .html 붙임
+    const branchNameDisplay = document.getElementById('branch-name-display');
+    const yearSelect = document.getElementById('year-select');
+
+    // --- 새 페이지 요소 ---
+    const gunSelect = document.getElementById('gun-select');
+    const universitySelect = document.getElementById('university-select');
+    const departmentSelect = document.getElementById('department-select');
+    const resultsThead = document.getElementById('results-thead');
+    const resultsTbody = document.getElementById('results-tbody');
+    const loadingMessage = document.getElementById('loading-message');
+
+    let userBranchName = '';
+    let allUniversities = [];
+    let currentStudents = []; 
+    let currentFormula = null; 
+    
+    // ⭐️ (추가) 여자대학교 목록
+    const WOMENS_UNIVERSITIES = ['이화여자대학교', '숙명여자대학교', '성신여자대학교', '덕성여자대학교', '동덕여자대학교','서울여자대학교'];
+
+    // ⭐️ (신규) API 호출 실패 시 (토큰 만료 등) 부모 창을 로그인 페이지로 보내는 함수
+    const handleAuthError = () => {
+        alert('인증이 만료되었거나 오류가 발생했습니다. 다시 로그인하세요.');
+        window.top.location.href = LOGIN_PAGE;
+    };
+
+    // --- 인증 게이트 및 지점명 표시 ---
+    const getToken = () => localStorage.getItem('jwt_token');
+    const token = getToken();
+
+    // ⭐️ iframe 내부 인증: 토큰 없으면 그냥 함수 종료 (껍데기가 처리)
+    if (!token) {
+        handleAuthError(); // ⭐️ 토큰 없으면 바로 로그인으로
+        return;
+    }
+    
+    try {
+        const payloadBase64Url = token.split('.')[1]; const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const binaryString = atob(payloadBase64); const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+        const decodedString = new TextDecoder().decode(bytes); const decodedPayload = JSON.parse(decodedString);
+        if (decodedPayload && decodedPayload.branch) {
+            userBranchName = decodedPayload.branch;
+            if(branchNameDisplay) branchNameDisplay.textContent = userBranchName;
+        } else {
+            throw new Error('토큰에 지점 정보 없음');
+        }
+    } catch (e) {
+        console.error('토큰 처리 실패:', e);
+        if(branchNameDisplay) branchNameDisplay.textContent = '오류';
+        handleAuthError(); // ⭐️ 인증 오류 시 로그인으로
+        return;
+    }
+
+
+    // --- API 호출 함수들 ---
+
+    // 1. 전체 대학/학과 목록 불러오기
+    const loadUniversities = async () => {
+        const year = yearSelect.value;
+        gunSelect.innerHTML = '<option value="">- 군 선택 -</option>';
+        universitySelect.innerHTML = '<option value="">- 대학 선택 -</option>';
+        departmentSelect.innerHTML = '<option value="">- 학과 선택 -</option>';
+        gunSelect.disabled = true; universitySelect.disabled = true; departmentSelect.disabled = true;
+        
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); // ⭐️
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/university-list?year=${year}`, {
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            });
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return; } // ⭐️
+            
+            const data = await res.json();
+            if (data.success && data.list) {
+                allUniversities = data.list;
+                const guns = [...new Set(data.list.map(item => item.gun).filter(g => g))];
+                guns.sort();
+                guns.forEach(g => {
+                    gunSelect.innerHTML += `<option value="${g}">${g}</option>`;
+                });
+                gunSelect.disabled = false;
+            }
+        } catch (e) {
+            console.error('대학 목록 로딩 실패', e);
+            if (e.message === '로그인 만료') handleAuthError(); // ⭐️
+        }
+    };
+
+    // 2. 지점 학생 목록 + 성적 불러오기
+    const loadStudents = async () => {
+        const year = yearSelect.value;
+        resultsTbody.innerHTML = `<tr><td colspan="10">학생 목록 로딩 중...</td></tr>`;
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); // ⭐️
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}`, {
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            });
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return; } // ⭐️
+            
+            const data = await res.json();
+            if (data.success && data.students) {
+                currentStudents = data.students.map(s => ({
+                    ...s,
+                    scoresData: s.scores 
+                }));
+                resultsTbody.innerHTML = `<tr><td colspan="10">상단에서 군/대학/학과를 선택하세요.</td></tr>`;
+            } else {
+                currentStudents = [];
+                resultsTbody.innerHTML = `<tr><td colspan="10">학생 데이터 없음.</td></tr>`;
+            }
+        } catch (e) {
+            console.error('학생 목록 로딩 실패', e);
+            if (e.message === '로그인 만료') handleAuthError(); // ⭐️
+        }
+    };
+
+    // --- 이벤트 핸들러 ---
+    
+    // '군' 선택 시 
+    gunSelect.addEventListener('change', () => {
+        const selectedGun = gunSelect.value;
+        universitySelect.innerHTML = '<option value="">- 대학 선택 -</option>';
+        departmentSelect.innerHTML = '<option value="">- 학과 선택 -</option>';
+        departmentSelect.disabled = true;
+        
+        if (selectedGun) {
+            const universities = [...new Set(
+                allUniversities
+                    .filter(item => item.gun === selectedGun)
+                    .map(item => item.university)
+            )];
+            universities.sort();
+            universities.forEach(u => {
+                universitySelect.innerHTML += `<option value="${u}">${u}</option>`;
+            });
+            universitySelect.disabled = false;
+        } else {
+            universitySelect.disabled = true;
+        }
+        resultsThead.innerHTML = '';
+        resultsTbody.innerHTML = `<tr><td colspan="10">대학을 선택하세요.</td></tr>`;
+    });
+
+    // '대학' 선택 시 
+    universitySelect.addEventListener('change', () => {
+        const selectedGun = gunSelect.value;
+        const selectedUniversity = universitySelect.value;
+        departmentSelect.innerHTML = '<option value="">- 학과 선택 -</option>';
+        
+        if (selectedUniversity && selectedGun) {
+            allUniversities
+                .filter(item => item.gun === selectedGun && item.university === selectedUniversity)
+                .forEach(item => {
+                    departmentSelect.innerHTML += `<option value="${item.U_ID}">${item.department}</option>`;
+                });
+            departmentSelect.disabled = false;
+        } else {
+            departmentSelect.disabled = true;
+        }
+        resultsThead.innerHTML = '';
+        resultsTbody.innerHTML = `<tr><td colspan="10">학과를 선택하세요.</td></tr>`;
+    });
+
+    // '학과' 선택 시 
+    departmentSelect.addEventListener('change', async (event) => {
+        const U_ID = event.target.value;
+        const year = yearSelect.value;
+        if (!U_ID) return;
+        
+        loadingMessage.style.display = 'block';
+        resultsThead.innerHTML = '';
+        resultsTbody.innerHTML = '';
+
+        try {
+            // 1. 학과 요강 불러오기
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); // ⭐️
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/formula-details?U_ID=${U_ID}&year=${year}`, {
+                 headers: { 'Authorization': `Bearer ${currentToken}` }
+            });
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return; } // ⭐️
+            
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || '요강 로딩 실패');
+            currentFormula = data.formula;
+
+            // ▼▼▼ 2. ⭐️ (추가) 선택된 대학이 여대인지 확인하고 학생 필터링 ▼▼▼
+            const isWomensUni = WOMENS_UNIVERSITIES.includes(currentFormula.대학명);
+            
+            const studentsToDisplay = isWomensUni 
+                ? currentStudents.filter(student => student.gender === '여') 
+                : currentStudents;
+                
+            if (studentsToDisplay.length === 0) {
+                 const message = isWomensUni 
+                     ? '해당 학년도에 등록된 여학생 데이터가 없습니다.' 
+                     : '해당 학년도에 등록된 학생 데이터가 없습니다.';
+                 resultsTbody.innerHTML = `<tr><td colspan="10">${message}</td></tr>`;
+                 loadingMessage.style.display = 'none'; 
+                 return; 
+            }
+            // ▲▲▲ 2. ⭐️ (추가) 여기까지 ▲▲▲
+
+            // 3. 테이블 헤더 생성
+            renderHeader(currentFormula);
+            
+            // 4. 수능 점수 "먼저" 모두 계산 (⭐️ studentsToDisplay 사용)
+            const suneungPromises = studentsToDisplay.map(student => 
+                calculateSuneung(student, U_ID, year)
+            );
+            const suneungScores = await Promise.all(suneungPromises);
+
+            // 5. 계산된 점수로 테이블 행 생성 (⭐️ studentsToDisplay 사용)
+            studentsToDisplay.forEach((student, index) => { 
+                const tr = document.createElement('tr');
+                tr.dataset.studentId = student.student_id;
+                
+                const suneungScore = suneungScores[index];
+                
+                let naeshinCellHtml = '';
+                if (Number(currentFormula.내신 || 0) > 0) {
+                    naeshinCellHtml = `<td><input type="number" class="naeshin-input" placeholder="내신점수 입력"></td>`;
+                }
+                
+                let silgiCellsHtml = '';
+                const practicalEvents = [...new Set((currentFormula.실기배점 || []).map(r => r.종목명))];
+                practicalEvents.forEach(event => {
+                    silgiCellsHtml += `<td><input type="text" class="practical-input" data-event="${event}" placeholder="기록 입력"></td>
+                                       <td class="score-cell score-practical-event" data-event-score="${event}">-</td>`;
+                });
+
+                const studentInfoHtml = `
+                    <td class="student-name-cell">
+                        ${student.student_name}
+                        <span class="student-info">${student.gender} / ${student.school_name || '정보없음'}</span>
+                    </td>`;
+
+                tr.innerHTML = `
+                    ${studentInfoHtml}
+                    <td class="score-cell score-suneung">${suneungScore.toFixed(2)}</td>
+                    ${naeshinCellHtml}
+                    ${silgiCellsHtml}
+                    <td class="score-cell score-silgi">0.00</td>
+                    <td class="score-cell score-total">${suneungScore.toFixed(2)}</td>
+                `;
+                resultsTbody.appendChild(tr);
+            });
+
+            // 6. 리스너 바인딩
+            bindInputListeners();
+            
+            // 7. 최초 정렬
+            sortResultsTable();
+
+        } catch (e) {
+            console.error('계산 오류', e);
+            resultsTbody.innerHTML = `<tr><td colspan="10">오류: ${e.message}</td></tr>`;
+            if (e.message === '로그인 만료') handleAuthError(); // ⭐️
+        } finally {
+            loadingMessage.style.display = 'none';
+        }
+    });
+    
+    // (gachaejeom.html의 scores) -> (jungsical.js의 studentScores) 형식 변환
+    const convertScoresToSuneungFormat = (scores) => {
+        if (!scores) return { subjects: [] };
+        const subjects = [];
+        if (scores.국어_표준점수 || scores.국어_백분위) { subjects.push({ name: "국어", subject: scores.국어_선택과목, std: scores.국어_표준점수, percentile: scores.국어_백분위, grade: scores.국어_등급 }); }
+        if (scores.수학_표준점수 || scores.수학_백분위) { subjects.push({ name: "수학", subject: scores.수학_선택과목, std: scores.수학_표준점수, percentile: scores.수학_백분위, grade: scores.수학_등급 }); }
+        if (scores.영어_등급) { subjects.push({ name: "영어", grade: scores.영어_등급 }); }
+        if (scores.한국사_등급) { subjects.push({ name: "한국사", grade: scores.한국사_등급 }); }
+        if (scores.탐구1_선택과목) { subjects.push({ name: "탐구", subject: scores.탐구1_선택과목, std: scores.탐구1_표준점수, percentile: scores.탐구1_백분위, grade: scores.탐구1_등급 }); }
+        if (scores.탐구2_선택과목) { subjects.push({ name: "탐구", subject: scores.탐구2_선택과목, std: scores.탐구2_표준점수, percentile: scores.탐구2_백분위, grade: scores.탐구2_등급 }); }
+        return { subjects: subjects };
+    };
+
+    // 수능 점수 계산 API
+    const calculateSuneung = async (student, U_ID, year) => {
+        try {
+            const studentScores = convertScoresToSuneungFormat(student.scoresData);
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); // ⭐️
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/calculate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                body: JSON.stringify({ U_ID, year, studentScores })
+            });
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return 0; } // ⭐️
+            if (!res.ok) { console.error(`Suneung calc HTTP error: ${res.status}`); return 0; }
+            const data = await res.json();
+            if (!data.success) { console.error(`Suneung calc API error: ${data.message}`); return 0; }
+            return Number(data.result?.totalScore || 0);
+        } catch (e) {
+             console.error(`Suneung calc fetch error:`, e);
+             if (e.message === '로그인 만료') handleAuthError(); // ⭐️
+             return 0;
+        }
+    };
+
+    // 실기/내신 입력 시 실시간 재계산
+    const bindInputListeners = () => {
+        document.querySelectorAll('.practical-input, .naeshin-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const tr = e.target.closest('tr');
+                recalculateSilgiAndTotal(tr);
+            });
+        });
+    };
+
+    // 실기 점수 계산
+    const recalculateSilgiAndTotal = async (tr) => {
+        if (!currentFormula) return;
+
+        const studentId = tr.dataset.studentId;
+        // ⭐️ studentsToDisplay 대신 currentStudents 에서 학생 찾기 (필터링 전 원본)
+        const student = currentStudents.find(s => s.student_id == studentId);
+        if (!student) return; // 학생 정보 없으면 중단
+        
+        // 1. 실기 기록 수집 
+        const practicalInputs = tr.querySelectorAll('.practical-input');
+        const practicals = [];
+        practicalInputs.forEach(input => {
+            practicals.push({ event: input.dataset.event, value: input.value });
+        });
+
+        // 2. 실기 점수 계산 
+        const S_data = { gender: student.gender, practicals: practicals };
+        const F_data = currentFormula;
+        
+        let silgiScore = 0;
+        let silgiResult = null; 
+
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); // ⭐️
+            const silgiRes = await fetch(`${SVR_JUNGSI}/silgi/calculate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                body: JSON.stringify({ F_data, S_data })
+            });
+            if (silgiRes.status === 401 || silgiRes.status === 403) { handleAuthError(); return; } // ⭐️
+            
+            const silgiData = await silgiRes.json();
+            if (silgiData.success) {
+                silgiResult = silgiData.result; 
+                silgiScore = Number(silgiResult?.totalScore || 0);
+            }
+        } catch(e) {
+            console.error('Silgi calc error', e);
+            if (e.message === '로그인 만료') handleAuthError(); // ⭐️
+        }
+
+        // 3. 종목별 점수 / "감수" / "null" 업데이트
+        if (silgiResult && silgiResult.breakdown && silgiResult.breakdown.events) {
+            silgiResult.breakdown.events.forEach(event => {
+                const eventCell = tr.querySelector(`td[data-event-score="${event.event}"]`);
+                if (eventCell) {
+                    if (event.score === null) {
+                        eventCell.innerHTML = '-';
+                    } else {
+                        const level = event.deduction_level; 
+                        eventCell.innerHTML = `${event.score} <span>(${level}감)</span>`;
+                    }
+                }
+            });
+        }
+        
+        // 4. 실기 총점 / "총감수" 업데이트
+        const totalSilgiCell = tr.querySelector('.score-silgi');
+        const totalDeductionLevel = silgiResult?.breakdown?.total_deduction_level || 0;
+        const totalDeductionText = totalDeductionLevel > 0 ? `<span>(${totalDeductionLevel}감)</span>` : '<span>(0감)</span>';
+        
+        totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} ${totalDeductionText}`;
+        
+        // 5. 총점 계산
+        recalculateTotal(tr, silgiScore);
+    };
+    
+    // 총점 합산 
+    const recalculateTotal = (tr, silgiScore = null) => {
+        const suneungScore = Number(tr.querySelector('.score-suneung')?.textContent || 0);
+        
+        if (silgiScore === null) { 
+            const silgiText = tr.querySelector('.score-silgi')?.textContent || '0';
+            silgiScore = parseFloat(silgiText) || 0; 
+        }
+        
+        const naeshinInput = tr.querySelector('.naeshin-input');
+        let naeshinScore = 0;
+        if (naeshinInput && currentFormula) {
+             const rawNaeshinInput = Number(naeshinInput.value || 0);
+             const naeshinRatio = (Number(currentFormula.내신) || 0) / 100;
+             const SCHOOL_TOTAL = Number(currentFormula.총점) > 0 ? Number(currentFormula.총점) : 1000;
+             const naeshinMax = Number(currentFormula.내신만점) || 0;
+             if (naeshinRatio > 0 && naeshinMax > 0 && rawNaeshinInput > 0) {
+                 naeshinScore = (rawNaeshinInput / naeshinMax) * naeshinRatio * SCHOOL_TOTAL;
+             } else if (naeshinRatio > 0 && rawNaeshinInput > 0 && naeshinMax === 0) {
+                 naeshinScore = rawNaeshinInput; 
+             }
+        }
+        
+        const totalScore = suneungScore + silgiScore + naeshinScore;
+        tr.querySelector('.score-total').textContent = totalScore.toFixed(2);
+    };
+
+
+    // 테이블 헤더 렌더링
+    const renderHeader = (formula) => {
+        let headers = '<tr><th>이름 (성별/학교)</th><th>수능점수</th>';
+        const naeshinRatio = Number(formula.내신 || 0);
+        if (naeshinRatio > 0) {
+            headers += `<th>내신(${naeshinRatio}%)</th>`;
+        }
+        
+        const practicalEvents = [...new Set((formula.실기배점 || []).map(r => r.종목명))];
+        practicalEvents.forEach(event => {
+            headers += `<th>${event} (기록)</th><th>점수 (감)</th>`;
+        });
+        
+        headers += `<th>실기총점 (총감)</th><th class="sortable" id="sort-by-total">총점(${Number(formula.총점) || 1000}) <i class="fas fa-sort-down"></i></th></tr>`;
+        resultsThead.innerHTML = headers;
+        
+        const sortBtn = document.getElementById('sort-by-total');
+        if(sortBtn) {
+            sortBtn.addEventListener('click', () => sortResultsTable());
+        }
+    };
+    
+    // 테이블 정렬 함수
+    const sortResultsTable = () => {
+        const rows = Array.from(resultsTbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+            const scoreA = Number(a.querySelector('.score-total')?.textContent || 0);
+            const scoreB = Number(b.querySelector('.score-total')?.textContent || 0);
+            return scoreB - scoreA;
+        });
+        rows.forEach(row => resultsTbody.appendChild(row));
+    };
+
+
+    // --- 페이지 초기 로드 ---
+    loadUniversities(); 
+    loadStudents(); 
+    
+    // 학년도 변경 시
+    yearSelect.addEventListener('change', () => {
+        loadUniversities();
+        loadStudents();
+        gunSelect.value = '';
+        universitySelect.innerHTML = '<option value="">- 대학 선택 -</option>';
+        universitySelect.disabled = true;
+        departmentSelect.innerHTML = '<option value="">- 학과 선택 -</option>';
+        departmentSelect.disabled = true;
+        resultsThead.innerHTML = '';
+        resultsTbody.innerHTML = '';
+    });
+
+});
+</script>
+
+</body>
+</html>

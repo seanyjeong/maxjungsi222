@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>실기 배점표 관리자 (v5 - 최종)</title>
+    <style>
+        /* setting.html과 거의 동일한 스타일 */
+        :root { --primary-color:#007bff; --border-color:#dee2e6; --bg-color:#f8f9fa; --text-color:#212529; --font-size-base:16px; }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; margin:0; background:#f4f4f4; color:var(--text-color); font-size:var(--font-size-base); }
+        .container { width:95%; max-width:1200px; /* Max width slightly smaller */ margin:0 auto; padding:20px; }
+        header { display:flex; justify-content:space-between; align-items:center; padding:15px 30px; background:var(--primary-color); color:#fff; margin-bottom:20px; }
+        header h1 { margin:0; font-size:1.6em; }
+        header .header-controls { display:flex; align-items:center; gap:20px; }
+        header select { width:180px; padding:8px; margin:0; }
+        input,button,select,textarea { width:100%; padding:12px; margin-bottom:10px; border-radius:5px; border:1px solid var(--border-color); box-sizing:border-box; font-size:1em; }
+        button { background:var(--primary-color); color:#fff; cursor:pointer; border:none; font-weight:bold; transition:background-color .2s; }
+        button:hover { opacity:.9; }
+        .btn-load { background-color: #007bff; }
+        .btn-load:hover { background-color: #0056b3; }
+        .btn-save { background-color: #28a745; }
+        .btn-save:hover { background-color: #1e7e34; }
+        .btn-delete { background-color: #dc3545; font-size: 12px; padding: 4px 8px; width:auto; }
+        .btn-delete:hover { background-color: #b02a37; }
+        
+        /* Layout specific to silgi-editor */
+        .control-group { margin-bottom: 20px; padding: 15px; background: #fafafa; border-radius: 6px; border: 1px solid #eee; }
+        .control-group label { font-weight: bold; margin-right: 10px; font-size: 14px; display: inline-block; min-width: 60px; }
+        .control-group input[type="text"], .control-group select { width: auto; padding: 8px; display: inline-block; }
+        #year { width: 100px; }
+        #schoolSearch { width: 500px; } /* Select2 overrides this */
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 14px; }
+        th { background-color: #f9f9f9; }
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        
+        .editor-section { display: flex; gap: 20px; margin-top: 20px; }
+        .editor-section > div { flex: 1; padding: 15px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
+        
+        .bulk-paste-area { display: flex; gap: 10px; }
+        .bulk-paste-area textarea { width: 50%; height: 200px; font-family: monospace; font-size: 13px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .note { font-size: 12px; color: #666; margin-top: 10px; }
+        .message { margin-top:15px; font-weight:bold; min-height:20px; font-size:1.1em; }
+        .message.success { color:#28a745; }
+        .message.error { color:#dc3545; }
+        .hidden { display:none !important; }
+
+        /* Login Modal from setting.html */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:1000; }
+        .modal-content { background:#fff; padding:40px; border-radius:8px; width:100%; max-width:400px; box-shadow:0 5px 15px rgba(0,0,0,.3); }
+        .modal-content h2 { margin-top: 0; }
+        .modal-content input { width: 100%; margin-bottom: 15px; } /* Adjusted width */
+        .modal-content button { width: 100%; }
+        #login-message { height: 20px; } /* Ensure space for message */
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</head>
+<body>
+    <div id="login-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>실기 배점 관리 로그인</h2>
+            <form id="login-form">
+                <input type="text" id="userid" placeholder="아이디" required />
+                <input type="password" id="password" placeholder="비밀번호" required />
+                <button type="submit">로그인</button>
+            </form>
+            <p id="login-message" class="message"></p>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <header>
+            <h1>실기 배점표 관리</h1>
+            <div class="header-controls">
+                <label for="year-selector" style="color:#fff;font-weight:bold;">학년도:</label>
+                <select id="year-selector">
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                </select>
+                <button id="logout-btn">로그아웃</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="control-group">
+                <div>
+                    <label for="schoolSearch">학교:</label>
+                    <select id="schoolSearch">
+                        <option value="">먼저 학년도를 선택하세요.</option>
+                    </select>
+                    <button id="loadButton" class="btn-load">배점표 불러오기</button>
+                </div>
+            </div>
+
+            <h2 id="tableTitle">배점표 (U_ID: -)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>종목명</th>
+                        <th>성별</th>
+                        <th>기록</th>
+                        <th>배점</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreTableBody">
+                </tbody>
+            </table>
+
+            <div class="editor-section">
+                <div>
+                    <h2>한 줄 추가</h2>
+                    <form id="addForm">
+                        <div class="control-group">
+                            <label for="eventName">종목명:</label>
+                            <input type="text" id="eventName" required>
+                        </div>
+                        <div class="control-group">
+                            <label for="gender">성별:</label>
+                            <select id="gender" required>
+                                <option value="남">남</option>
+                                <option value="여">여</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="record">기록:</label>
+                            <input type="text" id="record" placeholder="12.50 또는 A" required>
+                        </div>
+                        <div class="control-group">
+                            <label for="score">배점:</label>
+                            <input type="text" id="score" placeholder="100 또는 PASS" required>
+                        </div>
+                        <button type="submit" class="btn-save">신규 저장</button>
+                    </form>
+                </div>
+
+                <div>
+                    <h2>대량 추가 (엑셀/CSV 복붙)</h2>
+                    <div class="control-group">
+                        <label for="bulkEventName">종목명:</label>
+                        <input type="text" id="bulkEventName" placeholder="적용할 종목명">
+                    </div>
+                    <div class="control-group">
+                        <label for="bulkGender">성별:</label>
+                        <select id="bulkGender">
+                            <option value="남">남</option>
+                            <option value="여">여</option>
+                        </select>
+                    </div>
+                    <p class="note">엑셀에서 '기록' 열, '배점' 열을 각각 복사해서 아래 칸에 붙여넣으세요.</p>
+                    <div class="bulk-paste-area">
+                        <textarea id="bulkRecord" placeholder="[기록] 열 붙여넣기"></textarea>
+                        <textarea id="bulkScore" placeholder="[배점] 열 붙여넣기"></textarea>
+                    </div>
+                    <button id="bulkSaveButton" class="btn-save" style="margin-top: 10px;">대량 저장</button>
+                </div>
+            </div>
+            <p id="editor-message" class="message"></p> </div>
+    </div>
+
+    <script>
+        // ⭐️ 3. 서버 주소 (setting.html과 동일) ⭐️
+        const SVR_26SUSI = 'https://supermax.kr'; // 🚨 로그인 서버 주소 확인!
+        const SVR_JUNGSI = 'https://supermax.kr'; // 🚨 정시 서버 주소 확인!
+        
+        const TOKEN_STORAGE_KEY = 'jwt_token'; // setting.html과 동일한 키 사용
+
+        // DOM 요소 가져오기
+        const loginModal = document.getElementById('login-modal');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const loginMessage = document.getElementById('login-message');
+        const logoutBtn = document.getElementById('logout-btn');
+        const yearSelector = document.getElementById('year-selector');
+        const schoolSearchSelect = $('#schoolSearch'); // jQuery 객체
+        const loadButton = document.getElementById('loadButton');
+        const tableTitle = document.getElementById('tableTitle');
+        const tableBody = document.getElementById('scoreTableBody');
+        const addForm = document.getElementById('addForm');
+        const bulkSaveButton = document.getElementById('bulkSaveButton');
+        const editorMessageEl = document.getElementById('editor-message');
+
+        let current_U_ID = null;
+        let current_Year = null;
+
+        // ⭐️ 4. 토큰 관리 함수 (setting.html과 동일) ⭐️
+        const getToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
+        const setToken = (token) => localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        const removeToken = () => localStorage.removeItem(TOKEN_STORAGE_KEY);
+
+        // ⭐️ 5. 인증된 fetch 함수 (setting.html과 동일) ⭐️
+        async function fetchWithAuth(url, options = {}) {
+            const token = getToken();
+            if (!token) {
+                showLoginModal();
+                throw new Error('인증 토큰 없음');
+            }
+            
+            const headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+            
+            try {
+                const response = await fetch(url, { ...options, headers });
+                if (response.status === 401 || response.status === 403) {
+                    removeToken();
+                    showLoginModal();
+                    throw new Error('인증 실패 또는 토큰 만료');
+                }
+                return response; // JSON 파싱은 호출하는 쪽에서
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                editorMessageEl.textContent = `네트워크 오류: ${error.message}`;
+                editorMessageEl.className = 'message error';
+                throw error; // 에러를 다시 던져서 호출부가 처리하게 함
+            }
+        }
+
+        // ⭐️ 6. UI 상태 관리 함수 (setting.html과 동일) ⭐️
+        function showLoginModal() {
+            loginModal.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+        }
+        function showApp() {
+            loginModal.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+        }
+
+        // ⭐️ 7. 로그인 처리 (setting.html과 동일) ⭐️
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userid = document.getElementById('userid').value;
+            const password = document.getElementById('password').value;
+            loginMessage.textContent = '로그인 중...';
+            try {
+                // 🚨 로그인 API 경로 확인! '/26susi/login'이 맞는지?
+                const response = await fetch(`${SVR_26SUSI}/26susi/login`,{ 
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({userid, password}) // 🚨 body 키 이름 확인!
+                });
+                const data = await response.json();
+                if (data.success && data.token) {
+                    setToken(data.token);
+                    loginMessage.textContent = '✅ 로그인 성공!';
+                    loginMessage.className = 'message success';
+                    setTimeout(() => {
+                        showApp();
+                        loadSchools(); // 로그인 성공 후 학교 목록 자동 로드
+                    }, 500);
+                } else {
+                    loginMessage.textContent = data.message || '로그인 실패';
+                    loginMessage.className = 'message error';
+                }
+            } catch (error) {
+                loginMessage.textContent = '로그인 서버에 연결할 수 없습니다.';
+                loginMessage.className = 'message error';
+            }
+        });
+
+        // ⭐️ 8. 로그아웃 처리 (setting.html과 동일) ⭐️
+        logoutBtn.addEventListener('click', () => {
+            removeToken();
+            showLoginModal();
+            // 필요시 화면 초기화
+            schoolSearchSelect.empty().prop('disabled', true).append(new Option("먼저 학년도를 선택하세요.", ""));
+            tableBody.innerHTML = '';
+            tableTitle.textContent = '배점표 (U_ID: -)';
+        });
+
+        // --- Select2 및 초기화 ---
+        $(document).ready(function() {
+            schoolSearchSelect.select2({
+                placeholder: "학교/학과명 검색",
+                allowClear: true,
+                language: "ko" // 한국어 지원 (필요시 CDN 추가)
+            });
+            init(); // 페이지 로드 시 인증 상태 확인
+        });
+        
+        // --- 초기화 함수 ---
+        function init() {
+            if (getToken()) {
+                showApp();
+                loadSchools(); // 앱 보여주고 학교 목록 로드
+            } else {
+                showLoginModal();
+            }
+        }
+
+        // --- 학년도 변경 시 학교 목록 로드 ---
+        yearSelector.addEventListener('change', loadSchools);
+
+        // --- 학교 목록 로드 ---
+        async function loadSchools() {
+            const selectedYear = yearSelector.value;
+            schoolSearchSelect.empty().prop('disabled', true).append(new Option("학교 목록 로딩 중...", ""));
+            tableBody.innerHTML = ''; // 기존 테이블 내용 지우기
+            tableTitle.textContent = '배점표 (U_ID: -)'; // 타이틀 초기화
+            current_U_ID = null; // 선택된 학교 초기화
+            current_Year = selectedYear; // 현재 학년도 설정
+            
+            try {
+                const response = await fetchWithAuth(`${SVR_JUNGSI}/jungsi/schools/${selectedYear}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    schoolSearchSelect.empty().prop('disabled', false);
+                    schoolSearchSelect.append(new Option("학교/학과를 선택하세요...", ""));
+                    
+                    data.schools.forEach(school => {
+                        const text = `${school.대학명} - ${school.학과명} (${school.군 || 'N/A'}군)`;
+                        const option = new Option(text, school.U_ID);
+                        schoolSearchSelect.append(option);
+                    });
+                    // Select2 업데이트 반영
+                    schoolSearchSelect.trigger('change'); 
+                } else {
+                    schoolSearchSelect.empty().prop('disabled', true)
+                      .append(new Option("학교 목록 로드 실패", ""));
+                    alert('학교 목록 로드 실패: ' + data.message);
+                }
+            } catch (error) {
+                 schoolSearchSelect.empty().prop('disabled', true)
+                   .append(new Option("학교 목록 로드 오류", ""));
+                // fetchWithAuth에서 에러 메시지 처리
+            }
+        }
+
+        // --- 배점표 불러오기 버튼 ---
+        loadButton.addEventListener('click', loadScores);
+
+        // --- 배점표 불러오기 함수 ---
+        async function loadScores() {
+            const U_ID = schoolSearchSelect.val(); // jQuery val() 사용
+            const year = yearSelector.value;
+            
+            if (!U_ID || !year) {
+                alert('학년도와 학교를 모두 선택하세요.');
+                return;
+            }
+            
+            current_U_ID = U_ID;
+            current_Year = year;
+            const schoolName = schoolSearchSelect.find('option:selected').text();
+            editorMessageEl.textContent = '배점표 로딩 중...';
+            editorMessageEl.className = 'message';
+            
+            try {
+                const response = await fetchWithAuth(`${SVR_JUNGSI}/jungsi/practical-scores/${U_ID}/${year}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderTable(data.scores);
+                    tableTitle.textContent = `배점표 | ${schoolName} (U_ID: ${U_ID})`;
+                    editorMessageEl.textContent = ''; // 성공 시 메시지 클리어
+                } else {
+                     editorMessageEl.textContent = '배점표 불러오기 실패: ' + data.message;
+                     editorMessageEl.className = 'message error';
+                }
+            } catch (error) {
+                // fetchWithAuth에서 에러 메시지 처리됨
+            }
+        }
+
+        // --- 테이블 렌더링 ---
+        function renderTable(scores) {
+            tableBody.innerHTML = ''; // 기존 내용 삭제
+            if (!scores || scores.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6">데이터가 없습니다.</td></tr>';
+                return;
+            }
+            
+            scores.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.id}</td>
+                    <td>${row.종목명}</td>
+                    <td>${row.성별}</td>
+                    <td>${row.기록}</td>
+                    <td>${row.배점}</td>
+                    <td>
+                        <button class="btn-delete" data-id="${row.id}">삭제</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // --- 한 줄 추가 ---
+        addForm.addEventListener('submit', async (event) => {
+             event.preventDefault();
+            if (!current_U_ID || !current_Year) {
+                alert('먼저 학교를 조회해주세요.');
+                return;
+            }
+
+            const payload = {
+                U_ID: current_U_ID,
+                학년도: current_Year,
+                종목명: document.getElementById('eventName').value,
+                성별: document.getElementById('gender').value,
+                기록: document.getElementById('record').value,
+                배점: document.getElementById('score').value
+            };
+            
+            editorMessageEl.textContent = '저장 중...';
+            editorMessageEl.className = 'message';
+
+            try {
+                const response = await fetchWithAuth(`${SVR_JUNGSI}/jungsi/practical-scores/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    editorMessageEl.textContent = '저장 완료!';
+                    editorMessageEl.className = 'message success';
+                    addForm.reset();
+                    loadScores(); // 테이블 새로고침
+                } else {
+                    editorMessageEl.textContent = '저장 실패: ' + data.message;
+                    editorMessageEl.className = 'message error';
+                }
+            } catch (error) {
+                 // fetchWithAuth에서 에러 메시지 처리됨
+            }
+        });
+
+        // --- 한 줄 삭제 (이벤트 위임 사용) ---
+        tableBody.addEventListener('click', async (event) => {
+            if (!event.target.classList.contains('btn-delete')) return;
+            
+            const id = event.target.dataset.id;
+            if (!confirm(`정말로 ID ${id} 항목을 삭제하시겠습니까?`)) return;
+
+            editorMessageEl.textContent = '삭제 중...';
+            editorMessageEl.className = 'message';
+
+            try {
+                const response = await fetchWithAuth(`${SVR_JUNGSI}/jungsi/practical-scores/delete/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    editorMessageEl.textContent = '삭제 완료';
+                    editorMessageEl.className = 'message success';
+                    loadScores(); // 테이블 새로고침
+                } else {
+                    editorMessageEl.textContent = '삭제 실패: ' + data.message;
+                    editorMessageEl.className = 'message error';
+                }
+            } catch (error) {
+                 // fetchWithAuth에서 에러 메시지 처리됨
+            }
+        });
+        
+        // --- 대량 추가 ---
+        bulkSaveButton.addEventListener('click', async () => {
+             if (!current_U_ID || !current_Year) {
+                alert('먼저 학교를 조회해주세요.');
+                return;
+            }
+            const eventName = document.getElementById('bulkEventName').value;
+            const gender = document.getElementById('bulkGender').value;
+            
+            const records = document.getElementById('bulkRecord').value.split('\n').filter(Boolean);
+            const scores = document.getElementById('bulkScore').value.split('\n').filter(Boolean);
+
+            if (!eventName) {
+                alert('종목명을 입력해야 합니다.');
+                return;
+            }
+            if (records.length === 0 || scores.length === 0) {
+                alert('붙여넣을 기록과 배점 데이터가 없습니다.');
+                return;
+            }
+            if (records.length !== scores.length) {
+                alert(`오류: '기록' (${records.length}줄)과 '배점' (${scores.length}줄)의 줄 수가 다릅니다.`);
+                return;
+            }
+
+            const rows_text = records.map((record, i) => {
+                const score = scores[i];
+                return `${record.trim()}\t${score.trim()}`;
+            }).join('\n');
+            
+            const payload = { 
+                U_ID: current_U_ID, 
+                year: current_Year, 
+                eventName, 
+                gender, 
+                rows_text 
+            };
+            
+            if (!confirm(`[${eventName}(${gender})] ${records.length}건의 데이터를 대량 저장하시겠습니까?`)) return;
+            
+            editorMessageEl.textContent = '대량 저장 중...';
+            editorMessageEl.className = 'message';
+
+            try {
+                const response = await fetchWithAuth(`${SVR_JUNGSI}/jungsi/practical-scores/bulk-save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    editorMessageEl.textContent = data.message;
+                    editorMessageEl.className = 'message success';
+                    document.getElementById('bulkRecord').value = '';
+                    document.getElementById('bulkScore').value = '';
+                    loadScores(); // 테이블 새로고침
+                } else {
+                    editorMessageEl.textContent = '대량 저장 실패: ' + data.message;
+                    editorMessageEl.className = 'message error';
+                }
+            } catch (error) {
+                 // fetchWithAuth에서 에러 메시지 처리됨
+            }
+        });
+
+    </script>
+</body>
+</html>

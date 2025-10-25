@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>정시 최종 지원 수합</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb; --light-bg: #f8fafc; --card-bg: #ffffff;
+            --border-color: #e2e8f0; --text-primary:#1e293b; --text-secondary:#475569;
+            --danger-color: #ef4444; --success-color: #10b981; --warning-color: #f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Pretendard', sans-serif; background-color: var(--light-bg); padding: 20px; line-height: 1.4; margin: 0;}
+        .container { max-width: 95%; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 1.8rem; color: var(--primary-color); margin: 0; }
+        .header-controls { display: flex; gap: 20px; align-items: center; }
+        .student-selector, .year-selector { background: var(--card-bg); padding: 8px 15px; border-radius: 8px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; }
+        select { padding: 5px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: white; font-size: 0.9rem; min-width: 150px; }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .btn-save { background-color: var(--success-color); color: white; padding: 12px 25px; font-size: 1rem; }
+        .btn-save:hover:not(:disabled) { background-color: #059669; } /* :disabled 추가 */
+        .btn-save:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        .btn-reset { background-color: var(--text-secondary); color: white; padding: 6px 12px; font-size: 0.8rem; }
+        .btn-reset:hover { background-color: #4a5568; }
+
+        /* 학생 정보 카드 스타일 */
+        .student-info-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .student-details { flex: 1; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 15px; }
+        .student-name { font-size: 1.3rem; font-weight: 600; color: var(--text-primary); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+        .student-meta { display: flex; gap: 15px; color: var(--text-secondary); font-size: 0.9rem; flex-wrap: wrap; }
+        .meta-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .student-scores-info { display: flex; flex-wrap: wrap; gap: 10px 15px; font-size: 0.9rem; color: var(--text-secondary); padding-top: 10px; border-top: 1px dashed var(--border-color); margin-top: 10px; width: 100%; }
+        .score-item { background-color: #f8fafc; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-color); }
+        .grade-emphasis { font-weight: 700; color: var(--primary-color); font-size: 1.05em; margin: 0 2px; }
+
+        .apply-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .apply-card { background: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; }
+        .apply-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .apply-card h2 { margin: 0; font-size: 1.3rem; color: var(--primary-color); font-weight: 700; }
+        .apply-card .input-group { margin-bottom: 12px; }
+        .apply-card label { font-weight: 500; margin-bottom: 4px; display: block; font-size: 0.85rem; color: var(--text-secondary); }
+        .apply-card select, .apply-card input, .apply-card textarea { width: 100%; padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem; box-sizing: border-box; }
+        .apply-card textarea { min-height: 50px; resize: vertical; }
+        .apply-card hr { border: none; border-top: 1px dashed var(--border-color); margin: 15px 0; }
+
+        .score-display-area { margin-bottom: 15px; }
+        .score-display-area table { width: 100%; font-size: 0.9rem; border-collapse: collapse;}
+        .score-display-area th { text-align: left; padding: 5px 0; color: var(--text-secondary); width: 80px; font-weight: 500; }
+        .score-display-area td { text-align: right; padding: 5px 0; font-weight: 600; }
+        .score-display-area .score-suneung { color: var(--primary-color); }
+        .score-display-area .score-naeshin { color: #059669; }
+        .score-display-area .score-silgi { color: var(--success-color); }
+        .score-display-area .score-silgi span { color: var(--danger-color); font-size: 0.85em; margin-left: 4px; }
+        .score-display-area .total-score td { font-size: 1.1em; color: var(--danger-color); font-weight: 700; border-top: 1px solid var(--border-color); padding-top: 8px; }
+        .score-display-area .naeshin-score-row.hidden, .naeshin-input-group.hidden { display: none; }
+
+        /* ⭐️ 실기 입력 스타일 수정 */
+        .practical-inputs-container { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-color); }
+        .practical-inputs-container table { width: 100%; border-collapse: collapse; }
+        .practical-inputs-container th { text-align: left; padding: 4px 0; color: var(--text-secondary); width: 80px; /* 라벨 너비 조정 */ vertical-align: middle; white-space: nowrap; font-size: 0.85rem; font-weight: 500;}
+        .practical-inputs-container td { text-align: right; padding: 4px 0; vertical-align: middle; display: flex; justify-content: flex-end; align-items: center; gap: 8px; /* 입력칸과 점수 사이 간격 */}
+        .practical-inputs-container input { width: 100px; text-align: right; }
+        .practical-inputs-container .input-group { margin-bottom: 0; }
+        /* ⭐️ 점수/감수 표시 스타일 추가 */
+        .practical-score-display {
+            font-size: .85em; color: var(--text-secondary); min-width: 70px; /* 너비 확보 */ text-align: right; white-space: nowrap;
+        }
+        .practical-score-display span { color: var(--danger-color); font-weight: 500; }
+
+
+        .result-inputs { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .result-inputs label { font-size: 0.8rem; }
+        .reserve-number-input { display: none; margin-left: 5px; width: 60px !important; }
+        .reserve-number-input.visible { display: inline-block; }
+
+        .save-section { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 15px 25px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .save-section .info-text { font-size: 0.9rem; color: var(--text-secondary); }
+
+        /* ⭐️ Toast Popup */
+        .toast-popup { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); color: white; padding: 10px 18px; border-radius: 20px; font-size: .9rem; z-index: 1000; opacity: 0; transition: opacity .5s ease; white-space: nowrap; }
+        .toast-popup.show { opacity: 1; }
+        .toast-popup.error { background-color: rgba(220, 38, 38, 0.9); }
+
+        .year-selector label { white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-file-signature"></i> 정시 최종 지원 수합</h1>
+        <div class="header-controls">
+            <div class="student-selector"> <label for="student-select">대상 학생:</label> <select id="student-select"> <option value="">- 학생 선택 -</option> </select> </div>
+            <div class="year-selector"> <label for="year-select">대상 학년도:</label> <select id="year-select"> <option value="2026">2026</option> <option value="2027">2027</option> </select> </div>
+        </div>
+    </div>
+
+    <div id="student-info-container" class="student-info-card" style="display: none;">
+        <div class="student-details">
+            <h2 class="student-name" id="selected-student-name">학생 이름</h2>
+            <div class="student-meta">
+                <span class="meta-item"><i class="fas fa-school"></i> <span id="selected-school-name">학교 정보</span></span>
+                <span class="meta-item"><i class="fas fa-venus-mars"></i> <span id="selected-gender">성별</span></span>
+            </div>
+            <div class="student-scores-info">
+                <span class="score-item" id="score-hist">한국사: -</span>
+                <span class="score-item" id="score-kor">국어(?): -</span>
+                <span class="score-item" id="score-math">수학(?): -</span>
+                <span class="score-item" id="score-eng">영어: -</span>
+                <span class="score-item" id="score-inq1">탐구1(?): -</span>
+                <span class="score-item" id="score-inq2">탐구2(?): -</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="save-section">
+        <div class="info-text"> <i class="fas fa-info-circle"></i> 각 군별 지원 정보를 입력/수정한 후 저장해주세요. (학과 미선택 시 해당 군 정보 삭제) </div>
+        <button type="button" id="save-final-apply-btn" class="btn btn-save" disabled> <i class="fas fa-save"></i> 최종 지원 내역 저장 </button>
+    </div>
+
+    <div class="apply-grid">
+        <p style="grid-column: 1 / -1; text-align: center; padding: 20px; margin: 0;">학생을 선택하면 지원 내역 입력 칸이 표시됩니다.</p>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 서버 및 인증 ---
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const LOGIN_PAGE = 'jungsilogin.html';
+    const yearSelect = document.getElementById('year-select');
+    const studentSelect = document.getElementById('student-select');
+    const applyGrid = document.querySelector('.apply-grid');
+    const saveBtn = document.getElementById('save-final-apply-btn');
+    const studentInfoContainer = document.getElementById('student-info-container');
+
+    let allUniversities = [];
+    let allStudents = [];
+    let selectedStudentData = null;
+    let currentApplications = {};
+    let universityFormulas = {};
+
+    // --- API 호출 실패 처리 ---
+    const handleAuthError = () => { alert('인증 만료. 다시 로그인하세요.'); window.top.location.href = LOGIN_PAGE; };
+    const getToken = () => localStorage.getItem('jwt_token');
+    const token = getToken();
+    if (!token) { handleAuthError(); return; }
+
+    // --- Helper 함수 ---
+    const safeParse = (jsonStringOrObject, fallback = null) => {
+        if (typeof jsonStringOrObject === 'object' && jsonStringOrObject !== null) { return jsonStringOrObject; }
+        if (typeof jsonStringOrObject !== 'string' || !jsonStringOrObject) { return fallback; }
+        try { return JSON.parse(jsonStringOrObject); }
+        catch (e) { console.warn("JSON 파싱 실패:", jsonStringOrObject, e); return fallback; }
+    };
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.className = `toast-popup ${isError ? 'error' : ''}`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 500);
+        }, 3000);
+    }
+
+    // --- 초기 데이터 로드 ---
+    // 1. 학생 목록 로드
+    const loadStudents = async () => {
+        const year = yearSelect.value;
+        studentSelect.innerHTML = '<option value="">- 로딩 중... -</option>';
+        try {
+            const currentToken = getToken();
+            if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return; }
+            const data = await res.json();
+            if (data.success && data.students) {
+                allStudents = data.students;
+                studentSelect.innerHTML = '<option value="">- 학생 선택 -</option>';
+                allStudents.sort((a, b) => a.student_name.localeCompare(b.student_name, 'ko'));
+                allStudents.forEach(s => { studentSelect.innerHTML += `<option value="${s.student_id}">${s.student_name} (${s.school_name || '학교정보없음'})</option>`; });
+            } else {
+                studentSelect.innerHTML = '<option value="">- 학생 없음 -</option>';
+                if (!data.success) { showToast(`학생 목록 로딩 실패: ${data.message || '알 수 없는 오류'}`, true); }
+            }
+        } catch (e) {
+            console.error('학생 목록 로딩 실패', e);
+            studentSelect.innerHTML = '<option value="">- 로딩 오류 -</option>';
+            showToast(`학생 목록 로딩 중 오류: ${e.message}`, true);
+            if (e.message === '로그인 만료') handleAuthError();
+        }
+    };
+    // 2. 전체 대학/학과 목록 불러오기
+    const loadUniversities = async () => {
+        const year = yearSelect.value;
+        universityFormulas = {};
+        console.log(`[${year}] 대학 목록 로딩 시작...`);
+        try {
+            const currentToken = getToken();
+            if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/university-list?year=${year}`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+            console.log("대학 목록 API 응답 상태:", res.status);
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return; }
+            const data = await res.json();
+            if (data.success && data.list) {
+                allUniversities = data.list;
+                console.log(`[${year}] 대학 목록 ${allUniversities.length}개 로드 완료.`);
+                if(applyGrid.querySelector('.apply-card')) { await renderApplyGrid(); }
+            } else {
+                allUniversities = [];
+                console.warn("대학 목록 로딩 실패:", data.message);
+                showToast(`대학 목록 로딩 실패: ${data.message || '오류'}`, true);
+            }
+        } catch (e) {
+            console.error('❌ 대학 목록 로딩 fetch/처리 오류:', e);
+            allUniversities = [];
+            showToast(`대학 목록 로딩 중 오류: ${e.message}`, true);
+            if (e.message === '로그인 만료') handleAuthError();
+        }
+    };
+    // 3. 학과 요강 불러오기
+    const fetchFormulaDetails = async (U_ID, year) => {
+        if (!U_ID) return null;
+        const cacheKey = `${U_ID}-${year}`;
+        if (universityFormulas[cacheKey]) return universityFormulas[cacheKey];
+        console.log(`[${year}] 요강 정보 로딩 시작 (U_ID: ${U_ID})...`);
+        try {
+            const currentToken = getToken();
+            if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/formula-details?U_ID=${U_ID}&year=${year}`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+            if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+             if (!res.ok) { const errorText = await res.text(); throw new Error(`요강 로딩 HTTP 오류 ${res.status}: ${errorText.substring(0, 100)}`); }
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || '요강 로딩 실패 (success: false)');
+            universityFormulas[cacheKey] = data.formula;
+            console.log(`[${year}] 요강 정보 로딩 완료 (U_ID: ${U_ID})`);
+            return data.formula;
+        } catch (e) {
+            console.error(`요강 로딩 실패 (U_ID: ${U_ID}, Year: ${year}):`, e);
+            showToast(`요강 로딩 실패 (U_ID: ${U_ID}): ${e.message}`, true);
+            if (e.message.includes('로그인 만료') || e.message.includes('인증 오류')) handleAuthError();
+            return null;
+        }
+    };
+    // 4. 수능 점수 계산 API 호출
+    const calculateSuneung = async (student, U_ID, year) => {
+        console.log(`calculateSuneung 호출: student_id=${student?.student_id}, U_ID=${U_ID}, year=${year}`);
+        if (!student || !student.scores) { console.warn("calculateSuneung: 학생 또는 성적 정보 없음"); return 0; }
+        try {
+            const studentScoresInput = convertScoresToSuneungFormat(student.scores);
+            console.log("calculateSuneung API 요청 데이터 (studentScores):", studentScoresInput);
+            const currentToken = getToken();
+            if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/calculate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                body: JSON.stringify({ U_ID, year, studentScores: studentScoresInput })
+            });
+            console.log(`calculateSuneung API 응답 상태: ${res.status}`);
+            if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+             if (!res.ok) { const errorText = await res.text(); throw new Error(`수능 계산 HTTP 오류 ${res.status}: ${errorText.substring(0, 100)}`); }
+            const data = await res.json();
+            console.log("calculateSuneung API 응답:", data);
+            if (!data.success) throw new Error(data.message || '수능 계산 실패 (success: false)');
+            const score = Number(data.result?.totalScore || 0);
+            console.log(`calculateSuneung 계산 결과 점수: ${score}`);
+            return score;
+        } catch (e) {
+            console.error(`calculateSuneung 에러 발생:`, e);
+            showToast(`수능 점수 계산 오류: ${e.message}`, true);
+            if (e.message.includes('로그인 만료') || e.message.includes('인증 오류')) handleAuthError();
+            return 0;
+        }
+    };
+    // 5. 점수 변환 함수
+    const convertScoresToSuneungFormat = (scores) => {
+        if (!scores) return { subjects: [] };
+        const subjects = [];
+        if (scores.국어_표준점수 != null || scores.국어_백분위 != null) { subjects.push({ name: "국어", subject: scores.국어_선택과목, std: scores.국어_표준점수, percentile: scores.국어_백분위, grade: scores.국어_등급 }); }
+        if (scores.수학_표준점수 != null || scores.수학_백분위 != null) { subjects.push({ name: "수학", subject: scores.수학_선택과목, std: scores.수학_표준점수, percentile: scores.수학_백분위, grade: scores.수학_등급 }); }
+        if (scores.영어_등급 != null) { subjects.push({ name: "영어", grade: scores.영어_등급 }); }
+        if (scores.한국사_등급 != null) { subjects.push({ name: "한국사", grade: scores.한국사_등급 }); }
+        if (scores.탐구1_선택과목 != null) { subjects.push({ name: "탐구", subject: scores.탐구1_선택과목, std: scores.탐구1_표준점수, percentile: scores.탐구1_백분위, grade: scores.탐구1_등급 }); }
+        if (scores.탐구2_선택과목 != null) { subjects.push({ name: "탐구", subject: scores.탐구2_선택과목, std: scores.탐구2_표준점수, percentile: scores.탐구2_백분위, grade: scores.탐구2_등급 }); }
+        return { subjects: subjects };
+    };
+    // 6. 학생 정보 카드 업데이트 함수
+    function updateStudentInfoCard(studentData) {
+        const container = document.getElementById('student-info-container');
+        if (!studentData || !container) { if (container) container.style.display = 'none'; return; }
+        container.querySelector('#selected-student-name').textContent = studentData.student_name || '-';
+        container.querySelector('#selected-school-name').textContent = studentData.school_name || '정보없음';
+        container.querySelector('#selected-gender').textContent = studentData.gender || '-';
+        const scores = studentData.scores || {};
+        const formatScore = (subject, std, pct, grade) => { let p=[]; if(std!=null) p.push(`표 ${std}`); if(pct!=null) p.push(`백 ${pct}`); if(grade!=null) p.push(`<strong class="grade-emphasis">${grade}</strong>등급`); return p.length ? p.join(' / ') : '-'; };
+        const formatGradeOnly = (g) => (g != null) ? `<strong class="grade-emphasis">${g}</strong>등급` : '-';
+        const el = (id) => container.querySelector('#' + id);
+        if(el('score-hist')) el('score-hist').innerHTML = `한국사: ${formatGradeOnly(scores.한국사_등급)}`;
+        if(el('score-kor')) el('score-kor').innerHTML = `국어(${scores.국어_선택과목||'?'}): ${formatScore(scores.국어_선택과목,scores.국어_표준점수,scores.국어_백분위,scores.국어_등급)}`;
+        if(el('score-math')) el('score-math').innerHTML= `수학(${scores.수학_선택과목||'?'}): ${formatScore(scores.수학_선택과목,scores.수학_표준점수,scores.수학_백분위,scores.수학_등급)}`;
+        if(el('score-eng')) el('score-eng').innerHTML = `영어: ${formatGradeOnly(scores.영어_등급)}`;
+        if(el('score-inq1')) el('score-inq1').innerHTML= `탐구1(${scores.탐구1_선택과목||'?'}): ${formatScore(scores.탐구1_선택과목,scores.탐구1_표준점수,scores.탐구1_백분위,scores.탐구1_등급)}`;
+        if(el('score-inq2')) el('score-inq2').innerHTML= `탐구2(${scores.탐구2_선택과목||'?'}): ${formatScore(scores.탐구2_선택과목,scores.탐구2_표준점수,scores.탐구2_백분위,scores.탐구2_등급)}`;
+        container.style.display = 'flex';
+    }
+
+    // --- 이벤트 핸들러 ---
+    studentSelect.addEventListener('change', async (e) => {
+        const selectedId = e.target.value;
+        if (selectedId) {
+            selectedStudentData = allStudents.find(s => s.student_id == selectedId);
+            console.log("선택 학생:", selectedStudentData);
+            updateStudentInfoCard(selectedStudentData);
+            await loadFinalApplications();
+            saveBtn.disabled = false;
+        } else {
+            selectedStudentData = null;
+            applyGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; padding: 20px; margin: 0;">학생을 선택하면 지원 내역 입력 칸이 표시됩니다.</p>';
+            saveBtn.disabled = true;
+            updateStudentInfoCard(null);
+        }
+    });
+    yearSelect.addEventListener('change', async () => {
+        universityFormulas = {};
+        await loadStudents();
+        await loadUniversities();
+        selectedStudentData = null; studentSelect.value = '';
+        applyGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; padding: 20px; margin: 0;">학생을 선택하면 지원 내역 입력 칸이 표시됩니다.</p>';
+        saveBtn.disabled = true; updateStudentInfoCard(null);
+    });
+
+    // --- 최종 지원 내역 불러오기 ---
+    const loadFinalApplications = async () => {
+        applyGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; padding: 20px; margin: 0;">지원 내역 로딩 중...</p>';
+        currentApplications = {};
+        if (!selectedStudentData) return;
+        const studentId = selectedStudentData.student_id;
+        const year = yearSelect.value;
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/final-apply/${studentId}/${year}`, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+            if (res.status === 401 || res.status === 403) { handleAuthError(); return; }
+             if (!res.ok) { const errorText = await res.text(); throw new Error(`지원 내역 로딩 HTTP 오류 ${res.status}: ${errorText.substring(0,100)}`); }
+            const data = await res.json();
+            if (data.success && data.applications) {
+                data.applications.forEach(app => { currentApplications[app.모집군] = app; });
+            } else if (!data.success) { showToast(`지원 내역 로딩 실패: ${data.message || '오류'}`, true); }
+            await renderApplyGrid();
+        } catch (e) {
+            console.error('최종 지원 내역 로딩 실패:', e);
+            applyGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; padding: 20px; color: red;">지원 내역 로딩 중 오류 발생</p>';
+            showToast(`지원 내역 로딩 오류: ${e.message}`, true);
+            if (e.message.includes('로그인 만료')) handleAuthError();
+        }
+    };
+
+    // --- 최종 지원 카드 UI 생성 (⭐️ 실기 상세 파싱 수정) ---
+    const renderApplyGrid = async () => {
+        applyGrid.innerHTML = '';
+        const guns = ['가', '나', '다'];
+        const cardElements = {};
+        const cardPromises = guns.map(async (gun) => {
+            const card = document.createElement('div'); card.className = 'apply-card'; card.dataset.gun = gun;
+            const applicationData = currentApplications[gun] || {};
+            let universityOptions = '<option value="">-- 대학 선택 --</option>';
+            const universitiesInGun = [...new Set(allUniversities.filter(u => u.gun === gun).map(u => u.university))].sort((a,b)=>a.localeCompare(b,'ko'));
+            universitiesInGun.forEach(uni => { universityOptions += `<option value="${uni}" ${applicationData.대학명 === uni ? 'selected' : ''}>${uni}</option>`; });
+            let departmentOptions = '<option value="">-- 학과 선택 --</option>';
+            let practicalInputsHtml = '<p style="font-size: 0.8em; color: var(--text-secondary); margin: 5px 0;">학과를 선택하면 실기 입력칸이 표시됩니다.</p>';
+            let suneungScore = 0;
+            const savedDeptId = applicationData.대학학과_ID;
+            const formula = await fetchFormulaDetails(savedDeptId, yearSelect.value);
+            const reflectsNaeshin = formula && Number(formula.내신 || 0) > 0;
+
+            // ⭐️⭐️⭐️ [수정 1] 지원_실기상세(breakdown 객체)에서 events 배열 꺼내기 ⭐️⭐️⭐️
+            const savedSilgiBreakdown = safeParse(applicationData.지원_실기상세, null);
+            const savedSilgiDetails = (savedSilgiBreakdown && Array.isArray(savedSilgiBreakdown.events)) ? savedSilgiBreakdown.events : [];
+            // ⭐️⭐️⭐️ 수정 끝 ⭐️⭐️⭐️
+
+            if (applicationData.대학명 && savedDeptId && formula) {
+                 allUniversities
+                    .filter(u => u.gun === gun && u.university === applicationData.대학명)
+                    .sort((a,b) => a.department.localeCompare(b.department,'ko'))
+                    .forEach(dept => { departmentOptions += `<option value="${dept.U_ID}" ${savedDeptId == dept.U_ID ? 'selected' : ''}>${dept.department}</option>`; });
+                suneungScore = await calculateSuneung(selectedStudentData, savedDeptId, yearSelect.value);
+
+                if (formula.실기배점 && formula.실기배점.length > 0) {
+                    const practicalEvents = [...new Set(formula.실기배점.map(r => r.종목명))];
+                    const savedRecords = safeParse(applicationData.지원_실기기록, {});
+                    practicalInputsHtml = '<table>';
+                    practicalEvents.forEach(event => {
+                        const savedValue = savedRecords[event] ?? '';
+                        // ⭐️ savedSilgiDetails (배열)에서 .find() 사용
+                        const detail = savedSilgiDetails.find(d => d.event === event);
+                        const scoreText = detail && detail.score != null ? `${Number(detail.score).toFixed(2)}점 <span>(${detail.deduction_level ?? '?'}감)</span>` : '-';
+
+                        practicalInputsHtml += `
+                            <tr>
+                                <th>${event}:</th>
+                                <td>
+                                    <input type="text" class="practical-input" data-event="${event}" value="${savedValue}" placeholder="기록 입력">
+                                    <span class="practical-score-display" data-event-score-display="${event}">${scoreText}</span>
+                                </td>
+                            </tr>`;
+                    });
+                    practicalInputsHtml += '</table>';
+                } else { practicalInputsHtml = '<p style="font-size: 0.8em; color: var(--text-secondary);">실기 정보 없음</p>'; }
+            }
+            let initialStatusValue = applicationData.결과_최초 || '미정'; let reserveNumberValue = '';
+            if (initialStatusValue && initialStatusValue.startsWith('예비')) { reserveNumberValue = initialStatusValue.replace(/[^0-9]/g, ''); initialStatusValue = '예비'; }
+
+            card.innerHTML = `
+                <div class="apply-card-header"><h2>${gun}군 최종 지원</h2><button type="button" class="btn btn-reset"><i class="fas fa-undo"></i> 초기화</button></div>
+                <div class="input-group"><label>대학교</label><select class="university-select">${universityOptions}</select></div>
+                <div class="input-group"><label>학과</label><select class="department-select">${departmentOptions}</select></div><hr>
+                <div class="score-display-area"><table>
+                    <tr><th>수능 점수:</th><td class="score-suneung">${suneungScore.toFixed(2)}</td></tr>
+                    <tr class="naeshin-score-row ${reflectsNaeshin ? '' : 'hidden'}"><th>내신 점수:</th><td class="score-naeshin">0.00</td></tr>
+                    <tr><th>실기 점수:</th><td class="score-silgi">0.00 <span>(0감)</span></td></tr>
+                    <tr class="total-score"><th>총점:</th><td class="score-total">${suneungScore.toFixed(2)}</td></tr>
+                </table></div>
+                <div class="input-group naeshin-input-group ${reflectsNaeshin ? '' : 'hidden'}"><label>최종 내신 점수</label><input type="number" class="naeshin-input" step="0.01" placeholder="내신 점수 입력" value="${applicationData.지원_내신점수 ?? ''}"></div>
+                <div class="input-group practical-inputs-container"><label>최종 실기 기록</label>${practicalInputsHtml}</div><hr>
+                <div class="result-inputs">
+                    <div class="input-group"><label>1단계 결과</label><select class="stage1-select"><option value="해당없음" ${applicationData.결과_1단계 === '해당없음' ? 'selected' : ''}>해당없음</option><option value="합격" ${applicationData.결과_1단계 === '합격' ? 'selected' : ''}>합격</option><option value="불합격" ${applicationData.결과_1단계 === '불합격' ? 'selected' : ''}>불합격</option></select></div>
+                    <div class="input-group"><label>최초 결과</label><select class="initial-status-select"><option value="미정" ${initialStatusValue === '미정' ? 'selected' : ''}>미정</option><option value="최초합" ${initialStatusValue === '최초합' ? 'selected' : ''}>최초합</option><option value="불합격" ${initialStatusValue === '불합격' ? 'selected' : ''}>불합격</option><option value="예비" ${initialStatusValue === '예비' ? 'selected' : ''}>예비</option></select><input type="number" class="reserve-number-input ${initialStatusValue === '예비' ? 'visible' : ''}" placeholder="번호" value="${reserveNumberValue}"></div>
+                    <div class="input-group"><label>최종 결과</label><select class="final-select"><option value="미정" ${applicationData.결과_최종 === '미정' ? 'selected' : ''}>미정</option><option value="최종합" ${applicationData.결과_최종 === '최종합' ? 'selected' : ''}>최종합</option><option value="불합격" ${applicationData.결과_최종 === '불합격' ? 'selected' : ''}>불합격</option></select></div>
+                    <div class="input-group"><label>최종 등록</label><select class="register-select"><option value="false" ${!applicationData.최종등록_여부 ? 'selected' : ''}>미등록</option><option value="true" ${applicationData.최종등록_여부 ? 'selected' : ''}>등록</option></select></div>
+                </div>
+                <div class="input-group"><label>메모</label><textarea class="memo-input" rows="2">${applicationData.메모 || ''}</textarea></div>`;
+            cardElements[gun] = card;
+        });
+
+        const results = await Promise.allSettled(cardPromises);
+        guns.forEach((gun, index) => {
+            if (results[index].status === 'fulfilled' && cardElements[gun]) {
+                applyGrid.appendChild(cardElements[gun]);
+                recalculateScoresInCard(cardElements[gun]);
+            } else if (results[index].status === 'rejected') {
+                console.error(`[${gun}군] 카드 렌더링 실패:`, results[index].reason);
+                const errorCard = document.createElement('div'); errorCard.className = 'apply-card';
+                errorCard.innerHTML = `<h2>${gun}군 로딩 실패</h2><p style="color:red;">오류: ${results[index].reason.message || '알 수 없는 오류'}</p>`; // ⭐️ 에러 메시지 표시
+                applyGrid.appendChild(errorCard);
+            }
+        });
+
+        applyGrid.querySelectorAll('.university-select').forEach(select => { select.addEventListener('change', handleUniversityChange); });
+        applyGrid.querySelectorAll('.department-select').forEach(select => { select.addEventListener('change', handleDepartmentChange); });
+        applyGrid.querySelectorAll('.initial-status-select').forEach(select => { select.addEventListener('change', handleInitialStatusChange); });
+        applyGrid.querySelectorAll('.naeshin-input, .practical-input').forEach(input => { input.addEventListener('change', (e) => recalculateScoresInCard(e.target.closest('.apply-card'))); });
+        applyGrid.querySelectorAll('.btn-reset').forEach(button => { button.addEventListener('click', handleResetCard); });
+    };
+
+    const handleUniversityChange = async (event) => {
+        const universitySelect = event.target; const card = universitySelect.closest('.apply-card'); const gun = card.dataset.gun;
+        const departmentSelect = card.querySelector('.department-select'); const practicalContainer = card.querySelector('.practical-inputs-container');
+        const selectedUniversity = universitySelect.value;
+        departmentSelect.innerHTML = '<option value="">-- 학과 선택 --</option>';
+        practicalContainer.innerHTML = '<label>최종 실기 기록</label><p style="font-size: 0.8em; color: var(--text-secondary);">학과를 선택하면 실기 입력칸이 표시됩니다.</p>';
+        card.querySelector('.score-suneung').textContent = '0.00'; card.querySelector('.score-naeshin').textContent = '0.00';
+        card.querySelector('.score-silgi').innerHTML = '0.00 <span>(0감)</span>'; card.querySelector('.score-total').textContent = '0.00';
+        card.querySelector('.naeshin-input-group')?.classList.add('hidden'); card.querySelector('.naeshin-score-row')?.classList.add('hidden');
+        const ni = card.querySelector('.naeshin-input'); if(ni) ni.value = '';
+        if (selectedUniversity) {
+            allUniversities.filter(u => u.gun === gun && u.university === selectedUniversity).sort((a, b) => a.department.localeCompare(b.department,'ko'))
+                .forEach(dept => { departmentSelect.innerHTML += `<option value="${dept.U_ID}">${dept.department}</option>`; });
+        }
+    };
+    const handleDepartmentChange = async (event) => {
+        const departmentSelect = event.target; const card = departmentSelect.closest('.apply-card');
+        const practicalContainer = card.querySelector('.practical-inputs-container'); const selectedDeptId = departmentSelect.value;
+        card.querySelector('.score-suneung').textContent = '0.00'; card.querySelector('.score-naeshin').textContent = '0.00';
+        card.querySelector('.score-silgi').innerHTML = '0.00 <span>(0감)</span>'; card.querySelector('.score-total').textContent = '0.00';
+        card.querySelector('.naeshin-input-group')?.classList.add('hidden'); card.querySelector('.naeshin-score-row')?.classList.add('hidden');
+        const ni = card.querySelector('.naeshin-input'); if(ni) ni.value = '';
+        practicalContainer.innerHTML = '<label>최종 실기 기록</label><p style="font-size: 0.8em; color: var(--text-secondary);">학과를 선택하면 실기 입력칸이 표시됩니다.</p>';
+
+        if (selectedDeptId && selectedStudentData) {
+            const formula = await fetchFormulaDetails(selectedDeptId, yearSelect.value);
+            if (!formula) { practicalContainer.innerHTML = '<label>최종 실기 기록</label><p style="color:red; font-size: 0.8em;">요강 로딩 실패</p>'; showToast('학과 요강 로딩 실패', true); return; }
+            const suneungScore = await calculateSuneung(selectedStudentData, selectedDeptId, yearSelect.value);
+            card.querySelector('.score-suneung').textContent = suneungScore.toFixed(2);
+            card.querySelector('.score-total').textContent = suneungScore.toFixed(2);
+            const reflectsNaeshin = Number(formula.내신 || 0) > 0;
+            card.querySelector('.naeshin-input-group')?.classList.toggle('hidden', !reflectsNaeshin);
+            card.querySelector('.naeshin-score-row')?.classList.toggle('hidden', !reflectsNaeshin);
+
+            if (formula.실기배점 && formula.실기배점.length > 0) {
+                const practicalEvents = [...new Set(formula.실기배점.map(r => r.종목명))];
+                let practicalInputsHtml = '<table>';
+                practicalEvents.forEach(event => {
+                    practicalInputsHtml += `
+                        <tr><th>${event}:</th>
+                            <td>
+                                <input type="text" class="practical-input" data-event="${event}" placeholder="기록 입력">
+                                <span class="practical-score-display" data-event-score-display="${event}">-</span>
+                            </td>
+                        </tr>`;
+                });
+                practicalInputsHtml += '</table>';
+                practicalContainer.innerHTML = `<label>최종 실기 기록</label>${practicalInputsHtml}`;
+                card.querySelectorAll('.practical-input').forEach(input => { input.addEventListener('change', (e) => recalculateScoresInCard(e.target.closest('.apply-card'))); });
+            } else { practicalContainer.innerHTML = '<label>최종 실기 기록</label><p style="font-size: 0.8em; color: var(--text-secondary);">실기 정보 없음</p>'; }
+            recalculateScoresInCard(card);
+        } else if (!selectedStudentData) { showToast('학생을 먼저 선택해주세요.', true); }
+    };
+    const handleInitialStatusChange = (event) => {
+        const select = event.target; const card = select.closest('.apply-card');
+        const reserveInput = card.querySelector(`.reserve-number-input`);
+        reserveInput.classList.toggle('visible', select.value === '예비');
+        if (select.value !== '예비') reserveInput.value = '';
+    };
+
+    const recalculateScoresInCard = async (card) => {
+        if (!card) return;
+        const deptId = card.querySelector('.department-select')?.value;
+        const student = selectedStudentData;
+        if (!deptId || !student) return;
+        const formula = await fetchFormulaDetails(deptId, yearSelect.value);
+        if (!formula) return;
+        const suneungScore = Number(card.querySelector('.score-suneung')?.textContent || 0);
+
+        let naeshinScore = 0;
+        const reflectsNaeshin = Number(formula.내신 || 0) > 0;
+        card.querySelector('.naeshin-score-row')?.classList.toggle('hidden', !reflectsNaeshin);
+        if (reflectsNaeshin) {
+            const naeshinInput = card.querySelector('.naeshin-input');
+            if (naeshinInput) {
+                const rawNaeshinInput = Number(naeshinInput.value || 0); const naeshinRatio = (Number(formula.내신)||0)/100;
+                const SCHOOL_TOTAL = Number(formula.총점)>0?Number(formula.총점):1000; const naeshinMax = Number(formula.내신만점)||0;
+                if (naeshinRatio>0 && naeshinMax>0 && rawNaeshinInput>0) { naeshinScore = (rawNaeshinInput/naeshinMax)*naeshinRatio*SCHOOL_TOTAL; }
+                else if (naeshinRatio>0 && rawNaeshinInput>0 && naeshinMax===0) { naeshinScore = rawNaeshinInput; }
+            }
+        }
+        card.querySelector('.score-naeshin').textContent = naeshinScore.toFixed(2);
+
+        let silgiScore = 0; let totalDeductionText = '<span>(0감)</span>';
+        const practicalInputs = card.querySelectorAll('.practical-input');
+        card.querySelectorAll('.practical-score-display').forEach(span => span.innerHTML = '-');
+
+        if (practicalInputs.length > 0) {
+            const practicals = [];
+            practicalInputs.forEach(input => { if (input.value.trim() !== '') { practicals.push({ event: input.dataset.event, value: input.value.trim() }); } });
+
+            if (practicals.length > 0) {
+                const S_data = { gender: student.gender, practicals: practicals }; const F_data = formula;
+                try {
+                    const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+                    const silgiRes = await fetch(`${SVR_JUNGSI}/silgi/calculate`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }, body: JSON.stringify({ F_data, S_data }) });
+                    if (silgiRes.status === 401 || silgiRes.status === 403) throw new Error('인증 오류');
+                     if (!silgiRes.ok) { const errorText = await silgiRes.text(); throw new Error(`실기 계산 HTTP 오류 ${silgiRes.status}: ${errorText.substring(0,100)}`); }
+                    const silgiData = await silgiRes.json();
+                    if (silgiData.success && silgiData.result) {
+                        silgiScore = Number(silgiData.result.totalScore || 0);
+                        const breakdown = silgiData.result.breakdown;
+                        if (breakdown?.events) {
+                            breakdown.events.forEach(ev => {
+                                const span = card.querySelector(`.practical-score-display[data-event-score-display="${ev.event}"]`);
+                                if (span) { span.innerHTML = ev.score == null ? '-' : `${Number(ev.score).toFixed(2)}점 <span>(${ev.deduction_level ?? '?'}감)</span>`; }
+                            });
+                        }
+                        const totalDeductionLevel = breakdown?.total_deduction_level || 0;
+                        totalDeductionText = totalDeductionLevel > 0 ? `<span>(${totalDeductionLevel}감)</span>` : '<span>(0감)</span>';
+                    } else { console.warn('실기 계산 API 오류:', silgiData.message); showToast('실기 계산 오류', true); }
+                } catch (e) { console.error('실기 재계산 fetch 오류:', e); showToast('실기 계산 통신 오류', true); if (e.message.includes('로그인 만료') || e.message.includes('인증 오류')) handleAuthError(); }
+            }
+        }
+        card.querySelector('.score-silgi').innerHTML = `${silgiScore.toFixed(2)} ${totalDeductionText}`;
+        const totalScore = suneungScore + naeshinScore + silgiScore;
+        card.querySelector('.score-total').textContent = totalScore.toFixed(2);
+    };
+
+    const handleResetCard = async (event) => {
+        const card = event.target.closest('.apply-card'); const gun = card.dataset.gun;
+        if (!selectedStudentData || !confirm(`${gun}군 지원 정보를 초기화하시겠습니까?`)) return;
+        console.log(`[${gun}군] 카드 초기화 시작...`);
+        card.querySelector('.university-select').value = ''; card.querySelector('.department-select').innerHTML = '<option value="">-- 학과 선택 --</option>';
+        const ni = card.querySelector('.naeshin-input'); if(ni) ni.value = '';
+        card.querySelectorAll('.practical-input').forEach(i => i.value = '');
+        card.querySelectorAll('.practical-score-display').forEach(s => s.innerHTML = '-');
+        card.querySelector('.practical-inputs-container').innerHTML = '<label>최종 실기 기록</label><p style="font-size: 0.8em; color: var(--text-secondary);">학과를 선택하면 실기 입력칸이 표시됩니다.</p>';
+        card.querySelector('.stage1-select').value = '해당없음'; card.querySelector('.initial-status-select').value = '미정';
+        const ri = card.querySelector('.reserve-number-input'); ri.value = ''; ri.classList.remove('visible');
+        card.querySelector('.final-select').value = '미정'; card.querySelector('.register-select').value = 'false';
+        card.querySelector('.memo-input').value = ''; card.querySelector('.score-suneung').textContent = '0.00';
+        card.querySelector('.score-naeshin').textContent = '0.00'; card.querySelector('.score-silgi').innerHTML = '0.00 <span>(0감)</span>';
+        card.querySelector('.score-total').textContent = '0.00';
+        card.querySelector('.naeshin-input-group')?.classList.add('hidden'); card.querySelector('.naeshin-score-row')?.classList.add('hidden');
+        const studentId = selectedStudentData.student_id; const year = yearSelect.value;
+        try {
+            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/final-apply/${studentId}/${year}/${gun}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } });
+            if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+            if (!res.ok) { const errorText = await res.text(); throw new Error(`삭제 HTTP 오류 ${res.status}: ${errorText.substring(0,100)}`); }
+            const data = await res.json();
+            if (data.success) { showToast(`[${gun}군] 지원 정보 삭제 완료.`, false); delete currentApplications[gun]; }
+            else { showToast(`[${gun}군] DB 삭제 실패: ${data.message || 'Error'}`, true); }
+        } catch(e) { console.error(`[${gun}군] 삭제 오류:`, e); showToast(`[${gun}군] 초기화 중 오류 발생: ${e.message}`, true); if (e.message.includes('로그인 만료') || e.message.includes('인증 오류')) handleAuthError(); }
+    };
+
+    // --- 최종 지원 내역 저장 ---
+    saveBtn.addEventListener('click', async () => {
+        if (!selectedStudentData) { showToast('저장할 학생을 선택해주세요.', true); console.log("Save aborted: No student selected."); return; }
+        if (!selectedStudentData.scores || !selectedStudentData.scores.hasOwnProperty('입력유형') || selectedStudentData.scores.입력유형 !== 'official') {
+            console.log("Save aborted: Score type is not 'official'. Scores:", selectedStudentData.scores);
+            showToast('성적표 기준 수합만 가능합니다 (입력유형 확인).', true);
+            return;
+        }
+
+        console.log("Save process starting...");
+        saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+
+        const studentId = selectedStudentData.student_id; const year = yearSelect.value;
+        let successCount = 0; let errorCount = 0; const promises = [];
+
+        applyGrid.querySelectorAll('.apply-card').forEach(card => {
+            const gun = card.dataset.gun; const deptId = card.querySelector('.department-select').value;
+
+            if (deptId) { // Save or Update
+                // ⭐️⭐️⭐️ [수정 2] naeshinInput 찾아서 값 가져오기 ⭐️⭐️⭐️
+                const naeshinInput = card.querySelector('.naeshin-input');
+                const naeshinInputVal = (naeshinInput && naeshinInput.value.trim() !== '') ? parseFloat(naeshinInput.value) : null;
+                // ⭐️⭐️⭐️ 수정 끝 ⭐️⭐️⭐️
+
+                const practicalInputs = card.querySelectorAll('.practical-input');
+                const 실기기록 = {}; let hasPracticalInput = false;
+                practicalInputs.forEach(input => { if (input.value.trim() !== '') { 실기기록[input.dataset.event] = input.value.trim(); hasPracticalInput = true; }});
+                const finalPracticalRecords = hasPracticalInput ? 실기기록 : null;
+
+                let calculateSilgiPromise = Promise.resolve({ totalScore: null, breakdown: null });
+                if (hasPracticalInput) {
+                    calculateSilgiPromise = fetchFormulaDetails(deptId, year)
+                        .then(async formula => {
+                            if (!formula) throw new Error(`[${gun}군] 실기 계산 요강 없음 (U_ID: ${deptId})`);
+                            const S_data = { gender: selectedStudentData.gender, practicals: [] };
+                            for (const [event, value] of Object.entries(실기기록)) { S_data.practicals.push({ event, value }); }
+                            const F_data = formula;
+                            const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+                            const silgiRes = await fetch(`${SVR_JUNGSI}/silgi/calculate`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }, body: JSON.stringify({ F_data, S_data }) });
+                            if (silgiRes.status === 401 || silgiRes.status === 403) throw new Error('인증 오류');
+                             if (!silgiRes.ok) { const errorText = await silgiRes.text(); throw new Error(`실기 계산 HTTP 오류 ${silgiRes.status}: ${errorText.substring(0,100)}`);}
+                            const silgiData = await silgiRes.json();
+                            if (!silgiData.success) throw new Error(silgiData.message || `[${gun}군] 실기 계산 실패`);
+                            return { totalScore: silgiData.result?.totalScore ?? 0, breakdown: silgiData.result?.breakdown || null };
+                        })
+                        .catch(err => { console.error(`[${gun}군] 실기 계산 오류:`, err); if (err.message.includes('로그인 만료') || err.message.includes('인증 오류')) handleAuthError(); return { totalScore: null, breakdown: null }; });
+                }
+
+                let 최종_결과_최초 = card.querySelector('.initial-status-select').value;
+                if (최종_결과_최초 === '예비') { const reserveNum = card.querySelector('.reserve-number-input').value.trim(); 최종_결과_최초 = reserveNum ? `예비 ${reserveNum}번` : '예비'; }
+
+                const savePromise = calculateSilgiPromise.then(silgiResult => {
+                    const saveData = {
+                        학생_ID: studentId, 학년도: year, 모집군: gun, 대학학과_ID: parseInt(deptId),
+                        지원_내신점수: naeshinInputVal, // ⭐️ 수정된 변수 사용
+                        지원_실기기록: finalPracticalRecords,
+                        지원_실기총점: silgiResult.totalScore,
+                        지원_실기상세: silgiResult.breakdown,
+                        결과_1단계: card.querySelector('.stage1-select').value, 결과_최초: 최종_결과_최초, 결과_최종: card.querySelector('.final-select').value,
+                        최종등록_여부: card.querySelector('.register-select').value === 'true', 메모: card.querySelector('.memo-input').value.trim() || null
+                    };
+                    console.log(`[${gun}군] Saving data:`, saveData);
+                    const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
+                    return fetch(`${SVR_JUNGSI}/jungsi/final-apply/set`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }, body: JSON.stringify(saveData) });
+                })
+                .then(async (res) => {
+                    if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+                     if (!res.ok) { const errorText = await res.text(); throw new Error(`저장 HTTP 오류 ${res.status}: ${errorText.substring(0,100)}`);}
+                    const data = await res.json();
+                    if (!data.success) throw new Error(`[${gun}군 저장 실패] ${data.message || 'Error'}`);
+                    console.log(`[${gun}군] Save successful.`); successCount++;
+                 })
+                 .catch(err => { console.error(`[${gun}군] 저장 Promise 오류:`, err); errorCount++; if (err.message.includes('로그인 만료') || err.message.includes('인증 오류')) handleAuthError(); });
+                promises.push(savePromise);
+
+            } else { // Delete
+                console.log(`[${gun}군] 학과 선택 안 됨 - 기존 데이터 삭제 시도`);
+                const currentToken = getToken(); if (!currentToken) { promises.push(Promise.reject(new Error('로그인 만료'))); return; }
+                const deletePromise = fetch(`${SVR_JUNGSI}/jungsi/final-apply/${studentId}/${year}/${gun}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${currentToken}` } })
+                .then(async (res) => {
+                    if (res.status === 401 || res.status === 403) throw new Error('인증 오류');
+                    if (!res.ok) { const errorText = await res.text().catch(()=>''); console.warn(`[${gun}군] 삭제 HTTP 오류 ${res.status}: ${errorText.substring(0,100)}`);}
+                    const data = await res.json().catch(() => ({})); // Handle non-json or empty responses on delete
+                    if (!data.success && res.ok) { console.log(`[${gun}군] Existing data deleted successfully (or was absent).`); } // Treat 200 OK as success
+                    else if (!data.success) { console.warn(`[${gun}군] 기존 데이터 삭제 실패: ${data.message}`); }
+                    else { console.log(`[${gun}군] Existing data deleted successfully.`); }
+                })
+                .catch(err => { console.error(`[${gun}군] 삭제 중 오류:`, err); errorCount++; if (err.message.includes('인증 오류')) handleAuthError(); });
+                promises.push(deletePromise);
+            }
+        }); // End forEach
+
+        Promise.allSettled(promises).then((results) => {
+             console.log("Save All Promises Results:", results);
+             if (errorCount === 0) { showToast(`총 ${results.length}개 군 저장/삭제 완료.`, false); loadFinalApplications(); }
+             else { showToast(`${errorCount}개 군 저장/삭제 오류 발생.`, true); loadFinalApplications(); }
+             saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save"></i> 최종 지원 내역 저장';
+        });
+
+    }); // End saveBtn listener
+
+
+    // --- 페이지 초기 로드 ---
+    loadStudents();
+    loadUniversities();
+
+}); // End DOMContentLoaded
+</script>
+
+</body>
+</html>

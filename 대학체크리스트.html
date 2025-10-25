@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>대학별 배점표 작업 체크리스트 (ID순, 실기有)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb; --border-color: #e2e8f0; --light-bg: #f8fafc;
+            --card-bg: #ffffff; --text-primary: #1e293b; --text-secondary: #475569;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --success-color: #10b981; --success-light-bg: #f0fdf4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Pretendard', sans-serif; background-color: var(--light-bg); color: var(--text-primary); line-height: 1.6; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        h1 { font-size: 1.6rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        .controls { display: flex; align-items: center; gap: 15px; }
+        .year-selector select, #search-input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; background: white; font-size: 0.9rem; }
+        #search-input { width: 200px; }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; }
+        .list-container { max-height: 70vh; overflow-y: auto; margin-top: 15px; }
+        ul { list-style: none; padding: 0; }
+        li { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid #f1f5f9; transition: background-color 0.2s; }
+        li:last-child { border-bottom: none; }
+        li:hover { background-color: #f8fafc; }
+        li label { flex-grow: 1; margin-left: 12px; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; }
+        li input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-color); }
+        .uni-info { color: var(--text-secondary); font-size: 0.85rem; margin-left: 8px; }
+        .uni-id { font-weight: 600; color: var(--primary-color); }
+        .progress-info { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; }
+        .completed { background-color: var(--success-light-bg); }
+        .completed label { text-decoration: line-through; color: var(--secondary-color); }
+        .icon { font-size: 1.2rem; }
+        .loading, .no-data { text-align: center; padding: 30px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-tasks icon"></i> 배점표 작업 체크리스트 (ID순, 실기有)</h1>
+        <div class="controls">
+            <div class="year-selector">
+                <label for="year-select" style="font-weight: 600;">학년도:</label>
+                <select id="year-select">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+            <input type="text" id="search-input" placeholder="대학명 또는 학과명 검색...">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="progress-info">
+            총 <span id="total-count">0</span>개 대학 중 <span id="completed-count" style="color: var(--success-color);">0</span>개 완료
+        </div>
+        <div class="list-container">
+            <ul id="university-list">
+                <li class="loading">대학 목록을 불러오는 중...</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 서버 주소
+    const SVR_JUNGSI = 'https://supermax.kr';
+    // const LOGIN_PAGE = 'jungsilogin'; // 로그인 불필요
+
+    // HTML 요소
+    const yearSelect = document.getElementById('year-select');
+    const searchInput = document.getElementById('search-input');
+    const universityListUl = document.getElementById('university-list');
+    const totalCountEl = document.getElementById('total-count');
+    const completedCountEl = document.getElementById('completed-count');
+
+    let allUniversities = [];
+    let checklistState = {};
+
+    // --- ⭐️⭐️⭐️ 인증 게이트 관련 코드 완전 삭제 ⭐️⭐️⭐️ ---
+    // const getToken = () => localStorage.getItem('jwt_token');
+    // const token = getToken();
+    // if (!token) { /* ... 로그인 페이지 이동 ... */ }
+    // try { /* ... 토큰 유효성 검사 ... */ } catch(e) { /* ... 에러 처리 ... */ }
+    // --- ⭐️⭐️⭐️ 삭제 완료 ⭐️⭐️⭐️ ---
+
+
+    // --- LocalStorage 키 생성 함수 ---
+    const getStorageKey = (year) => `checklist_state_${year}`;
+
+    // --- 체크 상태 불러오기 ---
+    const loadChecklistState = (year) => { /* ... 이전과 동일 ... */
+        const key = getStorageKey(year);
+        try { const savedState = localStorage.getItem(key); checklistState = savedState ? JSON.parse(savedState) : {}; }
+        catch (e) { console.error("체크리스트 상태 로딩 오류:", e); checklistState = {}; }
+        updateProgress();
+    };
+
+    // --- 체크 상태 저장하기 ---
+    const saveChecklistState = (year) => { /* ... 이전과 동일 ... */
+        const key = getStorageKey(year);
+        try { localStorage.setItem(key, JSON.stringify(checklistState)); }
+        catch (e) { console.error("체크리스트 상태 저장 오류:", e); }
+        updateProgress();
+    };
+
+    // --- 진행률 업데이트 ---
+    const updateProgress = () => { /* ... 이전과 동일 ... */
+        const total = allUniversities.length;
+        const completed = Object.values(checklistState).filter(isChecked => isChecked).length;
+        totalCountEl.textContent = total; completedCountEl.textContent = completed;
+    };
+
+    // --- 대학 목록 불러오기 함수 (인증 헤더 없음) ---
+    const loadUniversityList = async () => {
+        const selectedYear = yearSelect.value;
+        universityListUl.innerHTML = '<li class="loading">대학 목록 로딩중...</li>';
+        allUniversities = [];
+        loadChecklistState(selectedYear);
+
+        try {
+            // --- API 호출 시 Authorization 헤더 없음 확인 ---
+            const response = await fetch(`${SVR_JUNGSI}/jungsi/public/schools/${selectedYear}`); // 공개 API 사용
+            // --- 확인 완료 ---
+
+            const data = await response.json();
+            // 인증 오류 체크 불필요
+
+            if (data.success && data.schools) {
+                const schoolsWithPractical = data.schools.filter(school => Number(school.실기) > 0);
+                allUniversities = schoolsWithPractical.sort((a, b) => Number(a.U_ID) - Number(b.U_ID));
+                renderList();
+            } else {
+                universityListUl.innerHTML = `<li class="no-data">목록 로딩 실패: ${data.message || '오류'}</li>`;
+            }
+        } catch (err) {
+            console.error('대학 목록 로딩 오류:', err);
+            universityListUl.innerHTML = `<li class="no-data">서버 연결 오류: ${err.message}</li>`;
+            // 로그인 페이지 이동 불필요
+        }
+        updateProgress();
+    };
+
+    // --- 목록 렌더링 함수 ---
+    const renderList = () => { /* ... 이전과 동일 ... */
+        const searchTerm = searchInput.value.toLowerCase(); universityListUl.innerHTML = '';
+        const filteredList = allUniversities.filter(uni => (uni.대학명 && uni.대학명.toLowerCase().includes(searchTerm)) || (uni.학과명 && uni.학과명.toLowerCase().includes(searchTerm)));
+        if (filteredList.length === 0) { universityListUl.innerHTML = `<li class="no-data">결과 없음.</li>`; return; }
+        const selectedYear = yearSelect.value;
+        filteredList.forEach(uni => {
+            const li = document.createElement('li'); const uId = uni.U_ID; const isChecked = checklistState[uId] === true; li.classList.toggle('completed', isChecked);
+            li.innerHTML = `<input type="checkbox" id="check-${uId}" data-uid="${uId}" ${isChecked ? 'checked' : ''}><label for="check-${uId}">${uni.대학명} - ${uni.학과명}<span class="uni-info">(ID: <span class="uni-id">${uId}</span>)</span></label>`;
+            const checkbox = li.querySelector('input[type="checkbox"]'); checkbox.addEventListener('change', (e) => { const uid = e.target.dataset.uid; const checked = e.target.checked; checklistState[uid] = checked; li.classList.toggle('completed', checked); saveChecklistState(selectedYear); });
+            universityListUl.appendChild(li);
+        });
+    };
+
+    // --- 학년도 변경 시 목록 다시 로딩 ---
+    yearSelect.addEventListener('change', loadUniversityList);
+
+    // --- 검색 입력 시 목록 필터링 ---
+    searchInput.addEventListener('input', renderList);
+
+    // --- 페이지 로드 시 초기 목록 로딩 ---
+    loadUniversityList();
+
+});
+</script>
+
+</body>
+</html>

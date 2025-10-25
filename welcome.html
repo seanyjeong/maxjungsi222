@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>정시 엔진 환영합니다</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb; --primary-dark:#1d4ed8;
+            --light-bg: #f8fafc; --card-bg: #ffffff;
+            --border-color: #e2e8f0; --text-primary:#1e293b; --text-secondary:#475569;
+            --success-color:#10b981; --danger-color:#ef4444; --warning-color: #f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --counseling-color: var(--warning-color); /* 상담 일정 색상 */
+            --practice-color: var(--success-color); /* 실기 일정 색상 */
+        }
+        body { font-family: 'Pretendard', sans-serif; background: var(--light-bg); padding: 20px; margin: 0; line-height: 1.6; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; }
+        .card h2 { margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .card h2 .actions { display: flex; gap: 8px; }
+        .card h2 .chip { margin-left: auto; font-size: 0.9rem; padding: 4px 8px; background: none; border: none; box-shadow: none;}
+        .card h2 .chip select { min-width: 80px; font-size: 0.9rem; padding: 4px 6px;}
+        .card .content-area { flex-grow: 1; overflow-y: auto; max-height: 400px; padding-right: 5px; }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px;}
+        .content-area::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px;}
+        .content-area::-webkit-scrollbar-thumb:hover { background: #aaa; }
+        .btn-sm { padding: 4px 8px; font-size: .75rem; }
+        .btn-add { background-color: var(--primary-color); color: white; }
+        .btn-edit { background-color: #f59e0b; color: white; }
+        .btn-delete { background-color: var(--danger-color); color: white; }
+        .admin-only { display: none !important; }
+        body.is-admin .admin-only { display: inline-flex !important; }
+
+        /* 공지사항 스타일 */
+        #announcements ul { list-style: none; padding: 0; margin: 0; }
+        #announcements li { padding: 10px 5px; border-bottom: 1px dashed var(--border-color); font-size: 0.9rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;}
+        #announcements li:last-child { border-bottom: none; }
+        #announcements .notice-main { flex-grow: 1; cursor: pointer; }
+        #announcements .notice-title { font-weight: 600; display: block; margin-bottom: 3px; }
+        #announcements .notice-meta { font-size: 0.8em; color: var(--text-secondary); }
+        #announcements .notice-actions { flex-shrink: 0; display: flex; gap: 5px; }
+
+        /* 달력 공통 스타일 */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-header h3 { margin: 0; font-size: 1.1rem; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .calendar-grid > div { padding: 8px 4px; border-radius: 4px; font-size: 0.85rem; min-height: 60px; position: relative; }
+        .day-header { font-weight: 600; color: var(--text-secondary); padding: 5px; min-height: auto; background-color: #f8fafc; }
+        .day-cell { background-color: #f9fafb; cursor: pointer; transition: background-color 0.2s; border: 1px solid transparent; }
+        .day-cell:hover:not(.other-month):not(.no-event) { background-color: #f0f9ff; border-color: #e0f2fe; }
+        .day-cell.other-month { color: #cbd5e1; background-color: transparent; cursor: default; border-color: transparent; }
+        .day-cell.today { background-color: #e0f2fe; font-weight: bold; border: 1px solid #bae6fd; }
+        .day-cell.no-event { cursor: default; }
+        .event-dots {
+            position: absolute; bottom: 5px; left: 0; width: 100%;
+            display: flex; justify-content: center; gap: 3px;
+            pointer-events: none; padding: 0 5px; box-sizing: border-box;
+        }
+        .event-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .event-dot.counseling { background-color: var(--counseling-color); }
+        .event-dot.practice { background-color: var(--practice-color); }
+
+        /* 지점 메모 스타일 */
+        #branch-memos ul { list-style: none; padding: 0; margin: 0; }
+        #branch-memos li { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 10px; font-size: 0.9rem; position: relative; }
+        #branch-memos .memo-content { margin-bottom: 5px; white-space: pre-wrap; word-break: break-all; } /* Added word-break */
+        #branch-memos .memo-meta { font-size: 0.8em; color: var(--text-secondary); text-align: right; }
+        #branch-memos .memo-actions { position: absolute; top: 5px; right: 5px; display: none; gap: 3px; }
+        #branch-memos li:hover .memo-actions { display: flex; }
+
+        /* 팝업(모달) 공통 스타일 */
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); padding-top: 60px; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 8px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-close { color: #aaa; position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-close:hover, .modal-close:focus { color: black; text-decoration: none; }
+        .modal h3 { margin-top: 0; font-size: 1.2rem; color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;}
+        .modal-details ul { list-style: none; padding: 0; margin: 0; max-height: 40vh; overflow-y: auto; }
+        .modal-details li { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 10px; font-size: 0.9rem; }
+        .modal-details li strong { color: var(--primary-dark); }
+        .modal-details li span { color: var(--text-secondary); margin-left: 5px; font-size: 0.9em;}
+        .modal-details li .phone-info { font-size: 0.85em; color: var(--text-secondary); margin-left: 8px; }
+        .modal-details .no-schedule { text-align: center; color: var(--text-secondary); padding: 20px; }
+
+        /* 상담 일정 추가 모달 스타일 수정 */
+        #add-counseling-modal label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        #add-counseling-modal input, #add-counseling-modal select, #add-counseling-modal textarea {
+            width: 100%; padding: 8px 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; font-family: inherit;
+            box-sizing: border-box; height: 38px;
+        }
+        .time-select-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .time-select-group select { width: 50%; margin-bottom: 0; }
+        #add-counseling-modal textarea { min-height: 60px; resize: vertical; height: auto; }
+        #add-counseling-modal .modal-actions { text-align: right; margin-top: 20px; }
+        #add-counseling-modal .btn-confirm { background-color: var(--primary-color); color: white; padding: 8px 15px; }
+        #add-counseling-modal .btn-cancel { background-color: var(--text-secondary); color: white; padding: 8px 15px; margin-left: 8px;}
+        #add-counseling-modal #time-conflict-warning { color: var(--danger-color); font-size: 0.85rem; margin-top: -10px; margin-bottom: 10px; display: none; }
+
+        /* 공지/메모 모달 입력 요소 스타일 */
+        #text-edit-modal label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        #text-edit-modal input[type="text"], #text-edit-modal textarea {
+             width: 100%; padding: 8px 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; font-family: inherit;
+             box-sizing: border-box;
+        }
+        #text-edit-modal input[type="text"] { height: 38px; }
+        #text-edit-modal textarea { min-height: 100px; resize: vertical; }
+        #text-edit-modal .modal-actions { text-align: right; margin-top: 15px; }
+
+        /* 간단 알림 메시지 (welcome.html 내에서만 사용) */
+        .toast-popup-local { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.8); color: white; padding: 10px 18px; border-radius: 20px; font-size: .9rem; z-index: 1002; opacity: 0; transition: opacity .5s ease; white-space: nowrap; }
+        .toast-popup-local.show { opacity: 1; }
+        .toast-popup-local.error { background-color: rgba(220, 38, 38, 0.9); }
+
+        /* 오늘 정보 모달 스타일 */
+        #today-info-modal .modal-content { max-width: 600px; }
+        #today-info-modal h4 {
+            margin-top: 15px; margin-bottom: 8px; font-size: 1rem; color: var(--primary-dark);
+            border-bottom: 1px solid var(--border-color); padding-bottom: 5px; display: flex; align-items: center; gap: 6px;
+        }
+        #today-info-modal h4:first-of-type { margin-top: 0; }
+        #today-info-modal .today-content { max-height: 20vh; overflow-y: auto; padding-right: 5px; }
+        #today-info-modal .today-content::-webkit-scrollbar { width: 5px; }
+        #today-info-modal .today-content::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px;}
+        #today-info-modal .today-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px;}
+        #today-info-modal .today-content ul { list-style: none; padding: 0; margin: 0; }
+        #today-info-modal .today-content li { font-size: 0.9rem; padding: 6px 0; border-bottom: 1px dotted var(--border-color); }
+        #today-info-modal .today-content li:last-child { border-bottom: none; }
+        #today-info-modal .today-content .no-data { color: var(--text-secondary); font-style: italic; }
+        #today-info-modal .notice-item strong { display: block; margin-bottom: 3px; font-weight: 600;}
+        #today-info-modal .notice-item span { font-size: 0.85em; color: var(--text-secondary); }
+        #today-info-modal .schedule-item strong { color: var(--primary-dark); margin-right: 5px; }
+        #today-info-modal .schedule-item .time { font-weight: 600; margin-right: 8px; }
+        #today-info-modal .schedule-item .phone-info { font-size: 0.85em; color: var(--text-secondary); margin-left: 8px; }
+
+    </style>
+</head>
+<body>
+
+<div class="grid-container">
+    <div class="card" id="announcements">
+         <h2>
+             <i class="fas fa-bullhorn"></i> 공지사항
+             <div class="actions admin-only">
+                 <button class="btn btn-sm btn-add" id="add-notice-btn"><i class="fas fa-plus"></i> 추가</button>
+             </div>
+             <div class="chip">
+                 <label for="welcome-year-select"><i class="fas fa-calendar-alt"></i> 학년도</label>
+                 <select id="welcome-year-select">
+                     <option value="2026">2026</option>
+                     <option value="2027">2027</option>
+                 </select>
+             </div>
+         </h2>
+         <div class="content-area">
+             <ul id="notice-list"></ul>
+         </div>
+     </div>
+
+    <div class="card" id="counseling-schedule">
+         <h2>
+             <i class="fas fa-comments"></i> 상담 일정
+             <div class="actions">
+                 <button class="btn btn-sm btn-add" id="add-counseling-btn"><i class="fas fa-plus"></i> 추가</button>
+             </div>
+         </h2>
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="btn btn-sm prev-month-btn">&lt;</button>
+                <h3 class="current-month-year">YYYY년 MM월</h3>
+                <button class="btn btn-sm next-month-btn">&gt;</button>
+            </div>
+            <div class="calendar-grid counseling-grid">
+                <div class="day-header">일</div> <div class="day-header">월</div> <div class="day-header">화</div>
+                <div class="day-header">수</div> <div class="day-header">목</div> <div class="day-header">금</div>
+                <div class="day-header">토</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="practice-schedule">
+        <h2><i class="fas fa-running"></i> 실기 일정</h2>
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="btn btn-sm prev-month-btn">&lt;</button>
+                <h3 class="current-month-year">YYYY년 MM월</h3>
+                <button class="btn btn-sm next-month-btn">&gt;</button>
+            </div>
+            <div class="calendar-grid practice-grid">
+                <div class="day-header">일</div> <div class="day-header">월</div> <div class="day-header">화</div>
+                <div class="day-header">수</div> <div class="day-header">목</div> <div class="day-header">금</div>
+                <div class="day-header">토</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="branch-memos">
+        <h2>
+            <i class="fas fa-sticky-note"></i> 지점 메모
+             <div class="actions">
+                 <button class="btn btn-sm btn-add" id="add-memo-btn"><i class="fas fa-plus"></i> 추가</button>
+             </div>
+        </h2>
+        <div class="content-area">
+            <ul id="memo-list"></ul>
+        </div>
+    </div>
+</div>
+
+<div id="counseling-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" data-close-modal="counseling-modal">&times;</span>
+    <h3 class="modal-date">YYYY-MM-DD 상담 일정</h3>
+    <div class="modal-details counseling-details"></div>
+  </div>
+</div>
+
+<div id="add-counseling-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" data-close-modal="add-counseling-modal">&times;</span>
+    <h3 id="counseling-form-title">상담 일정 추가</h3>
+    <input type="hidden" id="counseling-schedule-id">
+    <div>
+        <label for="counseling-student">학생</label>
+        <select id="counseling-student" required></select>
+    </div>
+    <div>
+        <label for="counseling-date">날짜</label>
+        <input type="date" id="counseling-date" required>
+    </div>
+    <div>
+        <label for="counseling-hour">시간</label>
+        <div class="time-select-group">
+            <select id="counseling-hour" required><option value="">-- 시 --</option></select>
+            <select id="counseling-minute" required><option value="">-- 분 --</option></select>
+        </div>
+        <div id="time-conflict-warning">⚠️ 해당 시간 30분 이내에 이미 다른 상담 일정이 있습니다!</div>
+    </div>
+    <div>
+        <label for="counseling-type">상담 내용 (선택)</label>
+        <textarea id="counseling-type" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-confirm" id="save-counseling-btn">저장</button>
+      <button type="button" class="btn btn-cancel" data-close-modal="add-counseling-modal">취소</button>
+      <button type="button" class="btn btn-delete" id="delete-counseling-btn" style="display: none; float: left;">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div id="practice-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" data-close-modal="practice-modal">&times;</span>
+    <h3 class="modal-date">YYYY-MM-DD 실기 일정</h3>
+    <div class="modal-details practice-details"></div>
+  </div>
+</div>
+
+<div id="text-edit-modal" class="modal">
+  <div class="modal-content">
+     <span class="modal-close" data-close-modal="text-edit-modal">&times;</span>
+     <h3 id="text-edit-modal-title">내용 편집</h3>
+     <input type="hidden" id="edit-id">
+     <input type="hidden" id="edit-type">
+     <div>
+         <label for="edit-title" id="edit-title-label" style="display:none;">제목</label>
+         <input type="text" id="edit-title">
+     </div>
+     <div>
+         <label for="edit-content">내용</label>
+         <textarea id="edit-content" rows="5" required></textarea>
+     </div>
+     <div class="modal-actions">
+         <button type="button" class="btn btn-confirm" id="save-text-btn">저장</button>
+         <button type="button" class="btn btn-cancel" data-close-modal="text-edit-modal">취소</button>
+     </div>
+  </div>
+</div>
+
+<div id="today-info-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" data-close-modal="today-info-modal">&times;</span>
+    <h3 id="today-info-modal-title">오늘의 정보</h3>
+    <h4><i class="fas fa-bullhorn"></i> 최신 공지</h4>
+    <div class="today-content" id="today-announcement"><p class="no-data">최신 공지사항이 없습니다.</p></div>
+    <h4><i class="fas fa-comments" style="color: var(--counseling-color);"></i> 오늘 상담 일정</h4>
+    <div class="today-content" id="today-counseling"><p class="no-data">오늘 상담 일정이 없습니다.</p></div>
+    <h4><i class="fas fa-running" style="color: var(--practice-color);"></i> 오늘 실기 일정</h4>
+    <div class="today-content" id="today-practice"><p class="no-data">오늘 실기 일정이 없습니다.</p></div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // --- API & Constants ---
+    // ⭐️ [수정] SVR_JUNGSI: HTTPS 주소 사용 (포트 번호 제거)
+    const SVR_JUNGSI = 'https://supermax.kr';
+    const API_URLS = {
+        announcements: `${SVR_JUNGSI}/jungsi/announcements`,
+        counselingSchedules: `${SVR_JUNGSI}/jungsi/counseling-schedules`,
+        practiceSchedules: `${SVR_JUNGSI}/jungsi/branch-final-applies`,
+        branchMemos: `${SVR_JUNGSI}/jungsi/branch-memos`,
+        studentDetails: `${SVR_JUNGSI}/jungsi/students/list-by-branch`, // 학생 상세 정보 API
+    };
+    const LOGIN_PAGE = 'jungsilogin.html';
+
+    // --- Global Variables ---
+    let userRole = 'branch';
+    let branchStudents = [];
+    const calendarInstances = { counseling: null, practice: null };
+    const yearSelect = document.getElementById('welcome-year-select');
+    let allAnnouncements = [];
+    let reminderCheckInterval = null;
+
+    // --- Authentication ---
+    const handleAuthError = () => {
+        console.error("Auth Error. Redirecting...");
+        if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+        alert('인증 만료. 로그인 페이지로 이동합니다.');
+        window.top.location.href = LOGIN_PAGE;
+    };
+    const getToken = () => localStorage.getItem('jwt_token');
+    const authHeader = () => ({ 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' });
+    const checkUserRole = () => {
+        const token = getToken();
+        if (!token) { handleAuthError(); return; }
+        try {
+            const payloadBase64Url = token.split('.')[1];
+            const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const binaryString = atob(payloadBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+            const decodedString = new TextDecoder().decode(bytes);
+            const payload = JSON.parse(decodedString);
+            if (payload && payload.userid === 'admin') { userRole = 'admin'; document.body.classList.add('is-admin'); }
+            else { userRole = 'branch'; document.body.classList.remove('is-admin'); }
+        } catch (e) { console.error("Token parsing error:", e); handleAuthError(); }
+    };
+    checkUserRole();
+
+    // --- Helper Functions ---
+     const showMessage = (msg, level = 'info') => { console.log(`Message [${level}]: ${msg}`); };
+     function showToast(message, isError = false, isReminder = false) {
+        if (isReminder && window.top !== window.self && typeof window.top?.showGlobalToast === 'function') {
+            console.log("Calling parent toast for reminder:", message);
+            try { window.top.showGlobalToast(message, isError, true); }
+            catch (e) { console.error("Error calling parent toast function:", e); showLocalToast(message, isError); }
+        } else { showLocalToast(message, isError); }
+    }
+    function showLocalToast(message, isError = false) {
+        console.log(`Showing local toast (${isError ? 'error' : 'normal'}):`, message);
+        const existingToast = document.querySelector('.toast-popup-local');
+        if(existingToast) existingToast.remove();
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.className = `toast-popup-local ${isError ? 'error' : ''}`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        const duration = 3000;
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 500);
+        }, duration);
+    }
+    const formatDate = (dateString) => {
+         if (!dateString) { return ''; }
+         try {
+             if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                 const d = new Date(dateString + 'T00:00:00');
+                 if (isNaN(d.getTime())) { console.warn("Invalid simple date:", dateString); return ''; }
+                 return dateString;
+             }
+             const date = new Date(dateString);
+             if (isNaN(date.getTime())) { console.warn("Invalid Date object:", dateString); return ''; }
+             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+         } catch (e) { console.error("formatDate error:", dateString, e); return ''; }
+    };
+    const apiCall = async (url, method = 'GET', body = null) => {
+        const options = { method, headers: authHeader() };
+        if (body && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+            options.body = JSON.stringify(body);
+        }
+        try {
+            console.log(`Calling API: ${method} ${url}`); // API 호출 로그 추가
+            const response = await fetch(url, options);
+            console.log(`API Response Status: ${response.status} for ${method} ${url}`); // 응답 상태 로그 추가
+
+            if (response.status === 401 || response.status === 403) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                console.error(`API Auth Error (${response.status}) ${method} ${url}:`, errorData);
+                const authError = new Error(`인증 오류: ${errorData.message}`);
+                authError.isAuthError = true;
+                throw authError;
+            }
+            if (response.status === 204) {
+                 console.log(`API Response: 204 No Content for ${method} ${url}`);
+                 return { success: true };
+            }
+
+            const contentType = response.headers.get("content-type");
+            let data;
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json().catch(async (e) => { // JSON 파싱 에러 상세 로깅
+                    console.error(`API JSON Parse Error ${method} ${url}:`, e);
+                    try { const textResponse = await response.text(); console.error(" -> Raw response text:", textResponse.substring(0, 500)); } catch (_) {}
+                    throw new Error('서버 응답 형식 오류 (JSON 파싱 실패)');
+                });
+            } else {
+                 const textResponse = await response.text();
+                 console.warn(`API non-JSON response ${method} ${url}:`, textResponse.substring(0, 200));
+                 // JSON이 아닌 응답도 성공으로 간주할지 여부 결정 필요
+                 // 지금은 에러로 처리
+                 throw new Error(`서버 응답 형식이 JSON이 아님 (Content-Type: ${contentType})`);
+            }
+
+            if (!response.ok) { // 4xx, 5xx 에러 처리
+                console.error(`API HTTP Error (${response.status}) ${method} ${url}:`, data);
+                throw new Error(data?.message || `HTTP 오류 ${response.status}`);
+            }
+            // success: false 인 경우 처리 (옵션)
+            if (data && data.hasOwnProperty('success') && data.success === false) {
+                 console.warn(`API returned success=false ${method} ${url}:`, data.message);
+                 throw new Error(data.message || 'API 처리 실패');
+            }
+            console.log(`API Success: ${method} ${url}`); // 성공 로그 추가
+            return data;
+        } catch (error) {
+            // Failed to fetch 에러 포함 모든 에러 로깅
+            console.error(`API Call Error (${method} ${url}):`, error.name, error.message);
+            if (error.isAuthError) {
+                handleAuthError();
+                return { success: false, message: error.message, isAuthError: true };
+            }
+            // Failed to fetch 같은 네트워크 레벨 에러 포함
+            return { success: false, message: error.message || '네트워크 오류 또는 서버 응답 없음' };
+        }
+    };
+
+
+    // --- Announcements ---
+    const noticeList = document.getElementById('notice-list');
+    const addNoticeBtn = document.getElementById('add-notice-btn');
+    const textEditModal = document.getElementById('text-edit-modal');
+    const textEditModalTitleEl = document.getElementById('text-edit-modal-title');
+    const editTitleLabel = document.getElementById('edit-title-label');
+    const editTitleInput = document.getElementById('edit-title');
+    const editContentInput = document.getElementById('edit-content');
+    const saveTextBtn = document.getElementById('save-text-btn');
+    const editIdInput = document.getElementById('edit-id');
+    const editTypeInput = document.getElementById('edit-type');
+
+    const loadAnnouncements = async () => {
+        if(!noticeList) { console.error("Notice list element not found"); return; }
+        noticeList.innerHTML = '<li><i class="fas fa-spinner fa-spin"></i> 로딩 중...</li>';
+        const data = await apiCall(API_URLS.announcements);
+        noticeList.innerHTML = ''; // Clear loading
+        allAnnouncements = [];
+        if (data.isAuthError) { noticeList.innerHTML = `<li style="color:red;">인증 오류</li>`; return; }
+        if (data.success && Array.isArray(data.announcements)) {
+            allAnnouncements = data.announcements.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+            if (allAnnouncements.length > 0) {
+                allAnnouncements.forEach(notice => {
+                    const li = document.createElement('li'); li.dataset.noticeId = notice.notice_id;
+                    const safeTitle = (notice.title || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    const safeContent = (notice.content || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    li.innerHTML = `<div class="notice-main" data-content="${safeContent}" data-title="${safeTitle}"><strong class="notice-title">${safeTitle}</strong><div class="notice-meta"><span>${new Date(notice.created_at).toLocaleDateString()}</span>${notice.created_by ? `| ${notice.created_by}` : ''}</div></div><div class="notice-actions admin-only"><button class="btn btn-sm btn-edit edit-notice-btn"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-delete delete-notice-btn"><i class="fas fa-trash"></i></button></div>`;
+                    const noticeMain = li.querySelector('.notice-main'); if (noticeMain) { noticeMain.addEventListener('click', (e) => { const d = e.currentTarget.dataset; alert(`[공지]\n제목:${d.title}\n\n내용:\n${d.content||'(없음)'}`); }); }
+                    noticeList.appendChild(li);
+                });
+                noticeList.querySelectorAll('.edit-notice-btn').forEach(btn => btn.addEventListener('click', handleEditNoticeClick));
+                noticeList.querySelectorAll('.delete-notice-btn').forEach(btn => btn.addEventListener('click', handleDeleteNoticeClick));
+            } else { noticeList.innerHTML = '<li>공지 없음.</li>'; }
+        } else { noticeList.innerHTML = `<li style="color:red;">로딩 실패: ${data.message || '데이터 형식 오류'}</li>`; }
+    };
+    const openTextEditModal = (type, id = null, title = '', content = '') => {
+        if (!editTypeInput || !editIdInput || !editTitleInput || !editContentInput || !textEditModal) return;
+        editTypeInput.value = type; editIdInput.value = id || ''; editTitleInput.value = title; editContentInput.value = content;
+        if (type === 'notice') { if(textEditModalTitleEl) textEditModalTitleEl.textContent = id ? '공지 수정' : '공지 추가'; if(editTitleLabel) editTitleLabel.style.display = 'block'; if(editTitleInput) { editTitleInput.style.display = 'block'; editTitleInput.required = true; } }
+        else { if(textEditModalTitleEl) textEditModalTitleEl.textContent = id ? '메모 수정' : '메모 추가'; if(editTitleLabel) editTitleLabel.style.display = 'none'; if(editTitleInput) { editTitleInput.style.display = 'none'; editTitleInput.required = false; } }
+        if(editContentInput) editContentInput.required = true;
+        if(textEditModal) textEditModal.style.display = 'block';
+    };
+    if(addNoticeBtn) addNoticeBtn.addEventListener('click', () => openTextEditModal('notice'));
+    const handleEditNoticeClick = (e) => { const li = e.target.closest('li'); if(!li) return; const mainDiv = li.querySelector('.notice-main'); if(!mainDiv) return; openTextEditModal('notice', li.dataset.noticeId, mainDiv.dataset.title, mainDiv.dataset.content); };
+    const handleDeleteNoticeClick = async (e) => { const li = e.target.closest('li'); if(!li) return; const noticeId = li.dataset.noticeId; if (!noticeId) return; if (confirm('공지 삭제?')) { const result = await apiCall(`${API_URLS.announcements}/delete/${noticeId}`, 'DELETE'); if (result.isAuthError) return; if (result.success) { showToast('삭제 완료.'); loadAnnouncements(); } else { showToast(`삭제 실패: ${result.message || '오류'}`, true); } } };
+
+
+    // --- Calendar Creation ---
+    const createCalendar = (targetCardId, scheduleType) => {
+        const card = document.getElementById(targetCardId); if (!card) return null;
+        const currentMonthYearEl = card.querySelector('.current-month-year');
+        const calendarGridEl = card.querySelector('.calendar-grid');
+        const prevMonthBtnEl = card.querySelector('.prev-month-btn');
+        const nextMonthBtnEl = card.querySelector('.next-month-btn');
+        const modalEl = document.getElementById(`${scheduleType}-modal`);
+        const modalDateEl = modalEl?.querySelector('.modal-date');
+        const modalDetailsEl = modalEl?.querySelector('.modal-details');
+        if (!currentMonthYearEl || !calendarGridEl || !prevMonthBtnEl || !nextMonthBtnEl) { console.error(`Calendar elements missing: ${targetCardId}`); return null; }
+
+        let currentDate = new Date();
+        let currentScheduleData = [];
+
+        const render = async (date) => {
+            const displayYear = date.getFullYear(); const displayMonth = date.getMonth();
+            const selectedAcademicYear = parseInt(yearSelect?.value || new Date().getFullYear(), 10);
+            currentMonthYearEl.textContent = `${displayYear}년 ${displayMonth + 1}월`;
+            calendarGridEl.querySelectorAll('.day-cell, .other-month, div[style*="grid-column"]').forEach(cell => cell.remove());
+
+            let apiUrl = '';
+            if (scheduleType === 'counseling') { apiUrl = `${API_URLS.counselingSchedules}/${displayYear}/${displayMonth + 1}`; }
+            else if (scheduleType === 'practice') { apiUrl = `${API_URLS.practiceSchedules}/${selectedAcademicYear}`; }
+            else { return; }
+
+            const apiResult = await apiCall(apiUrl);
+            currentScheduleData = [];
+
+             if (apiResult.isAuthError) { const errDiv = document.createElement('div'); errDiv.style.cssText='grid-column:1/-1;color:red;padding:20px'; errDiv.textContent=`인증오류`; calendarGridEl.appendChild(errDiv); return; }
+             if (!apiResult.success) { const errDiv = document.createElement('div'); errDiv.style.cssText='grid-column:1/-1;color:red;padding:20px'; errDiv.textContent=`로딩실패: ${apiResult.message||'오류'}`; calendarGridEl.appendChild(errDiv); return; }
+
+             const rawData = apiResult.schedules || apiResult.list || [];
+             currentScheduleData = rawData.filter(item => { const dStr=scheduleType==='counseling'?item.counseling_date:item.실기날짜; if(!dStr) return false; const localStr=formatDate(dStr); if(!localStr) return false; try { const d=new Date(localStr+'T00:00:00'); return !isNaN(d.getTime()) && d.getFullYear()===displayYear && d.getMonth()===displayMonth; } catch(e){ return false; } });
+             console.log(` -> ${currentScheduleData.length} ${scheduleType} for ${displayYear}-${String(displayMonth+1).padStart(2,'0')}`);
+
+            const eventsOnDate = {};
+            currentScheduleData.forEach(schedule => { const dStr = scheduleType==='counseling'?schedule.counseling_date:schedule.실기날짜; const localStr=formatDate(dStr); if(!localStr) return; try{ const d=new Date(localStr+'T00:00:00'); if(!isNaN(d.getTime())&&d.getFullYear()===displayYear&&d.getMonth()===displayMonth){ const day=d.getDate(); if(!eventsOnDate[day]) eventsOnDate[day]={counseling:0, practice:0}; eventsOnDate[day][scheduleType]++; } } catch(e){} });
+
+            const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();
+            const lastDateOfMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
+            const lastDateOfPrevMonth = new Date(displayYear, displayMonth, 0).getDate();
+            for (let i=firstDayOfMonth-1; i>=0; i--) { const div=document.createElement('div'); div.className='other-month'; div.textContent=lastDateOfPrevMonth-i; calendarGridEl.appendChild(div); }
+            const today = new Date();
+            for (let i=1; i<=lastDateOfMonth; i++) { const div=document.createElement('div'); div.className='day-cell'; div.textContent=i; const dateStr=`${displayYear}-${String(displayMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; div.dataset.date=dateStr; if(i===today.getDate()&&displayMonth===today.getMonth()&&displayYear===today.getFullYear()) div.classList.add('today'); const dots=document.createElement('div'); dots.className='event-dots'; let hasEvent=false; if(eventsOnDate[i]){ if(eventsOnDate[i].counseling>0){ const dot=document.createElement('div'); dot.className='event-dot counseling'; dots.appendChild(dot); if(scheduleType==='counseling') hasEvent=true;} if(eventsOnDate[i].practice>0){ const dot=document.createElement('div'); dot.className='event-dot practice'; dots.appendChild(dot); if(scheduleType==='practice') hasEvent=true;} } if(dots.children.length>0) div.appendChild(dots); if(hasEvent){ div.addEventListener('click', handleDateClickWrapper); } else { div.classList.add('no-event'); } calendarGridEl.appendChild(div); }
+            const totalRendered=firstDayOfMonth+lastDateOfMonth; const cellsNeeded = (totalRendered <= 35) ? (35 - totalRendered) : (42 - totalRendered);
+            for (let i=1; i<=cellsNeeded; i++) { const div=document.createElement('div'); div.className='other-month'; div.textContent=i; calendarGridEl.appendChild(div); }
+        }; // End render
+
+        const handleDateClickWrapper = (event) => { handleDateClick(event, scheduleType, currentScheduleData, modalEl, modalDateEl, modalDetailsEl); };
+        if(prevMonthBtnEl) prevMonthBtnEl.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); render(currentDate); });
+        if(nextMonthBtnEl) nextMonthBtnEl.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); render(currentDate); });
+        render(currentDate);
+        return { refresh: () => render(currentDate), refreshData: () => render(new Date(currentDate)), getCurrentData: () => currentScheduleData, getCurrentDate: () => currentDate };
+    };
+
+    // --- Date Click Handler (Modal Population) ---
+    const handleDateClick = (event, scheduleType, data, modalEl, modalDateEl, modalDetailsEl) => {
+        const dateStr = event.currentTarget.dataset.date;
+        if (!dateStr || !modalEl || !modalDateEl || !modalDetailsEl) return;
+        const events = data.filter(s => formatDate(scheduleType === 'counseling' ? s.counseling_date : s.실기날짜) === dateStr);
+        modalDateEl.textContent = `${dateStr} ${scheduleType === 'counseling' ? '상담' : '실기'} 일정`;
+        modalDetailsEl.innerHTML = '';
+
+        if (events.length === 0) {
+            modalDetailsEl.innerHTML = '<p class="no-schedule">일정 없음.</p>';
+        } else {
+            const ul = document.createElement('ul');
+            events.sort((a,b) => ( (scheduleType === 'counseling' ? a.counseling_time : a.실기시간) || '99:99').localeCompare( (scheduleType === 'counseling' ? b.counseling_time : b.실기시간) || '99:99'));
+
+            if (scheduleType === 'counseling') {
+                events.forEach(event => {
+                    const li = document.createElement('li');
+                    const student = branchStudents?.find(s => s.student_id == event.student_id);
+                    const studentName = student ? student.student_name : `학생ID:${event.student_id}`;
+                    const phoneInfo = student?.phone_number ? `<span class="phone-info"><i class="fas fa-phone-alt"></i> ${student.phone_number} (${student.phone_owner || '학생'})</span>` : '';
+                    li.innerHTML = `<strong>${studentName}</strong> ${phoneInfo} (${event.counseling_time || '미정'})<br><span>${event.counseling_type || '내용 없음'}</span><div style="text-align: right; margin-top: 5px;"><button class="btn btn-sm btn-edit edit-counseling-btn" data-id="${event.schedule_id}"><i class="fas fa-pen"></i></button> <button class="btn btn-sm btn-delete delete-counseling-btn" data-id="${event.schedule_id}"><i class="fas fa-trash"></i></button></div>`;
+                    const editBtn = li.querySelector('.edit-counseling-btn'); if(editBtn) editBtn.addEventListener('click', handleEditCounselingClick);
+                    const deleteBtn = li.querySelector('.delete-counseling-btn'); if(deleteBtn) deleteBtn.addEventListener('click', handleDeleteCounselingClick);
+                    ul.appendChild(li);
+                });
+            } else { // Practice
+                 const eventsBySchool = events.reduce((acc, ev) => { const k=`${ev.대학명}-${ev.학과명}-${ev.실기시간||'미정'}`; if(!acc[k]) acc[k]={school:ev.대학명,dept:ev.학과명,time:ev.실기시간||'미정',students:[]}; const s=branchStudents?.find(stu=>stu.student_id==ev.학생_ID); acc[k].students.push(s?.student_name||ev.student_name||`ID:${ev.학생_ID}`); return acc; }, {});
+                 Object.values(eventsBySchool).forEach(g => { const li=document.createElement('li'); li.innerHTML=`<strong>${g.school} ${g.dept}</strong> (${g.time})<br><span>참여: ${g.students.join(', ')}</span>`; ul.appendChild(li); });
+            }
+            modalDetailsEl.appendChild(ul);
+        }
+        if(modalEl) modalEl.style.display = 'block'; // Ensure modal is shown
+    }; // End handleDateClick
+
+
+    // --- Counseling Schedule Add/Edit ---
+    const addCounselingBtn = document.getElementById('add-counseling-btn');
+    const addCounselingModal = document.getElementById('add-counseling-modal');
+    const counselingFormTitle = document.getElementById('counseling-form-title');
+    const counselingScheduleIdInput = document.getElementById('counseling-schedule-id');
+    const counselingStudentSelect = document.getElementById('counseling-student');
+    const counselingDateInput = document.getElementById('counseling-date');
+    const counselingHourSelect = document.getElementById('counseling-hour');
+    const counselingMinuteSelect = document.getElementById('counseling-minute');
+    const counselingTypeInput = document.getElementById('counseling-type');
+    const saveCounselingBtn = document.getElementById('save-counseling-btn');
+    const deleteCounselingBtn = document.getElementById('delete-counseling-btn');
+    const timeConflictWarning = document.getElementById('time-conflict-warning');
+
+    const populateTimeSelects = () => {
+         if(!counselingHourSelect || !counselingMinuteSelect) return;
+        counselingHourSelect.innerHTML = '<option value="">-- 시 --</option>';
+        counselingMinuteSelect.innerHTML = '<option value="">-- 분 --</option>';
+        for (let i=0; i<24; i++) counselingHourSelect.innerHTML += `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}시</option>`;
+        for (let i=0; i<60; i+=5) counselingMinuteSelect.innerHTML += `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}분</option>`;
+    };
+    populateTimeSelects();
+
+    // Load student details (including phone numbers)
+    const loadBranchStudents = async () => {
+        const selectedYear = yearSelect?.value || new Date().getFullYear();
+        console.log("Loading students details for year:", selectedYear);
+        const data = await apiCall(`${API_URLS.studentDetails}?year=${selectedYear}`); // Use detail API
+        if (data.isAuthError) return; // Stop on auth error
+        if (data.success && Array.isArray(data.students)) { // Check if students is an array
+            branchStudents = data.students.sort((a, b) => (a.student_name || '').localeCompare(b.student_name || '', 'ko'));
+            const currentSelected = counselingStudentSelect?.value;
+            if(counselingStudentSelect) {
+                counselingStudentSelect.innerHTML = '<option value="">- 학생 선택 -</option>';
+                branchStudents.forEach(s => { if (s.student_id && s.student_name) { counselingStudentSelect.innerHTML += `<option value="${s.student_id}">${s.student_name}</option>`; } });
+                if (branchStudents.some(s => s.student_id == currentSelected)) { counselingStudentSelect.value = currentSelected; }
+            }
+            console.log("Branch students details loaded:", branchStudents.length);
+        } else {
+             console.error("Student details loading failed or invalid data:", data?.message || "Invalid data format");
+             if(counselingStudentSelect) counselingStudentSelect.innerHTML = '<option value="">- 로딩 실패 -</option>';
+             branchStudents = []; // Clear data on failure
+        }
+    };
+
+    if(addCounselingBtn) addCounselingBtn.addEventListener('click', () => {
+        if(counselingFormTitle) counselingFormTitle.textContent='상담 추가'; if(counselingScheduleIdInput) counselingScheduleIdInput.value='';
+        if(counselingStudentSelect) counselingStudentSelect.value=''; if(counselingDateInput) counselingDateInput.value='';
+        if(counselingHourSelect) counselingHourSelect.value=''; if(counselingMinuteSelect) counselingMinuteSelect.value='';
+        if(counselingTypeInput) counselingTypeInput.value=''; if(deleteCounselingBtn) deleteCounselingBtn.style.display='none';
+        if(timeConflictWarning) timeConflictWarning.style.display='none'; if(addCounselingModal) addCounselingModal.style.display='block';
+        // Load students if list is empty or dropdown is not populated
+        if (branchStudents.length===0 || (counselingStudentSelect && counselingStudentSelect.options.length <= 1) ) {
+            loadBranchStudents();
+        }
+    });
+
+    const handleEditCounselingClick = (e) => {
+        const scheduleId = e.currentTarget.dataset.id;
+        const schedule = calendarInstances.counseling?.getCurrentData().find(s => s.schedule_id == scheduleId);
+        if (!schedule) { showToast('일정 정보 없음.', true); return; }
+        if(counselingFormTitle) counselingFormTitle.textContent='상담 수정'; if(counselingScheduleIdInput) counselingScheduleIdInput.value=scheduleId;
+        const loadAndSet = async () => { if(branchStudents.length===0) await loadBranchStudents(); if(counselingStudentSelect){ counselingStudentSelect.value=schedule.student_id; if(counselingStudentSelect.value!=schedule.student_id) counselingStudentSelect.value=''; } }; loadAndSet();
+        if(counselingDateInput) counselingDateInput.value=formatDate(schedule.counseling_date);
+        if (counselingHourSelect && counselingMinuteSelect && schedule.counseling_time?.includes(':')) { const [h,m]=schedule.counseling_time.split(':'); counselingHourSelect.value=h; const minExists=Array.from(counselingMinuteSelect.options).some(o=>o.value===m); counselingMinuteSelect.value=minExists?m:''; } else { if(counselingHourSelect)counselingHourSelect.value=''; if(counselingMinuteSelect)counselingMinuteSelect.value=''; }
+        if(counselingTypeInput) counselingTypeInput.value = schedule.counseling_type || '';
+        if(deleteCounselingBtn) deleteCounselingBtn.style.display='inline-block'; if(timeConflictWarning) timeConflictWarning.style.display='none';
+        closeModal('counseling-modal'); if(addCounselingModal) addCounselingModal.style.display='block';
+    };
+
+    const handleDeleteCounselingClick = async (e) => {
+        const scheduleId = e.currentTarget.dataset.id; if (!scheduleId) return;
+        if (confirm('상담 삭제?')) { const result=await apiCall(`${API_URLS.counselingSchedules}/delete/${scheduleId}`, 'DELETE'); if(result.isAuthError)return; if(result.success){showToast('삭제 완료.'); closeModal('counseling-modal'); calendarInstances.counseling?.refresh();} else{showToast(`삭제 실패: ${result.message||'오류'}`, true);} }
+    };
+
+    if(deleteCounselingBtn) deleteCounselingBtn.addEventListener('click', async () => {
+         const scheduleId = counselingScheduleIdInput?.value; if (!scheduleId) return;
+         if (confirm('상담 삭제?')) { const result=await apiCall(`${API_URLS.counselingSchedules}/delete/${scheduleId}`, 'DELETE'); if(result.isAuthError)return; if(result.success){showToast('삭제 완료.'); closeModal('add-counseling-modal'); calendarInstances.counseling?.refresh();} else{showToast(`삭제 실패: ${result.message||'오류'}`, true);} }
+    });
+
+    if(saveCounselingBtn) saveCounselingBtn.addEventListener('click', async () => {
+        const scheduleId=counselingScheduleIdInput?.value; const studentId=counselingStudentSelect?.value; const date=counselingDateInput?.value; const hour=counselingHourSelect?.value; const minute=counselingMinuteSelect?.value; const type=counselingTypeInput?.value.trim();
+        if(!studentId||!date||!hour||!minute){ showToast('학생,날짜,시간 필수.', true); return; } const time=`${hour}:${minute}`;
+        const payload={ student_id:studentId, counseling_date:date, counseling_time:time, counseling_type:type||null };
+        let result = scheduleId ? await apiCall(`${API_URLS.counselingSchedules}/update/${scheduleId}`, 'PUT', payload) : await apiCall(`${API_URLS.counselingSchedules}/add`, 'POST', payload);
+        if(result.isAuthError) return;
+        if(result.success){ showToast(scheduleId?'수정됨.':'추가됨.'); closeModal('add-counseling-modal'); calendarInstances.counseling?.refresh(); }
+        else { if(timeConflictWarning && result.message?.includes('겹치는 일정')){ timeConflictWarning.textContent=`⚠️ ${result.message}`; timeConflictWarning.style.display='block'; showToast(result.message||'시간 겹침',true); } else { if(timeConflictWarning) timeConflictWarning.style.display='none'; showToast(`저장 실패: ${result.message||'오류'}`, true); } }
+    });
+
+    if(counselingHourSelect) counselingHourSelect.addEventListener('change', () => { if(timeConflictWarning) timeConflictWarning.style.display = 'none'; });
+    if(counselingMinuteSelect) counselingMinuteSelect.addEventListener('change', () => { if(timeConflictWarning) timeConflictWarning.style.display = 'none'; });
+    if(counselingDateInput) counselingDateInput.addEventListener('input', () => { if(timeConflictWarning) timeConflictWarning.style.display = 'none'; });
+
+
+    // --- Branch Memos ---
+    const memoList = document.getElementById('memo-list');
+    const addMemoBtn = document.getElementById('add-memo-btn');
+    const loadMemos = async () => {
+        if(!memoList) return;
+        memoList.innerHTML = '<li><i class="fas fa-spinner fa-spin"></i> 로딩 중...</li>';
+        const data = await apiCall(API_URLS.branchMemos);
+        memoList.innerHTML = '';
+        if (data.isAuthError) { memoList.innerHTML = `<li style="color:red;">인증 오류</li>`; return;}
+        if (data.success && Array.isArray(data.memos)) {
+            if (data.memos.length > 0) {
+                 // Sort is optional if API sorts it
+                 data.memos.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+                 data.memos.forEach(memo => {
+                     const li = document.createElement('li'); li.dataset.memoId = memo.memo_id;
+                     const safeContent = (memo.memo_content || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                     li.innerHTML = `<div class="memo-actions"><button class="btn btn-sm btn-edit edit-memo-btn" data-content="${safeContent}"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-delete delete-memo-btn"><i class="fas fa-trash"></i></button></div><div class="memo-content">${safeContent.replace(/\n/g, '<br>')}</div><div class="memo-meta"><span>${new Date(memo.created_at).toLocaleString()}</span> ${memo.created_by ? `| ${memo.created_by}` : ''}</div>`;
+                     const editBtn = li.querySelector('.edit-memo-btn'); if(editBtn) editBtn.addEventListener('click', handleEditMemoClick);
+                     const deleteBtn = li.querySelector('.delete-memo-btn'); if(deleteBtn) deleteBtn.addEventListener('click', handleDeleteMemoClick);
+                     memoList.appendChild(li);
+                 });
+            } else { memoList.innerHTML = '<li>메모 없음.</li>'; }
+        } else { memoList.innerHTML = `<li style="color:red;">로딩 실패: ${data.message || '오류'}</li>`; }
+    };
+    if(addMemoBtn) addMemoBtn.addEventListener('click', () => openTextEditModal('memo'));
+    const handleEditMemoClick = (e) => { const li = e.target.closest('li'); if(!li) return; const btn = li.querySelector('.edit-memo-btn'); if(!btn) return; openTextEditModal('memo', li.dataset.memoId, '', btn.dataset.content || ''); };
+    const handleDeleteMemoClick = async (e) => { const li = e.target.closest('li'); if(!li) return; const memoId = li.dataset.memoId; if(!memoId) return; if(confirm('메모 삭제?')){ const result = await apiCall(`${API_URLS.branchMemos}/delete/${memoId}`, 'DELETE'); if(result.isAuthError) return; if(result.success){ showToast('삭제 완료.'); loadMemos();} else{showToast(`삭제 실패: ${result.message||'오류'}`, true);} } };
+    if (saveTextBtn) { saveTextBtn.addEventListener('click', async () => { const type=editTypeInput?.value; const id=editIdInput?.value; const title=editTitleInput?.value.trim(); const content=editContentInput?.value.trim(); if(!content){showToast('내용 입력 필수.', true); return;} if(type==='notice'&&!title){showToast('제목 입력 필수.', true); return;} let url='', method='', payload={}; if(type==='notice'){payload={title,content}; url=id?`${API_URLS.announcements}/update/${id}`:`${API_URLS.announcements}/add`; method=id?'PUT':'POST';} else if(type==='memo'){payload={memo_content:content}; url=id?`${API_URLS.branchMemos}/update/${id}`:`${API_URLS.branchMemos}/add`; method=id?'PUT':'POST';} else{showToast('알 수 없는 타입.', true); return;} const result=await apiCall(url, method, payload); if(result.isAuthError) return; if(result.success){ showToast(id?'수정됨.':'추가됨.'); closeModal('text-edit-modal'); if(type==='notice')loadAnnouncements(); else loadMemos(); } else { showToast(`저장 실패: ${result.message||'오류'}`, true); } }); }
+
+
+    // --- Modal Closing Logic ---
+    const closeModal = (modalId) => {
+        if (typeof modalId !== 'string') { console.error("closeModal: invalid ID", modalId); return; }
+        const modalToClose = document.getElementById(modalId);
+        if (modalToClose) { modalToClose.style.display = 'none'; console.log(`Modal ${modalId} closed.`); }
+        else { console.warn(`Modal ${modalId} not found.`); }
+    };
+    window.closeModal = closeModal;
+
+    window.addEventListener('click', (event) => {
+        if (event.target.classList.contains('modal') && event.target.id) {
+             console.log(`Background clicked: ${event.target.id}`);
+             closeModal(event.target.id);
+        }
+    });
+
+    document.querySelectorAll('[data-close-modal]').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const targetButton = event.target.closest('[data-close-modal]');
+            const modalId = targetButton?.dataset.closeModal;
+             console.log(`Close button/cancel clicked for: ${modalId}`);
+            if (modalId) { closeModal(modalId); }
+            else { const parentModal = event.target.closest('.modal'); if (parentModal?.id) closeModal(parentModal.id); }
+        });
+    });
+    // --- Modal Closing Logic End ---
+
+
+    // --- Year Change Listener ---
+    if(yearSelect) yearSelect.addEventListener('change', () => {
+        console.log(`Year changed to: ${yearSelect.value}`);
+        loadBranchStudents(); // Reload student details
+        calendarInstances.counseling?.refreshData();
+        calendarInstances.practice?.refreshData();
+        if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+        setTimeout(startReminderChecks, 1500); // Restart checks after data likely reloaded
+    });
+
+    // --- Today Info Modal & Reminders ---
+    const showTodayInfoModal = () => {
+        const todayModal = document.getElementById('today-info-modal');
+        const todayTitle = document.getElementById('today-info-modal-title');
+        const todayAnnouncementDiv = document.getElementById('today-announcement');
+        const todayCounselingDiv = document.getElementById('today-counseling');
+        const todayPracticeDiv = document.getElementById('today-practice');
+
+        if (!todayModal || !todayTitle || !todayAnnouncementDiv || !todayCounselingDiv || !todayPracticeDiv) { console.error("Missing today modal elements"); return; }
+
+        const today = new Date(); const todayStr = formatDate(today);
+        todayTitle.textContent = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일 오늘의 정보`;
+
+        // 1. Announcement
+        todayAnnouncementDiv.innerHTML = '';
+        if (allAnnouncements?.length > 0) { const latest = allAnnouncements[0]; const safeTitle = (latest.title||'').replace(/</g,"&lt;"); const item=document.createElement('div'); item.className='notice-item'; item.innerHTML=`<strong>${safeTitle}</strong><span>${new Date(latest.created_at).toLocaleDateString()}|${latest.created_by||''}</span>`; item.style.cursor='pointer'; item.onclick=()=>alert(`[공지]\n제목:${safeTitle}\n\n내용:${(latest.content||'').replace(/</g,"&lt;")||'(없음)'}`); todayAnnouncementDiv.appendChild(item); }
+        else { todayAnnouncementDiv.innerHTML = '<p class="no-data">최신 공지 없음.</p>'; }
+
+        // 2. Counseling (⭐️ Phone included)
+        todayCounselingDiv.innerHTML = '';
+        const counselingData = calendarInstances.counseling?.getCurrentData() || [];
+        const todaySchedules = counselingData.filter(s => formatDate(s.counseling_date) === todayStr).sort((a,b) => (a.counseling_time||'99:99').localeCompare(b.counseling_time||'99:99'));
+        if (todaySchedules.length > 0) {
+            const ul = document.createElement('ul');
+            todaySchedules.forEach(event => {
+                 const student = branchStudents?.find(s => s.student_id == event.student_id); // Find student details
+                 const studentName = student?.student_name || `학생ID:${event.student_id}`;
+                 const phoneInfo = student?.phone_number ? `<span class="phone-info"><i class="fas fa-phone-alt"></i> ${student.phone_number} (${student.phone_owner || '학생'})</span>` : '';
+                 const li = document.createElement('li'); li.className='schedule-item';
+                 li.innerHTML = `<span class="time">${event.counseling_time || '미정'}</span> <strong>${studentName}</strong> ${phoneInfo} <span>${event.counseling_type || ''}</span>`;
+                 ul.appendChild(li);
+            });
+            todayCounselingDiv.appendChild(ul);
+        } else { todayCounselingDiv.innerHTML = '<p class="no-data">오늘 상담 일정 없음.</p>'; }
+
+        // 3. Practice
+        todayPracticeDiv.innerHTML = '';
+        const practiceData = calendarInstances.practice?.getCurrentData() || [];
+        const todayPractice = practiceData.filter(s => formatDate(s.실기날짜) === todayStr).sort((a,b) => (a.실기시간||'99:99').localeCompare(b.실기시간||'99:99'));
+        if (todayPractice.length > 0) { const ul=document.createElement('ul'); const bySchool=todayPractice.reduce((acc,ev)=>{ const k=`${ev.대학명}-${ev.학과명}-${ev.실기시간||'미정'}`; if(!acc[k]) acc[k]={school:ev.대학명,dept:ev.학과명,time:ev.실기시간||'미정',students:[]}; const s=branchStudents?.find(stu=>stu.student_id==ev.학생_ID); acc[k].students.push(s?.student_name||ev.student_name||`ID:${ev.학생_ID}`); return acc; },{}); Object.values(bySchool).forEach(g=>{ const li=document.createElement('li'); li.className='schedule-item'; li.innerHTML=`<span class="time">${g.time}</span> <strong>${g.school} ${g.dept}</strong> <span>(참여: ${g.students.join(', ')})</span>`; ul.appendChild(li); }); todayPracticeDiv.appendChild(ul); }
+        else { todayPracticeDiv.innerHTML = '<p class="no-data">오늘 실기 일정 없음.</p>'; }
+
+        // Check reminders after rendering today's counseling schedule
+        checkUpcomingCounseling(todaySchedules, branchStudents || []);
+
+        if(todayModal) todayModal.style.display = 'block';
+    };
+
+    // Counseling Reminder Check Function
+    const checkUpcomingCounseling = (todaySchedules, students) => {
+        if (!Array.isArray(todaySchedules) || !Array.isArray(students)) return;
+        const now = new Date(); const thirtyMinLater = now.getTime() + 30*60*1000;
+        todaySchedules.forEach(schedule => { if(!schedule.counseling_time||!schedule.schedule_id) return; try{ const [h,m]=schedule.counseling_time.split(':'); if(isNaN(parseInt(h))||isNaN(parseInt(m))) return; const apptTime=new Date(now.getFullYear(),now.getMonth(),now.getDate(),parseInt(h),parseInt(m)); const apptTS=apptTime.getTime(); if(apptTS>now.getTime()&&apptTS<=thirtyMinLater){ const diffM=Math.round((apptTS-now.getTime())/60000); let interval=0; if(diffM<=10) interval=10; else if(diffM<=20) interval=20; else if(diffM<=30) interval=30; if(interval>0){ const key=`reminder_${schedule.schedule_id}_${interval}`; if(!sessionStorage.getItem(key)){ const student=students.find(s=>s.student_id==schedule.student_id); const name=student?student.student_name:`ID:${schedule.student_id}`; const msg=`잠시 후 ${diffM}분 뒤 (${schedule.counseling_time}), ${name} 학생 상담 예정`; console.log(`Reminder: ${msg}`); showToast(msg, false, true); sessionStorage.setItem(key, 'shown'); } } } } catch(e){console.error("Reminder error:", schedule.counseling_time, e);} });
+    };
+
+     // Function to start the reminder interval check
+     const startReminderChecks = () => {
+         if (reminderCheckInterval) clearInterval(reminderCheckInterval);
+         console.log("Starting reminder interval (1 min).");
+         reminderCheckInterval = setInterval(() => {
+              console.log("Interval check...");
+              const counselingData = calendarInstances.counseling?.getCurrentData() || [];
+              const todayStr = formatDate(new Date());
+              const todaySchedules = counselingData.filter(s => formatDate(s.counseling_date) === todayStr);
+              if (branchStudents?.length > 0) { checkUpcomingCounseling(todaySchedules, branchStudents); }
+              else { console.warn("Interval: Student data unavailable."); }
+         }, 60000);
+     };
+
+    // --- Initial Data Load ---
+    await loadBranchStudents(); // Load student details FIRST
+
+    await Promise.allSettled([ // Load non-dependent data
+        loadAnnouncements(),
+        loadMemos(),
+    ]);
+
+    // Create calendars
+    calendarInstances.counseling = createCalendar('counseling-schedule', 'counseling');
+    calendarInstances.practice = createCalendar('practice-schedule', 'practice');
+
+    // Show Today Info Modal & Start Reminders after delay
+    setTimeout(() => {
+         // Check if crucial components are ready AND student data loaded
+         if (calendarInstances.counseling && calendarInstances.practice && branchStudents && branchStudents.length > 0) {
+              console.log("Initial load complete. Showing modal & starting reminders.");
+              showTodayInfoModal();
+              startReminderChecks();
+         } else {
+              console.warn("Initial data load incomplete. Modal/Reminders limited.");
+              if (!branchStudents || branchStudents.length === 0) showToast("학생 정보 로딩 실패", true);
+              if (!calendarInstances.counseling || !calendarInstances.practice) showToast("달력 정보 로딩 실패", true);
+              // Attempt to show modal anyway, might have partial data
+              showTodayInfoModal();
+         }
+    }, 1200); // Delay
+
+
+}); // End of DOMContentLoaded
+</script>
+
+</body>
+</html>
