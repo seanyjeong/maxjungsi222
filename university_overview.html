@@ -165,7 +165,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatRegion = (a, c) => [a, c].filter(Boolean).join(' ') || '-';
 
     const loadStudents = async () => { const y = yearSelect.value; studentSelect.innerHTML = '<option value="">- 로딩 중... -</option>'; try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${y}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) { handleAuthError(); return; } const d = await r.json(); if (d.success && d.students) { allStudents = d.students; allStudents.sort((a,b)=>a.student_name.localeCompare(b.student_name,'ko')); studentSelect.innerHTML = '<option value="">- 학생 선택 -</option>'; allStudents.forEach(s => { studentSelect.innerHTML += `<option value="${s.student_id}">${s.student_name} (${s.school_name || '정보없음'})</option>`; }); } else { allStudents = []; studentSelect.innerHTML = '<option value="">- 학생 없음 -</option>'; } } catch (e) { console.error('학생 로딩 실패', e); studentSelect.innerHTML = '<option value="">- 로딩 오류 -</option>'; if (e.message === '로그인 만료') handleAuthError(); } };
-    const loadUniversities = async (year) => { const k = year; if (universityDataCache[k]) return universityDataCache[k]; console.log(`[${year}] 대학 로딩...`); try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/university-list?year=${year}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) { handleAuthError(); return []; } const d = await r.json(); if (d.success && d.list) { universityDataCache[k] = d.list; console.log(`[${year}] 대학 ${d.list.length}개 로드 완료.`); return d.list; } else { console.warn("대학 로딩 실패:", d.message); return []; } } catch (e) { console.error('대학 로딩 오류:', e); if (e.message === '로그인 만료') handleAuthError(); return []; } };
+const loadUniversities = async (year) => {
+    const k = year;
+    if (universityDataCache[k]) return universityDataCache[k];
+    console.log(`[${year}] 대학 로딩...`);
+    try {
+        const tk = getToken();
+        if (!tk) throw new Error('로그인 만료');
+
+        // 🔥 여기 수정!!
+        const r = await fetch(`${SVR_JUNGSI}/jungsi/schools/${year}`, {
+            headers: { 'Authorization': `Bearer ${tk}` }
+        });
+
+        if (r.status === 401 || r.status === 403) { handleAuthError(); return []; }
+        const d = await r.json();
+        if (d.success && d.list) {
+            universityDataCache[k] = d.list;
+            console.log(`[${year}] 대학 ${d.list.length}개 로드 완료.`);
+            return d.list;
+        } else {
+            console.warn("대학 로딩 실패:", d.message);
+            return [];
+        }
+    } catch (e) {
+        console.error('대학 로딩 오류:', e);
+        if (e.message === '로그인 만료') handleAuthError();
+        return [];
+    }
+};
+
     const fetchFormulaDetails = async (uid, year) => { const k = `${uid}-${year}`; if (universityFormulas[k]) return universityFormulas[k]; if (!uid) return null; try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/formula-details?U_ID=${uid}&year=${year}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) throw new Error('인증 오류'); const d = await r.json(); if (!d.success) throw new Error(d.message || '요강 로딩 실패'); universityFormulas[k] = d.formula; return d.formula; } catch (e) { console.error('요강 로딩 실패', e); if (e.message.includes('인증')) handleAuthError(); return null; } };
     const calculateSuneung = async (stu, uid, year) => { if (!stu || !stu.scores) return null; try { const si = convertScoresToSuneungFormat(stu.scores); const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/calculate`, { method: 'POST', headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${tk}` }, body: JSON.stringify({ U_ID:uid, year, studentScores: si }) }); if (r.status === 401 || r.status === 403) throw new Error('인증 오류'); const d = await r.json(); if (!d.success) throw new Error(d.message||'수능 계산 실패'); return Number(d.result?.totalScore || 0); } catch (e) { console.error('수능 계산 에러:', e); if (e.message.includes('인증')) handleAuthError(); return null; } };
     const convertScoresToSuneungFormat = (s) => { if (!s) return { subjects: [] }; const sub = []; if (s.국어_표준점수!=null || s.국어_백분위!=null) sub.push({ name:'국어', subject:s.국어_선택과목, std:s.국어_표준점수, percentile:s.국어_백분위, grade:s.국어_등급 }); if (s.수학_표준점수!=null || s.수학_백분위!=null) sub.push({ name:'수학', subject:s.수학_선택과목, std:s.수학_표준점수, percentile:s.수학_백분위, grade:s.수학_등급 }); if (s.영어_등급!=null) sub.push({ name:'영어', grade:s.영어_등급 }); if (s.한국사_등급!=null) sub.push({ name:'한국사', grade:s.한국사_등급 }); if (s.탐구1_선택과목!=null) sub.push({ name:'탐구', subject:s.탐구1_선택과목, std:s.탐구1_표준점수, percentile:s.탐구1_백분위, grade:s.탐구1_등급 }); if (s.탐구2_선택과목!=null) sub.push({ name:'탐구', subject:s.탐구2_선택과목, std:s.탐구2_표준점수, percentile:s.탐구2_백분위, grade:s.탐구2_등급 }); return { subjects:sub }; };
@@ -184,12 +213,42 @@ const populateUniversityTable = async () => {
 
         await loadCurrentCounselingList(selectedStudentData.student_id, year);
 
-        const searchTerm = currentSearchTerm.toLowerCase();
-        const filteredUniversities = universities.filter(uni => {
-            const gunMatch = currentGunFilter === 'all' || (uni.gun && uni.gun.startsWith(currentGunFilter));
-            const searchMatch = !searchTerm || (uni.university && uni.university.toLowerCase().includes(searchTerm)) || (uni.department && uni.department.toLowerCase().includes(searchTerm)) || (uni.광역 && uni.광역.toLowerCase().includes(searchTerm)) || (uni.시구 && uni.시구.toLowerCase().includes(searchTerm));
-            return gunMatch && searchMatch;
-        });
+const searchTerm = currentSearchTerm.trim().toLowerCase();
+
+const filteredUniversities = universities.filter(uni => {
+    const gunMatch =
+        currentGunFilter === 'all' ||
+        (uni.gun && uni.gun.startsWith(currentGunFilter));
+
+    // 대학명
+    const hayUni  = (uni.university || '').toLowerCase();
+    // 학과명
+    const hayDept = (uni.department || '').toLowerCase();
+    // 군 (가군/나군/다군)도 검색에 포함시키자. "가군"으로 검색하면 바로 필터 가능하게.
+    const hayGun  = (uni.gun || '').toLowerCase();
+
+    // 지역 후보를 다 합쳐서 본다.
+    // 1) 기존에 쓰던 uni.광역 / uni.시구
+    // 2) 혹시 백엔드에서 region, city 이런 이름으로 보내고 있을 수도 있으니까 그것도 같이 본다.
+    const hayRegionAll = [
+        uni.광역,
+        uni.시구,
+        uni.region,
+        uni.city,
+        uni.지역,
+        uni.주소
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    const searchMatch =
+        !searchTerm ||
+        hayUni.includes(searchTerm) ||
+        hayDept.includes(searchTerm) ||
+        hayGun.includes(searchTerm) ||
+        hayRegionAll.includes(searchTerm);
+
+    return gunMatch && searchMatch;
+});
+
 
         if (filteredUniversities.length === 0) { tbody.innerHTML = '<tr class="loading-row"><td colspan="13">조건에 맞는 대학이 없습니다.</td></tr>'; return; }
 
