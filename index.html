@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>MAX 정시 엔진</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --primary-color: #2563eb;
@@ -178,30 +179,101 @@
             background-color: var(--light-bg);
         }
 
+        /* ===== 메인 iframe ===== */
+        #content-frame {
+            width: 100%;
+            height: calc(100vh - 60px);
+            margin-top: 60px;
+            border: none;
+            background-color: var(--light-bg);
+        }
+
+        /* admin 전용 메뉴 감추기/보여주기 */
         .admin-only { display: none; }
         body.is-admin .admin-only { display: block; }
 
-        /* MAX_LIVE 메뉴 스타일 */
-        .nav-menu > li > a#max-live-link { color: #f59e0b; font-weight: 700; cursor: not-allowed; text-shadow: 0 0 6px rgba(245, 158, 11, 0.2); }
-        .nav-menu > li > a#max-live-link .coming-soon-text { font-size: 0.8em; font-weight: 500; color: var(--text-secondary); margin-left: 4px; text-shadow: none; }
-        .nav-menu > li:hover > a#max-live-link { background-color: #fffbeb; color: #d97706; }
+        /* MAX_LIVE 메뉴 비활성 스타일 */
+        .nav-menu > li > a#max-live-link {
+            color: #f59e0b;
+            cursor: not-allowed;
+            text-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+        }
+        .nav-menu > li > a#max-live-link .coming-soon-text {
+            font-size: 0.8em;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-left: 4px;
+            text-shadow: none;
+        }
+        .nav-menu > li:hover > a#max-live-link {
+            background-color: #fffbeb;
+            color: #d97706;
+        }
 
-        /* 토스트 팝업 스타일 */
-        .toast-popup { position: fixed; bottom: 30px; right: 30px; transform: translateX(0); background-color: rgba(0,0,0,0.8); color: white; padding: 10px 18px; border-radius: 20px; font-size: .9rem; z-index: 2000; opacity: 0; transition: opacity .5s ease, transform .5s ease; white-space: nowrap; transform: translateY(20px); }
-        .toast-popup.show { opacity: 1; transform: translateY(0); }
-        .toast-popup.error { background-color: rgba(220, 38, 38, 0.9); }
-        .toast-popup.reminder { background-color: rgba(245, 158, 11, 0.9); font-size: 1.1rem; font-weight: 600; padding: 12px 22px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); top: 80px; bottom: auto; right: 30px; left: auto; transform: translateX(0) translateY(-20px); }
-        .toast-popup.reminder.show { transform: translateX(0) translateY(0); }
-
+        /* ===== 전역 토스트 (알림) ===== */
+        .toast-popup-local {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 16px 10px 14px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            z-index: 2000;
+            min-width: 260px;
+            max-width: 90vw;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity .3s ease;
+            white-space: pre-line;
+        }
+        .toast-popup-local.show {
+            opacity: 1;
+        }
+        .toast-popup-local.error {
+            background-color: rgba(220,38,38,0.9); /* 빨강 경고 */
+        }
+        .toast-msg-area {
+            flex: 1;
+            color: #fff;
+            font-weight: 500;
+            word-break: keep-all;
+            white-space: pre-line;
+        }
+        .toast-close-btn {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            line-height: 1;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .toast-close-btn:hover {
+            color: #fff;
+            background-color: rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
 
+    <!-- 상단 네비 -->
     <nav class="top-nav">
         <div class="nav-left">
-            <a href="#" class="nav-brand" id="brand-link"> <img src="https://github.com/seanyjeong/26maxsusi/blob/main/%EB%A7%A5%EC%8A%A4%EB%A1%9C%EA%B3%A01.png?raw=true" alt="MAX 로고" style="height: 50px; width: auto; vertical-align: middle; margin-right: 8px;"></a>
+            <a href="#" class="nav-brand" id="brand-link">
+                <img src="https://github.com/seanyjeong/26maxsusi/blob/main/%EB%A7%A5%EC%8A%A4%EB%A1%9C%EA%B3%A01.png?raw=true" style="height:50px; width:auto; vertical-align:middle;">
+                
+            </a>
             <ul class="nav-menu">
                 <li><a data-href="welcome.html">홈</a></li>
+
                 <li>
                     <a href="#">학생관리</a>
                     <ul class="dropdown-menu">
@@ -210,6 +282,7 @@
                         <li><a data-href="score_input.html">학생 성적표 입력</a></li>
                     </ul>
                 </li>
+
                 <li>
                     <a href="#">대학관리</a>
                     <ul class="dropdown-menu">
@@ -218,6 +291,7 @@
                         <li><a data-href="counsel.html">개인별 상담</a></li>
                     </ul>
                 </li>
+
                 <li>
                     <a href="#">최종지원</a>
                     <ul class="dropdown-menu">
@@ -225,9 +299,11 @@
                         <li><a data-href="final_apply_list.html">최종 지원LIST(실기일정)</a></li>
                     </ul>
                 </li>
+
                 <li>
                     <a id="max-live-link">MAX_LIVE <span class="coming-soon-text">(추후공개예정)</span></a>
                 </li>
+
                 <li>
                     <a href="#">설정</a>
                     <ul class="dropdown-menu">
@@ -239,127 +315,337 @@
                 </li>
             </ul>
         </div>
+
         <div class="nav-right">
             <div class="login-info"><i class="fas fa-building"></i> <span id="branch-name-display">...</span></div>
             <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> 로그아웃</button>
         </div>
     </nav>
 
+    <!-- 본문 -->
     <iframe id="content-frame" name="content-frame" src="welcome.html"></iframe>
 
-<script>
-// 전역 토스트 함수
-window.showGlobalToast = (message, isError = false, isReminder = false) => {
-    const existingToast = document.querySelector('.toast-popup');
-    if (existingToast) existingToast.remove();
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.className = `toast-popup ${isError ? 'error' : ''} ${isReminder ? 'reminder' : ''}`;
-    document.body.appendChild(toast);
-    setTimeout(() => { toast.classList.add('show'); }, 10);
-    const duration = isReminder ? 5000 : 3000;
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => { if (document.body.contains(toast)) document.body.removeChild(toast); }, 500);
-    }, duration);
-};
-
-
-document.addEventListener('DOMContentLoaded', () => {
+    <script>
+    /************************************
+     * 0. 유틸: 토큰/브랜치 가져오기
+     ************************************/
     const LOGIN_PAGE = 'jungsilogin.html';
-    const getToken = () => localStorage.getItem('jwt_token');
-    const token = getToken();
-
-    // --- 인증 ---
-    if (!token) {
-        alert('로그인이 필요합니다.');
-        window.location.href = `${LOGIN_PAGE}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-        return;
+    const SVR_JUNGSI = 'https://supermax.kr'; // 프록시 https 기준으로 갈 거라면 이렇게 유지
+    function getToken() {
+        return localStorage.getItem('jwt_token');
     }
-
-    const branchNameDisplay = document.getElementById('branch-name-display');
-    let userRole = 'branch';
-
-    try {
-        const payloadBase64Url = token.split('.')[1];
-        const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const binaryString = atob(payloadBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-        const decodedString = new TextDecoder().decode(bytes);
-        const decodedPayload = JSON.parse(decodedString);
-
-        if (decodedPayload?.branch) branchNameDisplay.textContent = decodedPayload.branch + " 지점";
-        else branchNameDisplay.textContent = '지점 정보 없음';
-
-        if (decodedPayload?.userid === 'admin') {
-            userRole = 'admin'; document.body.classList.add('is-admin');
-        } else { document.body.classList.remove('is-admin'); }
-
-    } catch (e) {
-        console.error('토큰 처리 실패:', e);
-        if (branchNameDisplay) branchNameDisplay.textContent = '인증 오류';
-        localStorage.removeItem('jwt_token');
-        alert('인증 정보 문제 발생'); window.location.href = LOGIN_PAGE; return;
-    }
-
-    // --- 로그아웃 ---
-    const logoutBtn = document.getElementById('logout-btn');
-    if(logoutBtn) logoutBtn.addEventListener('click', () => {
-        if (confirm('로그아웃?')) { localStorage.removeItem('jwt_token'); alert('로그아웃됨.'); window.location.href = LOGIN_PAGE; }
-    });
-
-    // --- 네비게이션 ---
-    const contentFrame = document.getElementById('content-frame');
-    const navLinks = document.querySelectorAll('.nav-menu a[data-href]');
-    const allMenuLinks = document.querySelectorAll('.nav-menu a');
-
-    function setActiveLink(clickedLink) {
-        if (!clickedLink) return;
-        allMenuLinks.forEach(l => l.classList.remove('active'));
-        clickedLink.classList.add('active');
-        const parentDropdown = clickedLink.closest('ul.dropdown-menu');
-        if (parentDropdown) {
-            const topLevelLink = parentDropdown.parentElement?.querySelector('a:not([data-href])');
-            if (topLevelLink) topLevelLink.classList.add('active');
+    function getBranchFromToken() {
+        const token = getToken();
+        if (!token) return null;
+        try {
+            const payloadBase64Url = token.split('.')[1];
+            const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const binaryString = atob(payloadBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const decodedString = new TextDecoder().decode(bytes);
+            const decoded = JSON.parse(decodedString);
+            return decoded.branch || null;
+        } catch (e) {
+            console.error('토큰 파싱 실패:', e);
+            return null;
         }
     }
 
-    function setupNavLinks() {
-        navLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const pageUrl = this.getAttribute('data-href');
-                if (!pageUrl || !contentFrame) return;
-                try {
-                    const currentSrc = contentFrame.contentWindow?.location.pathname.split('/').pop();
-                    // Avoid reloading same page unless it's welcome.html (often used as home)
-                    if (currentSrc !== pageUrl || pageUrl === 'welcome.html') {
-                         contentFrame.src = pageUrl;
-                    } else { console.log("Already on:", pageUrl); }
-                } catch (err) { contentFrame.src = pageUrl; } // Cross-origin safety
-                setActiveLink(this);
+    /************************************
+     * 1. 전역 토스트 (X 눌러서 닫는 방식)
+     ************************************/
+    let __currentToastEl = null;
+    function showToastLocal(message, isError = false) {
+        // 하나만 유지: 기존 거 있으면 제거
+        if (__currentToastEl && __currentToastEl.parentNode) {
+            __currentToastEl.parentNode.removeChild(__currentToastEl);
+        }
+
+        const wrap = document.createElement('div');
+        wrap.className = 'toast-popup-local' + (isError ? ' error' : '');
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'toast-msg-area';
+        msgDiv.textContent = message;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'toast-close-btn';
+        closeBtn.setAttribute('aria-label', '닫기');
+        closeBtn.textContent = '✕';
+        closeBtn.addEventListener('click', () => {
+            if (wrap.parentNode) {
+                wrap.parentNode.removeChild(wrap);
+            }
+            if (__currentToastEl === wrap) {
+                __currentToastEl = null;
+            }
+        });
+
+        wrap.appendChild(msgDiv);
+        wrap.appendChild(closeBtn);
+        document.body.appendChild(wrap);
+
+        requestAnimationFrame(() => {
+            wrap.classList.add('show');
+        });
+
+        __currentToastEl = wrap;
+    }
+
+    // 콘솔에서 테스트 가능하게 전역 노출
+    window.showToastLocal = showToastLocal;
+
+    /************************************
+     * 2. 상담 일정 불러오기 (오늘 것)
+     *    ⚠ 여기는 실제 네 API에 맞게 수정 필요
+     ************************************/
+    async function fetchTodayCounselList(branchName) {
+        const token = getToken();
+        if (!token) return [];
+
+        // 오늘 날짜 "YYYY-MM-DD"
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm   = String(now.getMonth() + 1).padStart(2, '0');
+        const dd   = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        // TODO: 실제 상담일정 API로 교체해.
+        // 아래는 예시:
+        //   GET /jungsi/counsel-schedule?date=2025-10-26&branch=일산
+        // 응답 형식 가정:
+        //   { success: true, list: [
+        //        { id: 123, name: "홍길동", phone: "010-1234-5678", startTime: "14:30" },
+        //        ...
+        //   ]}
+        const url = `${SVR_JUNGSI}/jungsi/counsel-schedule?date=${dateStr}&branch=${encodeURIComponent(branchName || '')}`;
+
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
-        });
-    }
-    setupNavLinks();
-
-    const homeLink = document.querySelector('.nav-menu a[data-href="welcome.html"]');
-    if (homeLink) setActiveLink(homeLink); // Set initial active
-
-    const brandLink = document.getElementById('brand-link');
-    if(brandLink) {
-        brandLink.addEventListener('click', (e) => {
-             e.preventDefault();
-             if (contentFrame) {
-                  try { if (contentFrame.contentWindow?.location.pathname.split('/').pop() !== 'welcome.html') contentFrame.src = 'welcome.html'; }
-                  catch(err){ contentFrame.src = 'welcome.html'; }
-             }
-             if (homeLink) setActiveLink(homeLink);
-        });
+            if (!res.ok) {
+                console.error('상담일정 API 응답 에러 상태:', res.status);
+                return [];
+            }
+            const data = await res.json();
+            if (!data.success || !Array.isArray(data.list)) {
+                return [];
+            }
+            return data.list;
+        } catch (err) {
+            console.error('상담일정 fetch 실패:', err);
+            return [];
+        }
     }
 
-});
-</script>
+    /************************************
+     * 3. 시작까지 몇 분 남았는지 계산
+     ************************************/
+    function minutesUntilTodayTime(startTimeStr) {
+        // "HH:MM" → 오늘 날짜 기준 Date
+        const now = new Date();
+        const parts = startTimeStr.split(':');
+        if (parts.length < 2) return null;
+        const hh = parseInt(parts[0], 10);
+        const mi = parseInt(parts[1], 10);
+        if (Number.isNaN(hh) || Number.isNaN(mi)) return null;
+
+        const target = new Date();
+        target.setHours(hh, mi, 0, 0);
+
+        const diffMs = target.getTime() - now.getTime();
+        const diffMin = Math.floor(diffMs / 60000); // 분 단위
+        return diffMin;
+    }
+
+    function buildToastMessage(entry, minutesLeft) {
+        // entry: { name, phone, startTime } 형태 가정
+        const name  = entry.name  || entry.student_name || '학생';
+        const phone = entry.phone || entry.phone_number || '';
+        const time  = entry.startTime || entry.time || '??:??';
+        return `🔔 [${minutesLeft}분 후 상담]\n${name} / ${time}\n${phone}`;
+    }
+
+    // 중복 알림 방지를 위한 메모
+    const notifiedSet = new Set();
+    const TRIGGER_POINTS = [30, 20, 10]; // 분 단위
+
+    async function checkUpcomingCounselsAndNotify(branchName) {
+        const list = await fetchTodayCounselList(branchName);
+        if (!list.length) return;
+
+        for (const item of list) {
+            if (!item.startTime) continue;
+
+            const minsLeft = minutesUntilTodayTime(item.startTime);
+            if (minsLeft == null) continue;
+
+            if (TRIGGER_POINTS.includes(minsLeft)) {
+                // item.id (또는 유일키) 기반으로 알림 중복 방지
+                const uniqueId =
+                    (item.id ?? item.examNumber ?? item.student_id ?? item.name ?? 'x')
+                    + '_' + minsLeft;
+
+                if (!notifiedSet.has(uniqueId)) {
+                    notifiedSet.add(uniqueId);
+                    const msg = buildToastMessage(item, minsLeft);
+                    showToastLocal(msg, false);
+                }
+            }
+        }
+    }
+
+    /************************************
+     * 4. 초기 인증/네비/루프 시작
+     ************************************/
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = getToken();
+        const branchNameDisplay = document.getElementById('branch-name-display');
+        const contentFrame = document.getElementById('content-frame');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // 로그인 안 되어 있으면 로그인 페이지로
+        if (!token) {
+            alert('로그인이 필요합니다.');
+            window.location.href = `${LOGIN_PAGE}?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+            return;
+        }
+
+        // 토큰에서 branch/권한 꺼내기
+        let userRole = 'branch';
+        let userBranch = null;
+        try {
+            const payloadBase64Url = token.split('.')[1];
+            const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const binaryString = atob(payloadBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const decodedString = new TextDecoder().decode(bytes);
+            const decodedPayload = JSON.parse(decodedString);
+
+            if (decodedPayload?.branch) {
+                userBranch = decodedPayload.branch;
+                branchNameDisplay.textContent = decodedPayload.branch + " 지점";
+            } else {
+                branchNameDisplay.textContent = '지점 정보 없음';
+            }
+
+            if (decodedPayload?.userid === 'admin') {
+                userRole = 'admin';
+                document.body.classList.add('is-admin');
+            } else {
+                document.body.classList.remove('is-admin');
+            }
+        } catch (e) {
+            console.error('토큰 처리 실패:', e);
+            branchNameDisplay.textContent = '인증 오류';
+            localStorage.removeItem('jwt_token');
+            alert('인증 정보 문제 발생');
+            window.location.href = LOGIN_PAGE;
+            return;
+        }
+
+        // 로그아웃 버튼
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (confirm('로그아웃?')) {
+                    localStorage.removeItem('jwt_token');
+                    alert('로그아웃됨.');
+                    window.location.href = LOGIN_PAGE;
+                }
+            });
+        }
+
+        // 네비게이션 클릭 시 iframe 전환 + active 표시
+        const navLinks = document.querySelectorAll('.nav-menu a[data-href]');
+        const allMenuLinks = document.querySelectorAll('.nav-menu a');
+
+        function setActiveLink(clickedLink) {
+            if (!clickedLink) return;
+            allMenuLinks.forEach(l => l.classList.remove('active'));
+            clickedLink.classList.add('active');
+
+            // 드롭다운 안 메뉴를 눌렀을 경우 상위 1depth에도 active 주기
+            const parentDropdown = clickedLink.closest('ul.dropdown-menu');
+            if (parentDropdown) {
+                const topLevelLink = parentDropdown.parentElement?.querySelector('a:not([data-href])');
+                if (topLevelLink) {
+                    topLevelLink.classList.add('active');
+                }
+            }
+        }
+
+        function setupNavLinks() {
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pageUrl = this.getAttribute('data-href');
+                    if (!pageUrl || !contentFrame) return;
+                    try {
+                        const currentSrc = contentFrame.contentWindow?.location.pathname.split('/').pop();
+                        // welcome.html 은 홈이라서 눌러도 다시 로드 가능하게 유지
+                        if (currentSrc !== pageUrl || pageUrl === 'welcome.html') {
+                            contentFrame.src = pageUrl;
+                        } else {
+                            console.log("Already on:", pageUrl);
+                        }
+                    } catch (err) {
+                        // cross-origin 안전장치
+                        contentFrame.src = pageUrl;
+                    }
+                    setActiveLink(this);
+                });
+            });
+        }
+        setupNavLinks();
+
+        // 첫 로드시 '홈' active로
+        const homeLink = document.querySelector('.nav-menu a[data-href="welcome.html"]');
+        if (homeLink) setActiveLink(homeLink);
+
+        // 브랜드(로고/이름) 클릭 시 홈
+        const brandLink = document.getElementById('brand-link');
+        if (brandLink) {
+            brandLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (contentFrame) {
+                    try {
+                        const currentSrc = contentFrame.contentWindow?.location.pathname.split('/').pop();
+                        if (currentSrc !== 'welcome.html') {
+                            contentFrame.src = 'welcome.html';
+                        }
+                    } catch (err) {
+                        contentFrame.src = 'welcome.html';
+                    }
+                }
+                if (homeLink) setActiveLink(homeLink);
+            });
+        }
+
+        /*******************************************
+         * 상담 일정 알림 루프 시작
+         * (index 단독으로 상담 일정 확인 + 토스트 출력)
+         *******************************************/
+        function startCounselLoop() {
+            // 첫 실행
+            checkUpcomingCounselsAndNotify(userBranch);
+
+            // 1분마다 반복
+            setInterval(() => {
+                checkUpcomingCounselsAndNotify(userBranch);
+            }, 60 * 1000);
+        }
+
+        startCounselLoop();
+    });
+    </script>
 </body>
 </html>
