@@ -304,7 +304,155 @@ document.addEventListener('DOMContentLoaded', () => {
     universitySelect.addEventListener('change', ()=>{ const g = gunSelect.value, uni = universitySelect.value; console.log(`University changed: ${uni}`); departmentSelect.innerHTML = '<option value="">- 학과 선택 -</option>'; addWishlistBtn.disabled = true; if (g && uni) { allUniversities.filter(i=>i.gun===g && i.university===uni).sort((a,b)=>a.department.localeCompare(b.department,'ko')).forEach(i=>departmentSelect.innerHTML += `<option value="${i.U_ID}">${i.department}</option>`); departmentSelect.disabled = false; } else departmentSelect.disabled = true; });
     departmentSelect.addEventListener('change', ()=>{ console.log(`Department changed: ${departmentSelect.value}`); addWishlistBtn.disabled = !departmentSelect.value; });
     const getGunSectionId = (gunName)=>{ if (gunName==='가군' || gunName==='가') return 'ga-gun'; if (gunName==='나군' || gunName==='나') return 'na-gun'; if (gunName==='다군' || gunName==='다') return 'da-gun'; return ''; };
-    const createResultCard = (container, formula, suneungScore, savedData=null) => { /* ... 이전과 동일 ... */ console.log(`createResultCard 호출: U_ID=${formula.U_ID}, suneungScore=${suneungScore}`); const card = document.createElement('div'); card.className = 'result-card'; card.dataset.uid = formula.U_ID; card.dataset.formula = JSON.stringify(formula); const reflectsNaeshin = Number(formula.내신||0) > 0; const reflectsSilgi = Number(formula.실기||0) > 0; let naeshinInputHtml = ''; if (reflectsNaeshin) naeshinInputHtml = `<tr class="naeshin-row"><th>내신 점수:</th><td><input type="number" class="naeshin-input" placeholder="진학사 점수"></td></tr>`; let silgiInputsHtml = ''; const practicalEvents = [...new Set((formula.실기배점||[]).map(r=>r.종목명))]; practicalEvents.forEach(event=>{ silgiInputsHtml += `<tr class="practical-row"><th>${event}:</th><td><input type="text" class="practical-input" data-event="${event}" placeholder="기록 입력"><span class="practical-score-display" data-event-score-display="${event}">-</span></td></tr>`; }); const naeshinScoreRowClass = reflectsNaeshin ? 'naeshin-score-row' : 'naeshin-score-row hidden-row'; card.innerHTML = ` <div class="result-card-header"> <div class="left"> <button type="button" class="btn btn-danger btn-sm remove-card-btn" title="삭제"><i class="fas fa-times"></i></button> <h3>${formula.대학명}<span>${formula.학과명}</span></h3> </div> <div class="right"> <div class="top-10-score-display" data-uid-top10="${formula.U_ID}"><span class="loading">Top10% 로딩...</span></div> </div> </div> <div class="result-card-body"> <div class="score-breakdown"> <table> <tr><th>수능 점수:</th><td class="score-suneung">${suneungScore.toFixed(2)}</td></tr> <tr class="${naeshinScoreRowClass}"><th>내신 점수:</th><td class="score-naeshin">0.00</td></tr> <tr><th>실기 점수:</th><td class="score-silgi">0.00 <span>(0감)</span></td></tr> <tr class="total-score"><th>총점:</th><td class="score-total">${suneungScore.toFixed(2)}</td></tr> </table> </div> <div class="input-section"><table>${naeshinInputHtml}${silgiInputsHtml}</table></div> <div class="card-actions"></div> </div>`; const actions = card.querySelector('.card-actions'); if (reflectsSilgi && formula.실기배점?.length) { const b = document.createElement('button'); b.className='btn btn-sm btn-outline'; b.innerHTML='<i class="fas fa-table"></i> 실기 배점표'; b.onclick=()=>showScoreTableModal('silgi',formula.U_ID,formula.학년도); actions.appendChild(b); } if (reflectsNaeshin && formula.내신배점?.length) { const b = document.createElement('button'); b.className='btn btn-sm btn-outline'; b.innerHTML='<i class="fas fa-table"></i> 내신 배점표'; b.onclick=()=>showScoreTableModal('naeshin',formula.U_ID,formula.학년도); actions.appendChild(b); } const bOther = document.createElement('button'); bOther.className='btn btn-sm btn-outline'; bOther.innerHTML='<i class="fas fa-users"></i> 타군 인기 지원'; bOther.onclick=()=>showCrossGunModal(formula.U_ID, formula.학년도, formula.대학명, formula.학과명, formula.군); actions.appendChild(bOther); if (reflectsNaeshin) { const row = card.querySelector('.naeshin-score-row'); if (row) row.style.display='table-row'; } if (savedData) { const naeshinInput = card.querySelector('.naeshin-input'); if (naeshinInput && savedData.상담_내신점수!=null) naeshinInput.value = savedData.상담_내신점수; const savedRecords = safeParse(savedData.상담_실기기록,{}); if (savedRecords && typeof savedRecords==='object') { card.querySelectorAll('.practical-input').forEach(input=>{ const eventName = input.dataset.event; if (Object.prototype.hasOwnProperty.call(savedRecords, eventName) && savedRecords[eventName]!=null) { input.value = savedRecords[eventName]; } }); } recalculateScoresInCard(card); } card.querySelectorAll('.naeshin-input, .practical-input').forEach(input=>{ input.addEventListener('change', ()=>recalculateScoresInCard(card)); }); card.querySelector('.remove-card-btn').addEventListener('click', ()=>{ const gunSection = card.closest('.gun-section'); card.remove(); if (gunSection) { updateGunCount(gunSection.id); saveCurrentWishlist(); /* ⭐️ 삭제 후 자동 저장 */ } }); container.appendChild(card); console.log(`createResultCard 종료: 카드 추가됨 (U_ID=${formula.U_ID})`); return card; };
+    // 결과 카드 생성 (⭐️ 실기 종목 필터링 로직 수정됨)
+    const createResultCard = (container, formula, suneungScore, savedData=null) => {
+        console.log(`createResultCard 호출: U_ID=${formula.U_ID}, suneungScore=${suneungScore}`);
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.dataset.uid = formula.U_ID;
+        card.dataset.formula = JSON.stringify(formula); // 포뮬러 데이터 저장
+
+        const reflectsNaeshin = Number(formula.내신||0) > 0;
+        const reflectsSilgi = Number(formula.실기||0) > 0;
+
+        // --- ⭐️ 실기 입력칸 HTML 생성 로직 수정 ---
+        let silgiInputsHtml = '';
+        let practicalEventsForStudent = []; // 학생 성별에 맞는 종목만 담을 배열
+
+        // 학생 정보와 실기 배점표가 모두 있을 때만 필터링 시도
+        if (reflectsSilgi && selectedStudentData && selectedStudentData.gender && formula.실기배점 && formula.실기배점.length > 0) {
+            const studentGender = selectedStudentData.gender; // '남' 또는 '여'
+
+            // 1. formula.실기배점 배열에서 현재 학생 성별 데이터만 필터링
+            const genderFilteredScores = formula.실기배점.filter(scoreRow => scoreRow.성별 === studentGender);
+
+            // 2. 필터링된 데이터에서 고유한 종목명 추출 및 정렬
+            practicalEventsForStudent = [...new Set(genderFilteredScores.map(r => r.종목명))].sort();
+
+            console.log(` -> U_ID=${formula.U_ID}, 학생 성별(${studentGender}) 기준 실기 종목 (${practicalEventsForStudent.length}개):`, practicalEventsForStudent);
+
+            // 3. 학생 성별에 맞는 종목이 있을 경우에만 입력칸 HTML 생성
+            if (practicalEventsForStudent.length > 0) {
+                practicalEventsForStudent.forEach(event => {
+                    silgiInputsHtml += `
+                        <tr class="practical-row">
+                            <th>${event}:</th>
+                            <td>
+                                <input type="text" class="practical-input" data-event="${event}" placeholder="기록 입력">
+                                <span class="practical-score-display" data-event-score-display="${event}">-</span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                 console.log(` -> U_ID=${formula.U_ID}: 학생 성별(${studentGender})에 맞는 실기 배점표 없음.`);
+                 // 실기 반영은 하지만, 해당 성별 종목이 없을 경우 메시지 표시 (선택 사항)
+                 silgiInputsHtml = `<tr><td colspan="2" style="font-size:0.85em; color:var(--text-secondary); text-align:center;">${studentGender}학생 대상 실기 종목 없음</td></tr>`;
+            }
+        }
+        // --- ⭐️ 실기 입력칸 HTML 생성 로직 수정 끝 ---
+
+        // --- 카드 기본 HTML 구조 (나머지는 이전과 동일) ---
+        let naeshinInputHtml = '';
+        if (reflectsNaeshin) {
+            naeshinInputHtml = `<tr class="naeshin-row"><th>내신 점수:</th><td><input type="number" class="naeshin-input" placeholder="진학사 점수"></td></tr>`;
+        }
+        const naeshinScoreRowClass = reflectsNaeshin ? 'naeshin-score-row' : 'naeshin-score-row hidden-row'; // 클래스명은 유지
+
+        card.innerHTML = `
+            <div class="result-card-header">
+                <div class="left">
+                    <button type="button" class="btn btn-danger btn-sm remove-card-btn" title="삭제"><i class="fas fa-times"></i></button>
+                    <h3>${formula.대학명}<span>${formula.학과명}</span></h3>
+                </div>
+                <div class="right">
+                    <div class="top-10-score-display" data-uid-top10="${formula.U_ID}"><span class="loading">Top10% 로딩...</span></div>
+                </div>
+            </div>
+            <div class="result-card-body">
+                <div class="score-breakdown">
+                    <table>
+                        <tr><th>수능 점수:</th><td class="score-suneung">${suneungScore.toFixed(2)}</td></tr>
+                        <tr class="${naeshinScoreRowClass}"><th>내신 점수:</th><td class="score-naeshin">0.00</td></tr>
+                        <tr><th>실기 점수:</th><td class="score-silgi">0.00 <span>(0감)</span></td></tr>
+                        <tr class="total-score"><th>총점:</th><td class="score-total">${suneungScore.toFixed(2)}</td></tr>
+                    </table>
+                </div>
+                <div class="input-section">
+                    <table>
+                        ${naeshinInputHtml}
+                        ${silgiInputsHtml}
+                    </table>
+                </div>
+                <div class="card-actions"></div>
+            </div>`;
+
+        // --- 카드 액션 버튼 추가 (이전과 동일) ---
+        const actions = card.querySelector('.card-actions');
+        // ⭐️ 실기 배점표 버튼 조건 수정: 학생 성별에 맞는 종목이 '있을 때만' 버튼 표시
+        if (reflectsSilgi && practicalEventsForStudent.length > 0) {
+            const b = document.createElement('button');
+            b.className='btn btn-sm btn-outline';
+            b.innerHTML='<i class="fas fa-table"></i> 실기 배점표';
+            b.onclick=()=>showScoreTableModal('silgi',formula.U_ID,formula.학년도);
+            actions.appendChild(b);
+        }
+        // 내신 배점표 버튼 (기존과 동일)
+        if (reflectsNaeshin && formula.내신배점?.length) {
+            const b = document.createElement('button');
+            b.className='btn btn-sm btn-outline';
+            b.innerHTML='<i class="fas fa-table"></i> 내신 배점표';
+            b.onclick=()=>showScoreTableModal('naeshin',formula.U_ID,formula.학년도);
+            actions.appendChild(b);
+        }
+        // 타군 인기 지원 버튼 (기존과 동일)
+        const bOther = document.createElement('button');
+        bOther.className='btn btn-sm btn-outline';
+        bOther.innerHTML='<i class="fas fa-users"></i> 타군 인기 지원';
+        bOther.onclick=()=>showCrossGunModal(formula.U_ID, formula.학년도, formula.대학명, formula.학과명, formula.군);
+        actions.appendChild(bOther);
+
+        // --- 내신 행 표시 및 저장된 값 로드 (이전과 동일) ---
+        if (reflectsNaeshin) {
+            const row = card.querySelector('.naeshin-score-row');
+            if (row) row.style.display='table-row';
+        }
+        if (savedData) { // 저장된 데이터(DB 로드 결과)가 있으면 값 채우기
+            const naeshinInput = card.querySelector('.naeshin-input');
+            if (naeshinInput && savedData.상담_내신점수!=null) {
+                naeshinInput.value = savedData.상담_내신점수;
+            }
+            const savedRecords = safeParse(savedData.상담_실기기록,{});
+            if (savedRecords && typeof savedRecords ==='object') {
+                card.querySelectorAll('.practical-input').forEach(input => {
+                    const eventName = input.dataset.event;
+                    // 저장된 기록 객체에 해당 종목 키가 있고 값이 null이 아니면 채움
+                    if (Object.prototype.hasOwnProperty.call(savedRecords, eventName) && savedRecords[eventName] != null) {
+                        input.value = savedRecords[eventName];
+                    }
+                });
+            }
+            recalculateScoresInCard(card); // 저장된 값 로드 후 점수 재계산
+        }
+
+        // --- 이벤트 리스너 추가 (⭐️ 자동 저장 호출 포함) ---
+        card.querySelectorAll('.naeshin-input, .practical-input').forEach(input => {
+            // 'change' 이벤트 (값이 변경되고 포커스를 잃었을 때) 발생 시 재계산 및 자동 저장
+            input.addEventListener('change', () => recalculateScoresInCard(card));
+        });
+        card.querySelector('.remove-card-btn').addEventListener('click', () => {
+            const gunSection = card.closest('.gun-section');
+            card.remove(); // 카드 DOM에서 제거
+            if (gunSection) {
+                updateGunCount(gunSection.id); // 군별 카운트 업데이트
+                saveCurrentWishlist(); // 삭제 후 자동 저장
+            }
+        });
+
+        container.appendChild(card); // 최종적으로 컨테이너에 카드 추가
+        console.log(`createResultCard 종료: 카드 추가됨 (U_ID=${formula.U_ID})`);
+        return card; // 생성된 카드 요소 반환
+    };
     const recalculateScoresInCard = async (card) => { /* ... 이전 내신 점수 계산 로직 수정된 버전 ... */ if (!card) return; const formula = JSON.parse(card.dataset.formula); const student = selectedStudentData; if (!formula || !student) return; let naeshinScore = 0; const naeshinInput = card.querySelector('.naeshin-input'); if (naeshinInput) { const raw = Number(naeshinInput.value || 0); const ratio = (Number(formula.내신) || 0) / 100; const TOTAL = Number(formula.총점) > 0 ? Number(formula.총점) : 1000; const max = Number(formula.내신만점) || 0; if (ratio > 0 && max > 0 && raw > 0) { naeshinScore = (raw / max) * ratio * TOTAL; } else if (ratio > 0 && raw > 0 && max === 0) { naeshinScore = raw; } } card.querySelector('.score-naeshin').textContent = naeshinScore.toFixed(2); let silgiScore = 0; let totalDeductionText = '<span>(0감)</span>'; const inputs = card.querySelectorAll('.practical-input'); if (inputs.length > 0) { const practicals = []; inputs.forEach(input => { if (input.value.trim() !== '') practicals.push({ event: input.dataset.event, value: input.value }); }); if (practicals.length > 0) { const S_data = { gender: student.gender, practicals }; const F_data = formula; try { const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); const res = await fetch(`${SVR_JUNGSI}/silgi/calculate`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }, body: JSON.stringify({ F_data, S_data }) }); if (res.status === 401 || res.status === 403) throw new Error('인증 오류'); const data = await res.json(); if (data.success && data.result) { silgiScore = Number(data.result.totalScore || 0); const breakdown = data.result.breakdown; if (breakdown?.events) { breakdown.events.forEach(ev => { const span = card.querySelector(`.practical-score-display[data-event-score-display="${ev.event}"]`); if (span) span.innerHTML = ev.score == null ? '-' : `${ev.score.toFixed(2)}점 <span>(${ev.deduction_level}감)</span>`; }); } const d = breakdown?.total_deduction_level || 0; totalDeductionText = d > 0 ? `<span>(${d}감)</span>` : '<span>(0감)</span>'; card.querySelector('.score-silgi').innerHTML = `${silgiScore.toFixed(2)} ${totalDeductionText}`; } else { card.querySelector('.score-silgi').textContent = '계산오류'; card.querySelectorAll('.practical-score-display').forEach(s => s.innerHTML = '-'); totalDeductionText = '<span>(오류)</span>'; card.querySelector('.score-silgi').innerHTML = `오류 ${totalDeductionText}`; } } catch (e) { console.error('실기 재계산 오류', e); card.querySelector('.score-silgi').textContent = '통신오류'; card.querySelectorAll('.practical-score-display').forEach(s => s.innerHTML = '-'); totalDeductionText = '<span>(오류)</span>'; card.querySelector('.score-silgi').innerHTML = `오류 ${totalDeductionText}`; if (e.message.includes('인증')) handleAuthError(); } } else { card.querySelector('.score-silgi').innerHTML = `0.00 ${totalDeductionText}`; card.querySelectorAll('.practical-score-display').forEach(s => s.innerHTML = '-'); } } else { card.querySelector('.score-silgi').innerHTML = `0.00 ${totalDeductionText}`; card.querySelectorAll('.practical-score-display').forEach(s => s.innerHTML = '-'); } const suneungScore = Number(card.querySelector('.score-suneung').textContent || 0); const totalScore = suneungScore + naeshinScore + silgiScore; card.querySelector('.score-total').textContent = totalScore.toFixed(2); saveCurrentWishlist(); /* ⭐️ 점수 재계산 후 자동 저장 호출 */ };
     const updateGunCount = (id)=>{ const c = document.getElementById(id)?.querySelector('.result-cards-container'); const s = document.getElementById(id)?.querySelector('.gun-count'); if (c && s) s.textContent = `${c.querySelectorAll('.result-card').length} / 3`; };
     const resetResultArea = ()=>{ ['ga-gun','na-gun','da-gun'].forEach(id=>{ const c = document.getElementById(id)?.querySelector('.result-cards-container'); if (c) c.innerHTML=''; updateGunCount(id); }); };
