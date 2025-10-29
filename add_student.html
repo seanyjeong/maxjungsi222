@@ -7,26 +7,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-light: #3b82f6;
-            --primary-dark: #1d4ed8;
-            --secondary-color: #64748b;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --warning-color: #f59e0b;
-            --light-bg: #f8fafc;
+            --primary-color: #4361ee;
+            --primary-light: #4895ef;
+            --primary-dark: #3a0ca3;
+            --secondary-color: #7209b7;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --warning-color: #f8961e;
+            --light-bg: #f8f9fa;
             --card-bg: #ffffff;
-            --border-color: #e2e8f0;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-color: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-light: #adb5bd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-light: 0 2px 6px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --radius-sm: 8px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { 
+            margin:0; 
+            padding:0; 
+            box-sizing:border-box; 
         }
 
         body {
@@ -38,11 +41,10 @@
         }
 
         .container {
-            max-width: 95%;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        /* 헤더 스타일 */
         .header {
             display: flex;
             justify-content: space-between;
@@ -50,6 +52,8 @@
             margin-bottom: 30px;
             padding: 20px 0;
             border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
         .header h1 {
@@ -67,8 +71,8 @@
             align-items: center;
         }
 
-        .login-info { /* 숨김 처리 유지 */
-            display: none;
+        .login-info { 
+            display: none; 
         }
 
         .year-selector {
@@ -77,11 +81,8 @@
             gap: 8px;
             background: var(--card-bg);
             padding: 8px 15px;
-            border-radius: 8px;
-            box-shadow: var(--shadow);
-        }
-        .year-selector label {
-            white-space: nowrap; /* '대상 학년도:' 텍스트 줄바꿈 방지 */
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-light);
         }
 
         .year-selector select {
@@ -92,10 +93,9 @@
             font-size: 0.9rem;
         }
 
-        /* 카드 스타일 */
         .card {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: var(--radius);
             box-shadow: var(--shadow);
             padding: 25px;
             margin-bottom: 30px;
@@ -104,10 +104,12 @@
         .card-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .card-title {
@@ -119,138 +121,179 @@
             gap: 10px;
         }
 
-        /* 테이블 스타일 */
         .table-container {
             overflow-x: auto;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             border: 1px solid var(--border-color);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* ⭐️ 테이블 레이아웃 고정 */
+            table-layout: fixed;
         }
 
         th, td {
             padding: 12px 15px;
             border-bottom: 1px solid var(--border-color);
-            text-align: left; /* 기본 왼쪽 정렬 */
-            white-space: nowrap; /* 줄바꿈 방지 */
-            overflow: hidden; /* 내용 넘치면 숨김 */
-            text-overflow: ellipsis; /* 넘치는 내용은 ... 처리 */
-        }
-        
-        th {
-            background-color: #f1f5f9;
-            font-weight: 600;
-            color: var(--text-secondary);
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             font-size: 0.9rem;
         }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        tbody tr { 
+            transition: background-color .2s; 
+        }
         
-
-
-        tbody tr {
-            transition: background-color 0.2s;
+        tbody tr:hover { 
+            background-color: #f8fafc; 
         }
 
-        tbody tr:hover {
-            background-color: #f8fafc;
-        }
-
-        /* 입력 필드 스타일 */
         input[type="text"], select {
             width: 100%;
             padding: 8px 12px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 0.9rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color .2s, box-shadow .2s;
         }
-        /* ⭐️ 전화번호 입력 필드 스타일 추가 */
+
         input[name="phone_number"] {
-             font-family: monospace; /* 숫자 가독성 좋게 */
+            font-family: monospace;
         }
 
         input[type="text"]:focus, select:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
         }
 
-        /* 버튼 스타일 */
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 10px 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all .2s;
         }
-        /* ... (다른 버튼 스타일은 동일) ... */
-        .btn-primary { background-color: var(--primary-color); color: white; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-success { background-color: var(--success-color); color: white; }
-        .btn-success:hover { background-color: #0da271; }
-        .btn-danger { background-color: var(--danger-color); color: white; }
-        .btn-danger:hover { background-color: #dc2626; }
-        .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); }
-        .btn-outline:hover { background-color: #f8fafc; }
-        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
-        .button-group { display: flex; gap: 10px; margin-top: 20px; }
 
+        .btn-primary { 
+            background-color: var(--primary-color); 
+            color: #fff; 
+        }
+        
+        .btn-primary:hover { 
+            background-color: var(--primary-dark); 
+        }
+        
+        .btn-success { 
+            background-color: var(--success-color); 
+            color: #fff; 
+        }
+        
+        .btn-success:hover { 
+            background-color: #3aa8d4; 
+        }
+        
+        .btn-danger { 
+            background-color: var(--danger-color); 
+            color: #fff; 
+        }
+        
+        .btn-danger:hover { 
+            background-color: #e11573; 
+        }
+        
+        .btn-outline { 
+            background-color: transparent; 
+            border: 1px solid var(--border-color); 
+            color: var(--text-secondary); 
+        }
+        
+        .btn-outline:hover { 
+            background-color: #f8fafc; 
+        }
+        
+        .btn-sm { 
+            padding: 6px 12px; 
+            font-size: 0.8rem; 
+        }
 
-        /* 메시지 스타일 */
+        .button-group { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 20px; 
+            flex-wrap: wrap; 
+        }
+
         .message {
             padding: 12px 15px;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             margin-top: 15px;
             font-weight: 500;
             text-align: center;
+            display: none;
         }
-        .message.success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
-        .message.error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        
+        .message.success { 
+            background-color: #e8f5e9; 
+            color: #2e7d32; 
+            border: 1px solid #c8e6c9; 
+            display: block; 
+        }
+        
+        .message.error { 
+            background-color: #ffebee; 
+            color: #c62828; 
+            border: 1px solid #ffcdd2; 
+            display: block; 
+        }
+        
+        .message.info { 
+            background-color: #e3f2fd; 
+            color: #1565c0; 
+            border: 1px solid #bbdefb; 
+            display: block; 
+        }
 
-        /* 액션 버튼 스타일 */
         .actions {
             display: flex;
             gap: 8px;
-            justify-content: center; /* 버튼 가운데 정렬 */
+            justify-content: center;
         }
 
-        /* 수정 모드 스타일 */
-        .editing {
-            background-color: #f0f9ff !important;
+        .editing { 
+            background-color: #f0f9ff !important; 
         }
-        /* ⭐️ 수정 모드 시 select 가운데 정렬 */
+        
         .editing td:nth-child(4) select,
         .editing td:nth-child(5) select,
         .editing td:nth-child(6) select {
             text-align: center;
-            /* text-align-last 속성은 표준이 아님 - 옵션 길이에 따라 다를 수 있음 */
-        }
-/* ⭐️ [수정] 컬럼 너비 비율 및 최소 너비 설정 */
-        th:nth-child(1), td:nth-child(1) { width: 18%; min-width: 100px; } /* 이름 */
-        th:nth-child(2), td:nth-child(2) { width: 25%; min-width: 120px; } /* 학교명 */
-        /* 전화번호/구분 컬럼이 없으므로 주석 처리 또는 삭제
-        th:nth-child(3), td:nth-child(3) { width: 18%; min-width: 110px; } /* 전화번호 */
-        /* th:nth-child(4), td:nth-child(4) { width: 12%; min-width: 70px; text-align: center; } /* 구분 */
-        */
-        th:nth-child(3), td:nth-child(3) { width: 10%; min-width: 50px; text-align: center; } /* 학년 */ /* ⭐️ 인덱스 수정됨 */
-        th:nth-child(4), td:nth-child(4) { width: 10%; min-width: 50px; text-align: center; } /* 성별 */ /* ⭐️ 인덱스 수정됨 */
-        th:nth-child(5), td:nth-child(5) { width: 15%; min-width: 120px; text-align: center; } /* 관리 */ /* ⭐️ 인덱스 수정됨, 최소 너비 확보 */
-
-        /* ⭐️ [추가] 관리(actions) td 안의 버튼 정렬 */
-        td.actions {
-             white-space: nowrap; /* 버튼 줄바꿈 방지 */
         }
 
-        /* 반응형 스타일 */
+        /* 컬럼 너비 */
+        th:nth-child(1), td:nth-child(1) { width: 18%; min-width: 100px; }
+        th:nth-child(2), td:nth-child(2) { width: 25%; min-width: 120px; }
+        th:nth-child(3), td:nth-child(3) { width: 18%; min-width: 110px; }
+        th:nth-child(4), td:nth-child(4) { width: 12%; min-width: 70px; text-align: center; }
+        th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 50px; text-align: center; }
+        th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 50px; text-align: center; }
+        th:nth-child(7), td:nth-child(7) { width: 15%; min-width: 120px; text-align: center; }
 
+        td.actions { white-space: nowrap; }
 
         @media (max-width: 768px) {
             .header {
@@ -258,40 +301,57 @@
                 align-items: flex-start;
                 gap: 15px;
             }
-            .header-info { width: 100%; justify-content: space-between; }
-            .card-header { flex-direction: column; align-items: flex-start; gap: 15px; }
-            .button-group { flex-direction: column; }
-            .btn { width: 100%; justify-content: center; }
+            
+            .header-info { 
+                width: 100%; 
+                justify-content: space-between; 
+            }
+            
+            .card-header { 
+                flex-direction: column; 
+                align-items: flex-start; 
+                gap: 15px; 
+            }
+            
+            .button-group { 
+                flex-direction: column; 
+            }
+            
+            .btn { 
+                width: 100%; 
+                justify-content: center; 
+            }
 
-            /* ⭐️ 작은 화면 테이블 스크롤 */
             .table-container {
-                overflow-x: scroll; /* 가로 스크롤 활성화 */
-                -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+                overflow-x: scroll;
+                -webkit-overflow-scrolling: touch;
             }
-            table {
-                 min-width: 700px; /* 테이블 최소 너비 지정 */
-                 table-layout: auto; /* 작은 화면에서는 자동 레이아웃 */
+            
+            table { 
+                min-width: 700px; 
+                table-layout: auto; 
             }
-             th, td { white-space: nowrap; } /* 작은 화면에서도 줄바꿈 방지 */
-             /* 작은 화면 컬럼 너비 재조정 (선택 사항) */
-             th:nth-child(1), td:nth-child(1) { min-width: 80px; } /* 이름 */
-             th:nth-child(2), td:nth-child(2) { min-width: 100px; } /* 학교명 */
-             th:nth-child(3), td:nth-child(3) { min-width: 120px; } /* 전화번호 */
-             th:nth-child(4), td:nth-child(4) { min-width: 80px; } /* 구분 */
-             th:nth-child(5), td:nth-child(5) { min-width: 50px; } /* 학년 */
-             th:nth-child(6), td:nth-child(6) { min-width: 50px; } /* 성별 */
-             th:nth-child(7), td:nth-child(7) { min-width: 100px; } /* 관리 */
+            
+            th, td { 
+                white-space: nowrap; 
+            }
+            
+            th:nth-child(1), td:nth-child(1) { min-width: 80px; }
+            th:nth-child(2), td:nth-child(2) { min-width: 100px; }
+            th:nth-child(3), td:nth-child(3) { min-width: 120px; }
+            th:nth-child(4), td:nth-child(4) { min-width: 80px; }
+            th:nth-child(5), td:nth-child(5) { min-width: 50px; }
+            th:nth-child(6), td:nth-child(6) { min-width: 50px; }
+            th:nth-child(7), td:nth-child(7) { min-width: 100px; }
         }
 
-        /* 아이콘 스타일 */
-        .icon {
-            font-size: 1.2rem;
+        .icon { 
+            font-size: 1.2rem; 
         }
 
-        /* 학생 수 카운트 */
         .student-count {
             background: var(--primary-color);
-            color: white;
+            color: #fff;
             border-radius: 50%;
             width: 28px;
             height: 28px;
@@ -302,6 +362,106 @@
             margin-left: 8px;
         }
 
+        .card-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .hint-inline-text {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .hint-inline-text i {
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            line-height: 1.2;
+            margin-top: 2px;
+        }
+
+        .card-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 15px;
+            box-shadow: var(--shadow-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-primary {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary-color);
+        }
+
+        .badge-success {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge-danger {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+        }
+
+        .badge-warning {
+            background-color: rgba(248, 150, 30, 0.1);
+            color: var(--warning-color);
+        }
     </style>
 </head>
 <body>
@@ -324,9 +484,23 @@
         </div>
     </div>
 
+    <!-- 학생 추가 카드 -->
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title"><i class="fas fa-user-plus icon"></i> 학생 추가</h2>
+            <h2 class="card-title">
+                <span style="display:flex; align-items:center; gap:8px; font-weight:600; color:var(--text-primary);">
+                    <i class="fas fa-user-plus icon"></i>
+                    학생 추가
+                </span>
+            </h2>
+        </div>
+
+        <div class="hint-inline-text">
+            <i class="fas fa-info-circle"></i>
+            <span>
+                엑셀이나 구글시트에서 이름 / 학교 / 전화 / 구분 / 학년 / 성별 여러 줄 복사 →  
+                첫 번째 행의 '이름' 칸에 붙여넣기(Ctrl+V) 하면 행이 자동으로 추가됩니다 👍
+            </span>
         </div>
 
         <div class="table-container">
@@ -335,7 +509,9 @@
                     <tr>
                         <th>이름</th>
                         <th>학교명</th>
-                        <th>전화번호</th> <th>연락처 구분</th> <th>학년</th>
+                        <th>전화번호</th>
+                        <th>연락처 구분</th>
+                        <th>학년</th>
                         <th>성별</th>
                         <th>삭제</th>
                     </tr>
@@ -353,8 +529,10 @@
             </button>
         </div>
 
-        <p id="add-message" class="message" style="display: none;"></p> </div>
+        <p id="add-message" class="message"></p>
+    </div>
 
+    <!-- 등록된 학생 목록 카드 -->
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">
@@ -363,21 +541,41 @@
             </h2>
         </div>
 
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="total-students">0</div>
+                <div class="stat-label">전체 학생</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="grade3-students">0</div>
+                <div class="stat-label">3학년</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="gradeN-students">0</div>
+                <div class="stat-label">N수생</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="grade2-students">0</div>
+                <div class="stat-label">2학년</div>
+            </div>
+        </div>
+
         <div class="table-container">
             <table id="student-table">
                 <thead>
                     <tr>
                         <th>이름</th>
                         <th>학교명</th>
-                        <th>전화번호</th> <th>연락처 구분</th> <th>학년</th>
+                        <th>전화번호</th>
+                        <th>연락처 구분</th>
+                        <th>학년</th>
                         <th>성별</th>
                         <th>관리</th>
                     </tr>
                 </thead>
                 <tbody id="student-tbody">
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 30px;"> 학생 목록을 불러오는 중...
-                        </td>
+                        <td colspan="7" style="text-align: center; padding: 30px;">학생 목록을 불러오는 중...</td>
                     </tr>
                 </tbody>
             </table>
@@ -387,11 +585,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // 서버 주소 및 로그인 페이지
     const SVR_JUNGSI = 'https://supermax.kr';
-    const LOGIN_PAGE = 'jungsilogin.html'; // .html 확장자 확인
+    const LOGIN_PAGE = 'jungsilogin.html';
 
-    // HTML 요소
     const branchNameDisplay = document.getElementById('branch-name-display');
     const yearSelect = document.getElementById('year-select');
     const addStudentTbody = document.getElementById('add-student-tbody');
@@ -400,30 +596,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const addMessageEl = document.getElementById('add-message');
     const studentTbody = document.getElementById('student-tbody');
     const studentCountEl = document.getElementById('student-count');
+    const totalStudentsEl = document.getElementById('total-students');
+    const grade3StudentsEl = document.getElementById('grade3-students');
+    const gradeNStudentsEl = document.getElementById('gradeN-students');
+    const grade2StudentsEl = document.getElementById('grade2-students');
 
     let userBranchName = '';
     let existingStudents = [];
 
-    // --- 인증 게이트 및 지점명 표시 ---
+    /* 1. 인증 검사 + branch 표시 */
     const getToken = () => localStorage.getItem('jwt_token');
     const token = getToken();
-    if (!token) { alert('로그인이 필요합니다.'); window.location.href = LOGIN_PAGE; return; }
+    if (!token) {
+        alert('로그인이 필요합니다.');
+        window.location.href = LOGIN_PAGE;
+        return;
+    }
     try {
-        const payloadBase64Url = token.split('.')[1]; const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const binaryString = atob(payloadBase64); const bytes = new Uint8Array(binaryString.length);
+        const payloadBase64Url = token.split('.')[1];
+        const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const binaryString = atob(payloadBase64);
+        const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
-        const decodedString = new TextDecoder().decode(bytes); const decodedPayload = JSON.parse(decodedString);
-        if (decodedPayload && decodedPayload.branch) { userBranchName = decodedPayload.branch; /* branchNameDisplay.textContent = userBranchName; */ } // 지점명 표시 제거
-        else { throw new Error('토큰에 지점 정보 없음'); }
-    } catch (e) { console.error('토큰 처리 실패:', e); /* branchNameDisplay.textContent = '오류'; */ alert('인증 정보 오류.'); window.location.href = LOGIN_PAGE; return; }
+        const decodedString = new TextDecoder().decode(bytes);
+        const decodedPayload = JSON.parse(decodedString);
+        if (decodedPayload && decodedPayload.branch) {
+            userBranchName = decodedPayload.branch;
+            // branchNameDisplay.textContent = userBranchName;
+        } else {
+            throw new Error('토큰에 지점 정보 없음');
+        }
+    } catch (e) {
+        console.error('토큰 처리 실패:', e);
+        alert('인증 정보 오류.');
+        window.location.href = LOGIN_PAGE;
+        return;
+    }
 
-    // --- API 호출 함수 (인증 오류 처리 강화) ---
+    /* 2. 공통 API 호출 래퍼 */
     const apiCall = async (url, options = {}) => {
         const currentToken = getToken();
         if (!currentToken) {
             alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
             window.location.href = LOGIN_PAGE;
-            throw new Error('로그인 만료'); // 함수 실행 중단
+            throw new Error('로그인 만료');
         }
         options.headers = { ...options.headers, 'Authorization': `Bearer ${currentToken}` };
 
@@ -431,108 +647,220 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, options);
             if (response.status === 401 || response.status === 403) {
                 alert('인증 오류가 발생했습니다. 다시 로그인해주세요.');
-                localStorage.removeItem('jwt_token'); // 만료된 토큰 제거
+                localStorage.removeItem('jwt_token');
                 window.location.href = LOGIN_PAGE;
-                throw new Error('인증 오류'); // 함수 실행 중단
+                throw new Error('인증 오류');
             }
-             // 204 No Content는 body가 없으므로 바로 성공 처리
-             if (response.status === 204) {
-                 return { success: true };
-             }
-             // 다른 오류 상태 처리
-             if (!response.ok) {
-                 let errorMsg = `HTTP 오류 ${response.status}`;
-                 try {
-                     const errorData = await response.json();
-                     errorMsg = errorData.message || errorMsg;
-                 } catch (_) { /* JSON 파싱 실패 시 무시 */ }
-                 throw new Error(errorMsg);
-             }
-             // 성공 시 JSON 파싱
-             return await response.json();
+            if (response.status === 204) {
+                return { success: true };
+            }
+            if (!response.ok) {
+                let errorMsg = `HTTP 오류 ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || errorMsg;
+                } catch (_) {}
+                throw new Error(errorMsg);
+            }
+            return await response.json();
         } catch (error) {
-             console.error('API 호출 실패:', url, error);
-             // 네트워크 오류 등 fetch 자체 실패 처리
-             if (error.message !== '로그인 만료' && error.message !== '인증 오류') {
-                  throw new Error(error.message || '네트워크 오류 또는 서버 응답 없음');
-             }
-             throw error; // 인증 오류는 그대로 전파
+            console.error('API 호출 실패:', url, error);
+            if (error.message !== '로그인 만료' && error.message !== '인증 오류') {
+                throw new Error(error.message || '네트워크 오류 또는 서버 응답 없음');
+            }
+            throw error;
         }
     };
 
+    /* 3. 메시지 출력 */
+    const showMessage = (element, text, type) => {
+        element.textContent = text;
+        element.className = `message ${type}`;
+        element.style.display = 'block';
+    };
 
-    // --- 학생 입력 행 추가 함수 ---
-    const addStudentInputRow = () => {
+    /* 4. 입력행(tr) 만드는 함수 */
+    function addStudentInputRow(preset = {}) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><input type="text" name="student_name" required placeholder="홍길동" /></td>
-            <td><input type="text" name="school_name" placeholder="맥스고" /></td>
-            <td><input type="text" name="phone_number" placeholder="010-1234-5678" /></td> <td> <select name="phone_owner">
-                    <option value="학생">학생</option>
-                    <option value="학부모">학부모</option>
+            <td>
+                <input type="text" name="student_name" required placeholder="홍길동" value="${preset.student_name || ''}" />
+            </td>
+            <td>
+                <input type="text" name="school_name" placeholder="맥스고" value="${preset.school_name || ''}" />
+            </td>
+            <td>
+                <input type="text" name="phone_number" placeholder="010-1234-5678" value="${preset.phone_number || ''}" />
+            </td>
+            <td>
+                <select name="phone_owner">
+                    <option value="학생" ${preset.phone_owner === '학부모' ? '' : 'selected'}>학생</option>
+                    <option value="학부모" ${preset.phone_owner === '학부모' ? 'selected' : ''}>학부모</option>
                 </select>
             </td>
             <td>
                 <select name="grade" required>
-                    <option value="3">3</option>
-                    <option value="N">N</option>
-                    <option value="2">2</option>
+                    <option value="3" ${preset.grade === '3' ? 'selected' : ''}>3</option>
+                    <option value="N" ${preset.grade === 'N' ? 'selected' : ''}>N</option>
+                    <option value="2" ${preset.grade === '2' ? 'selected' : ''}>2</option>
                 </select>
             </td>
             <td>
                 <select name="gender" required>
-                    <option value="남">남</option>
-                    <option value="여">여</option>
+                    <option value="남" ${preset.gender === '여' ? '' : 'selected'}>남</option>
+                    <option value="여" ${preset.gender === '여' ? 'selected' : ''}>여</option>
                 </select>
             </td>
             <td>
-                <button type="button" class="btn btn-danger btn-sm delete-row-btn"> <i class="fas fa-times"></i> </button>
+                <button type="button" class="btn btn-danger btn-sm delete-row-btn">
+                    <i class="fas fa-times"></i>
+                </button>
             </td>
         `;
-        tr.querySelector('.delete-row-btn').addEventListener('click', () => tr.remove()); // 이벤트 리스너 클래스명에 맞게 수정
+
+        // 삭제 버튼
+        tr.querySelector('.delete-row-btn').addEventListener('click', () => tr.remove());
+
+        // ⭐ 핵심: 이름칸 paste 이벤트 감지
+        const nameInput = tr.querySelector('input[name="student_name"]');
+        nameInput.addEventListener('paste', (e) => {
+            // 클립보드 전체 텍스트 가져오기
+            const pasteData = e.clipboardData.getData('text');
+            // 여러 줄이라면 우리가 직접 처리하고 기본 paste 막기
+            if (pasteData.includes('\n') || pasteData.includes('\r')) {
+                e.preventDefault();
+                handleBulkPasteIntoRows(pasteData, tr);
+            }
+        });
+
         addStudentTbody.appendChild(tr);
-    };
-    addStudentInputRow(); // 초기 행
-    addRowBtn.addEventListener('click', addStudentInputRow); // 행 추가 버튼
+        return tr;
+    }
 
-    // --- 메시지 표시 함수 ---
-    const showMessage = (element, text, type) => {
-        element.textContent = text;
-        element.className = `message ${type}`; // success or error
-        element.style.display = 'block';
-        // 일정 시간 후 메시지 숨김 (선택 사항)
-        // setTimeout(() => { element.style.display = 'none'; }, 5000);
-    };
+    // 페이지 들어오면 최초 한 줄 생성
+    addStudentInputRow();
 
+    // 행 추가 버튼은 기존처럼 수동 추가
+    addRowBtn.addEventListener('click', () => addStudentInputRow());
 
-    // --- 학생 목록 불러오기 함수 ---
+    /* 5. 실제 붙여넣기 파서
+          paste된 텍스트 전체를 줄별/컬럼별로 쪼개서
+          현재 tr부터 채우고, 추가 tr 생성해서 채움
+    */
+    function handleBulkPasteIntoRows(rawText, firstTr) {
+        // 1) 줄 분리
+        const lines = rawText
+            .split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l.length > 0);
+
+        if (lines.length === 0) return;
+
+        // 2) 첫 줄부터 순서대로 student rows 만들기
+        // columns: [이름, 학교, 전화, 구분, 학년, 성별]
+        // split 우선 탭, 탭이 없으면 쉼표
+        const parsedRows = lines.map(line => {
+            let cols = line.split('\t');
+            if (cols.length === 1) {
+                cols = line.split(',');
+            }
+            cols = cols.map(v => v.trim());
+            return {
+                student_name: cols[0] || '',
+                school_name:  cols[1] || '',
+                phone_number: cols[2] || '',
+                phone_owner:  cols[3] || '학생',
+                grade:        cols[4] || '3',
+                gender:       cols[5] || '남'
+            };
+        }).filter(row => row.student_name !== '');
+
+        if (parsedRows.length === 0) return;
+
+        // 3) 첫 번째 줄은 firstTr에 그대로 채워주고
+        const firstData = parsedRows[0];
+        fillRowInputs(firstTr, firstData);
+
+        // 4) 나머지 줄들은 새로 tr 만들어서 채우기
+        for (let i = 1; i < parsedRows.length; i++) {
+            const tr = addStudentInputRow(parsedRows[i]);
+            fillRowInputs(tr, parsedRows[i]);
+        }
+
+        showMessage(addMessageEl, `${parsedRows.length}명의 데이터가 입력되었습니다. 확인 후 "명단 추가"를 눌러주세요.`, 'info');
+    }
+
+    // row에 preset 값 반영하는 유틸
+    function fillRowInputs(tr, preset) {
+        tr.querySelector('input[name="student_name"]').value = preset.student_name || '';
+        tr.querySelector('input[name="school_name"]').value  = preset.school_name || '';
+        tr.querySelector('input[name="phone_number"]').value = preset.phone_number || '';
+
+        const ownerSel = tr.querySelector('select[name="phone_owner"]');
+        const gradeSel = tr.querySelector('select[name="grade"]');
+        const genderSel= tr.querySelector('select[name="gender"]');
+
+        if (ownerSel) ownerSel.value   = preset.phone_owner || '학생';
+        if (gradeSel) gradeSel.value   = preset.grade || '3';
+        if (genderSel) genderSel.value = preset.gender || '남';
+    }
+
+    /* 6. 학생 목록 로드 */
     const loadStudentList = async () => {
         const selectedYear = yearSelect.value;
-        studentTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">${selectedYear}학년도 목록 로딩중... <i class="fas fa-spinner fa-spin"></i></td></tr>`; // colspan 수정
+        studentTbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:30px;">
+                    ${selectedYear}학년도 목록 로딩중... <i class="fas fa-spinner fa-spin"></i>
+                </td>
+            </tr>
+        `;
         studentCountEl.textContent = '0';
+        totalStudentsEl.textContent = '0';
+        grade3StudentsEl.textContent = '0';
+        gradeNStudentsEl.textContent = '0';
+        grade2StudentsEl.textContent = '0';
         existingStudents = [];
         try {
             const data = await apiCall(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${selectedYear}`);
             if (data.success && data.students) {
                 existingStudents = data.students;
                 renderStudentList(data.students);
+                updateStudentStats(data.students);
             } else {
-                studentTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">목록 로딩 실패: ${data.message || '알 수 없는 오류'}</td></tr>`; // colspan 수정
+                studentTbody.innerHTML = `
+                    <tr><td colspan="7" style="text-align:center; padding:30px;">
+                        목록 로딩 실패: ${data.message || '알 수 없는 오류'}
+                    </td></tr>`;
             }
         } catch (err) {
-            // apiCall 함수 내에서 인증 오류는 처리되므로 여기서는 일반 오류만 처리
             console.error('목록 로딩 오류:', err);
-            studentTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">오류 발생: ${err.message}</td></tr>`; // colspan 수정
+            studentTbody.innerHTML = `
+                <tr><td colspan="7" style="text-align:center; padding:30px;">
+                    오류 발생: ${err.message}
+                </td></tr>`;
         }
     };
 
+    /* 학생 통계 업데이트 */
+    const updateStudentStats = (students) => {
+        totalStudentsEl.textContent = students.length;
+        
+        const grade3Count = students.filter(s => s.grade === '3').length;
+        const gradeNCount = students.filter(s => s.grade === 'N').length;
+        const grade2Count = students.filter(s => s.grade === '2').length;
+        
+        grade3StudentsEl.textContent = grade3Count;
+        gradeNStudentsEl.textContent = gradeNCount;
+        grade2StudentsEl.textContent = grade2Count;
+    };
 
-    // --- 학생 목록 테이블 렌더링 함수 ---
+    /* 7. 학생 목록 렌더링 / 수정 / 삭제 */
     const renderStudentList = (students) => {
         studentTbody.innerHTML = '';
         studentCountEl.textContent = students.length;
         if (students.length === 0) {
-            studentTbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px;">등록된 학생 없음.</td></tr>'; // colspan 수정
+            studentTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">등록된 학생 없음.</td></tr>';
             return;
         }
 
@@ -540,88 +868,92 @@ document.addEventListener('DOMContentLoaded', () => {
             const tr = document.createElement('tr');
             tr.dataset.studentId = student.student_id;
 
-      // --- ⭐️ 삭제 핸들러 함수 (수정!) ---
-          const deleteHandler = async () => {
-                // 1. 삭제 확인 창 띄우기
+            const deleteHandler = async () => {
                 const studentName = tr.querySelector('[data-field="student_name"]').textContent;
                 if (!confirm(`정말로 '${studentName}' 학생을 삭제하시겠습니까?\n관련된 모든 데이터(성적, 상담내역 등)가 함께 삭제됩니다!`)) {
-                    return; // 취소하면 함수 종료
+                    return;
                 }
-
-                // 2. 삭제 API 호출
                 const studentId = tr.dataset.studentId;
-                const deleteButton = tr.querySelector('.delete-btn'); // 버튼 참조
-                if (deleteButton) deleteButton.disabled = true; // 버튼 비활성화
+                const deleteButton = tr.querySelector('.delete-btn');
+                if (deleteButton) deleteButton.disabled = true;
 
                 try {
-                    // apiCall 함수 사용 (DELETE 메소드 지정)
                     const result = await apiCall(`${SVR_JUNGSI}/jungsi/students/delete/${studentId}`, {
                         method: 'DELETE'
                     });
 
-                    // 3. 성공 시: 테이블에서 행 제거 및 카운트 업데이트
-                    // (apiCall은 204 응답 시 { success: true } 반환)
                     if (result.success) {
-                        tr.remove(); // 테이블에서 해당 행(tr) 제거
-                        // 학생 수 업데이트
+                        tr.remove();
                         const currentCount = parseInt(studentCountEl.textContent || '1') - 1;
                         studentCountEl.textContent = currentCount;
-                        // 성공 메시지 (선택 사항)
-                        // showMessage(addMessageEl, `'${studentName}' 학생 삭제 완료.`, 'success');
+                        updateStudentStats(existingStudents.filter(s => s.student_id != studentId));
                     } else {
-                         // API가 success: false를 반환한 경우 (예: 404 Not Found)
-                         alert(`삭제 실패: ${result.message || '알 수 없는 오류'}`);
-                         if (deleteButton) deleteButton.disabled = false; // 버튼 다시 활성화
+                        alert(`삭제 실패: ${result.message || '알 수 없는 오류'}`);
+                        if (deleteButton) deleteButton.disabled = false;
                     }
                 } catch (err) {
-                    // API 호출 자체 실패 (네트워크 오류, 인증 오류 등)
-                    // apiCall 함수 내에서 alert 및 페이지 이동 처리하므로 여기서는 로그만 남김
                     console.error('학생 삭제 중 오류 발생:', err);
-                    if (deleteButton) deleteButton.disabled = false; // 버튼 다시 활성화
-                    // 추가적인 오류 메시지 표시 (선택 사항)
-                    // alert(`삭제 중 오류 발생: ${err.message}`);
+                    if (deleteButton) deleteButton.disabled = false;
                 }
-            }; // --- ⭐️ 삭제 핸들러 끝 ---
+            };
+
             const editHandler = () => {
                 const currentlyEditing = studentTbody.querySelector('tr.editing');
                 if (currentlyEditing && currentlyEditing !== tr) {
-                    alert('먼저 다른 학생의 수정을 완료하거나 취소해주세요.'); return;
+                    alert('먼저 다른 학생의 수정을 완료하거나 취소해주세요.');
+                    return;
                 }
                 tr.classList.add('editing');
-                const nameTd=tr.querySelector('[data-field="student_name"]');
-                const schoolTd=tr.querySelector('[data-field="school_name"]');
-                const phoneTd=tr.querySelector('[data-field="phone_number"]'); // ⭐️ 추가
-                const ownerTd=tr.querySelector('[data-field="phone_owner"]'); // ⭐️ 추가
-                const gradeTd=tr.querySelector('[data-field="grade"]');
-                const genderTd=tr.querySelector('[data-field="gender"]');
-                const actionsTd=tr.querySelector('.actions');
+                const nameTd   = tr.querySelector('[data-field="student_name"]');
+                const schoolTd = tr.querySelector('[data-field="school_name"]');
+                const phoneTd  = tr.querySelector('[data-field="phone_number"]');
+                const ownerTd  = tr.querySelector('[data-field="phone_owner"]');
+                const gradeTd  = tr.querySelector('[data-field="grade"]');
+                const genderTd = tr.querySelector('[data-field="gender"]');
+                const actionsTd= tr.querySelector('.actions');
 
                 const originalData = {
-                    name: nameTd.textContent,
+                    name:   nameTd.textContent,
                     school: schoolTd.textContent,
-                    phone: phoneTd.textContent, // ⭐️ 추가
-                    owner: ownerTd.textContent, // ⭐️ 추가
-                    grade: gradeTd.textContent,
+                    phone:  phoneTd.textContent,
+                    owner:  ownerTd.textContent,
+                    grade:  gradeTd.textContent,
                     gender: genderTd.textContent
                 };
 
-                nameTd.innerHTML=`<input type="text" value="${originalData.name}" required>`;
-                schoolTd.innerHTML=`<input type="text" value="${originalData.school}">`;
-                phoneTd.innerHTML=`<input type="text" name="phone_number" value="${originalData.phone}" placeholder="010-1234-5678">`; // ⭐️ 추가
-                ownerTd.innerHTML=`<select><option value="학생" ${originalData.owner==='학생'?'selected':''}>학생</option><option value="학부모" ${originalData.owner==='학부모'?'selected':''}>학부모</option></select>`; // ⭐️ 추가
-                gradeTd.innerHTML=`<select><option value="3" ${originalData.grade==='3'?'selected':''}>3</option><option value="N" ${originalData.grade==='N'?'selected':''}>N</option><option value="2" ${originalData.grade==='2'?'selected':''}>2</option></select>`;
-                genderTd.innerHTML=`<select><option value="남" ${originalData.gender==='남'?'selected':''}>남</option><option value="여" ${originalData.gender==='여'?'selected':''}>여</option></select>`;
-                actionsTd.innerHTML=`<button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button> <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>`;
+                nameTd.innerHTML   = `<input type="text" value="${originalData.name}" required>`;
+                schoolTd.innerHTML = `<input type="text" value="${originalData.school}">`;
+                phoneTd.innerHTML  = `<input type="text" name="phone_number" value="${originalData.phone}" placeholder="010-1234-5678">`;
+                ownerTd.innerHTML  = `<select>
+                        <option value="학생" ${originalData.owner==='학생'?'selected':''}>학생</option>
+                        <option value="학부모" ${originalData.owner==='학부모'?'selected':''}>학부모</option>
+                    </select>`;
+                gradeTd.innerHTML  = `<select>
+                        <option value="3" ${originalData.grade==='3'?'selected':''}>3</option>
+                        <option value="N" ${originalData.grade==='N'?'selected':''}>N</option>
+                        <option value="2" ${originalData.grade==='2'?'selected':''}>2</option>
+                    </select>`;
+                genderTd.innerHTML = `<select>
+                        <option value="남" ${originalData.gender==='남'?'selected':''}>남</option>
+                        <option value="여" ${originalData.gender==='여'?'selected':''}>여</option>
+                    </select>`;
+                actionsTd.innerHTML= `
+                    <button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button>
+                    <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>
+                `;
 
                 const cancelHandler = () => {
                     tr.classList.remove('editing');
-                    nameTd.textContent = originalData.name;
+                    nameTd.textContent   = originalData.name;
                     schoolTd.textContent = originalData.school;
-                    phoneTd.textContent = originalData.phone; // ⭐️ 추가
-                    ownerTd.textContent = originalData.owner; // ⭐️ 추가
-                    gradeTd.textContent = originalData.grade;
+                    phoneTd.textContent  = originalData.phone;
+                    ownerTd.textContent  = originalData.owner;
+                    gradeTd.textContent  = originalData.grade;
                     genderTd.textContent = originalData.gender;
-                    actionsTd.innerHTML = `<button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button> <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>`;
+                    actionsTd.innerHTML  = `
+                        <button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button>
+                        <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>
+                    `;
                     tr.querySelector('.edit-btn').addEventListener('click', editHandler);
                     tr.querySelector('.delete-btn').addEventListener('click', deleteHandler);
                 };
@@ -630,13 +962,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const studentId = tr.dataset.studentId;
                     const updatedData = {
                         student_name: nameTd.querySelector('input').value.trim(),
-                        school_name: schoolTd.querySelector('input').value.trim() || null, // 빈칸이면 null
-                        phone_number: phoneTd.querySelector('input').value.trim() || null, // ⭐️ 추가 (빈칸이면 null)
-                        phone_owner: ownerTd.querySelector('select').value, // ⭐️ 추가
-                        grade: gradeTd.querySelector('select').value,
-                        gender: genderTd.querySelector('select').value
+                        school_name:  schoolTd.querySelector('input').value.trim() || null,
+                        phone_number: phoneTd.querySelector('input').value.trim() || null,
+                        phone_owner:  ownerTd.querySelector('select').value,
+                        grade:        gradeTd.querySelector('select').value,
+                        gender:       genderTd.querySelector('select').value
                     };
-                    if (!updatedData.student_name) { alert('학생 이름은 필수 항목입니다.'); return; }
+                    if (!updatedData.student_name) {
+                        alert('학생 이름은 필수 항목입니다.');
+                        return;
+                    }
                     actionsTd.innerHTML = '저장중...';
                     try {
                         const result = await apiCall(`${SVR_JUNGSI}/jungsi/students/update/${studentId}`, {
@@ -645,131 +980,139 @@ document.addEventListener('DOMContentLoaded', () => {
                             body: JSON.stringify(updatedData)
                         });
 
-                        if(result.success){
+                        if (result.success) {
                             tr.classList.remove('editing');
-                            nameTd.textContent = updatedData.student_name;
-                            schoolTd.textContent = updatedData.school_name || ''; // null이면 빈칸 표시
-                            phoneTd.textContent = updatedData.phone_number || ''; // ⭐️ 추가 (null이면 빈칸 표시)
-                            ownerTd.textContent = updatedData.phone_owner; // ⭐️ 추가
-                            gradeTd.textContent = updatedData.grade;
+                            nameTd.textContent   = updatedData.student_name;
+                            schoolTd.textContent = updatedData.school_name || '';
+                            phoneTd.textContent  = updatedData.phone_number || '';
+                            ownerTd.textContent  = updatedData.phone_owner;
+                            gradeTd.textContent  = updatedData.grade;
                             genderTd.textContent = updatedData.gender;
-                            actionsTd.innerHTML = `<button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button> <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>`;
+                            actionsTd.innerHTML  = `
+                                <button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button>
+                                <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>
+                            `;
                             tr.querySelector('.edit-btn').addEventListener('click', editHandler);
                             tr.querySelector('.delete-btn').addEventListener('click', deleteHandler);
 
-                            // 로컬 데이터 업데이트
-                            const studentIndex = existingStudents.findIndex(s => s.student_id == studentId);
-                            if (studentIndex > -1) {
-                                // 기존 scores 정보 유지하면서 업데이트
-                                existingStudents[studentIndex] = {
-                                    ...existingStudents[studentIndex], // scores 등 기존 정보 보존
+                            const idx = existingStudents.findIndex(s => s.student_id == studentId);
+                            if (idx > -1) {
+                                existingStudents[idx] = {
+                                    ...existingStudents[idx],
                                     student_name: updatedData.student_name,
-                                    school_name: updatedData.school_name,
+                                    school_name:  updatedData.school_name,
                                     phone_number: updatedData.phone_number,
-                                    phone_owner: updatedData.phone_owner,
-                                    grade: updatedData.grade,
-                                    gender: updatedData.gender
+                                    phone_owner:  updatedData.phone_owner,
+                                    grade:        updatedData.grade,
+                                    gender:       updatedData.gender
                                 };
                             }
+                            updateStudentStats(existingStudents);
                         } else {
                             alert(`수정 실패: ${result.message||'알 수 없는 오류'}`);
-                            actionsTd.innerHTML=`<button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button> <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>`;
+                            actionsTd.innerHTML= `
+                                <button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button>
+                                <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>
+                            `;
                             actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
                             actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
                         }
-                    } catch(err){
-                         alert(`오류 발생: ${err.message}`);
-                         actionsTd.innerHTML=`<button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button> <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>`;
-                         actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
-                         actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
-                         // 인증 오류는 apiCall에서 처리
+                    } catch(err) {
+                        alert(`오류 발생: ${err.message}`);
+                        actionsTd.innerHTML= `
+                            <button type="button" class="btn btn-success btn-sm save-edit-btn"><i class="fas fa-check"></i></button>
+                            <button type="button" class="btn btn-outline btn-sm cancel-edit-btn"><i class="fas fa-times"></i></button>
+                        `;
+                        actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
+                        actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
                     }
-                }; // End of saveHandler
+                };
 
                 actionsTd.querySelector('.save-edit-btn').addEventListener('click', saveHandler);
                 actionsTd.querySelector('.cancel-edit-btn').addEventListener('click', cancelHandler);
-            }; // End of editHandler
+            };
 
-            // 초기 HTML 렌더링
             tr.innerHTML = `
                 <td data-field="student_name">${student.student_name || ''}</td>
                 <td data-field="school_name">${student.school_name || ''}</td>
-                <td data-field="phone_number">${student.phone_number || ''}</td> <td data-field="phone_owner" style="text-align: center;">${student.phone_owner || '학생'}</td> <td data-field="grade" style="text-align: center;">${student.grade || ''}</td> <td data-field="gender" style="text-align: center;">${student.gender || ''}</td> <td class="actions">
-                    <button type="button" class="btn btn-primary btn-sm edit-btn"> <i class="fas fa-edit"></i> </button>
-                    <button type="button" class="btn btn-danger btn-sm delete-btn"> <i class="fas fa-trash"></i> </button>
+                <td data-field="phone_number">${student.phone_number || ''}</td>
+                <td data-field="phone_owner" style="text-align:center;">${student.phone_owner || '학생'}</td>
+                <td data-field="grade" style="text-align:center;">${student.grade || ''}</td>
+                <td data-field="gender" style="text-align:center;">${student.gender || ''}</td>
+                <td class="actions">
+                    <button type="button" class="btn btn-primary btn-sm edit-btn"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-danger btn-sm delete-btn"><i class="fas fa-trash"></i></button>
                 </td>
             `;
 
-            // 초기 이벤트 연결
             tr.querySelector('.edit-btn').addEventListener('click', editHandler);
             tr.querySelector('.delete-btn').addEventListener('click', deleteHandler);
 
             studentTbody.appendChild(tr);
-        }); // End of forEach student
-    }; // End of renderStudentList
+        });
+    };
 
-
-    // --- 학년도 변경 시 학생 목록 다시 로딩 ---
+    /* 8. 연도 바뀌면 로딩 다시 */
     yearSelect.addEventListener('change', loadStudentList);
 
-    // --- 페이지 로드 시 학생 목록 자동 로딩 ---
+    /* 9. 첫 로딩 */
     loadStudentList();
 
-    // --- 학생 명단 추가 버튼 이벤트 ---
+    /* 10. 명단 추가 (POST bulk-add) */
     addStudentsBtn.addEventListener('click', async () => {
         const rows = addStudentTbody.querySelectorAll('tr');
         if (rows.length === 0) {
-            alert('추가할 학생 정보를 입력해주세요.'); return;
+            alert('추가할 학생 정보를 입력해주세요.');
+            return;
         }
 
-        showMessage(addMessageEl, '명단 추가 처리 중...', 'info'); // 메시지 표시
+        showMessage(addMessageEl, '명단 추가 처리 중...', 'info');
         addStudentsBtn.disabled = true;
+
         const studentsToAdd = [];
         let isValid = true;
         const potentialDuplicates = [];
         const selectedYear = yearSelect.value;
 
         rows.forEach(tr => {
-            const nameInput = tr.querySelector('input[name="student_name"]');
+            const nameInput   = tr.querySelector('input[name="student_name"]');
             const schoolInput = tr.querySelector('input[name="school_name"]');
-            const phoneInput = tr.querySelector('input[name="phone_number"]'); // ⭐️ 추가
-            const ownerSelect = tr.querySelector('select[name="phone_owner"]'); // ⭐️ 추가
+            const phoneInput  = tr.querySelector('input[name="phone_number"]');
+            const ownerSelect = tr.querySelector('select[name="phone_owner"]');
             const gradeSelect = tr.querySelector('select[name="grade"]');
-            const genderSelect = tr.querySelector('select[name="gender"]');
+            const genderSelect= tr.querySelector('select[name="gender"]');
 
-            const name = nameInput.value.trim();
-            const school = schoolInput.value.trim() || null; // 빈칸이면 null
-            const phone = phoneInput.value.trim() || null; // ⭐️ 추가 (빈칸이면 null)
-            const owner = ownerSelect.value; // ⭐️ 추가
-            const grade = gradeSelect.value;
-            const gender = genderSelect.value;
+            const name   = nameInput?.value.trim() || '';
+            const school = schoolInput?.value.trim() || null;
+            const phone  = phoneInput?.value.trim() || null;
+            const owner  = ownerSelect?.value || '학생';
+            const grade  = gradeSelect?.value || '';
+            const gender = genderSelect?.value || '';
 
-            // 이름 유효성 검사
             if (!name) {
                 isValid = false;
-                nameInput.style.borderColor = 'red';
+                if (nameInput) nameInput.style.borderColor = 'red';
             } else {
-                nameInput.style.borderColor = ''; // 초기화
+                if (nameInput) nameInput.style.borderColor = '';
             }
 
-            if (name) { // 이름이 있어야 추가 목록에 포함
+            if (name) {
                 const studentData = {
                     student_name: name,
-                    school_name: school,
-                    phone_number: phone, // ⭐️ 추가
-                    phone_owner: owner, // ⭐️ 추가
-                    grade: grade,
-                    gender: gender
+                    school_name:  school,
+                    phone_number: phone,
+                    phone_owner:  owner,
+                    grade:        grade,
+                    gender:       gender
                 };
                 studentsToAdd.push(studentData);
 
-                // 중복 가능성 체크 (이름만으로 체크 - 필요시 기준 강화)
                 const isDuplicate = existingStudents.some(existing => existing.student_name === name);
                 if (isDuplicate) {
                     potentialDuplicates.push(name);
                 }
             }
-        }); // End of rows.forEach
+        });
 
         if (!isValid) {
             showMessage(addMessageEl, '학생 이름은 필수 입력 항목입니다.', 'error');
@@ -783,10 +1126,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 중복 경고 및 확인
         if (potentialDuplicates.length > 0) {
             const uniqueDuplicateNames = [...new Set(potentialDuplicates)];
-            const confirmationMessage = `다음 학생(들)은 이미 목록에 있는 이름과 같습니다:\n\n[ ${uniqueDuplicateNames.join(', ')} ]\n\n그래도 추가하시겠습니까? (동명이인일 수 있습니다)`;
+            const confirmationMessage =
+                `다음 학생(들)은 이미 목록에 있는 이름과 같습니다:\n\n[ ${uniqueDuplicateNames.join(', ')} ]\n\n그래도 추가하시겠습니까? (동명이인일 수 있습니다)`;
             if (!confirm(confirmationMessage)) {
                 showMessage(addMessageEl, '명단 추가가 취소되었습니다.', 'info');
                 addStudentsBtn.disabled = false;
@@ -794,7 +1137,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 서버로 전송
         try {
             const data = await apiCall(`${SVR_JUNGSI}/jungsi/students/bulk-add`, {
                 method: 'POST',
@@ -806,26 +1148,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 let successMsg = `총 ${data.insertedCount || 0}명의 학생을 추가했습니다.`;
                 if (data.errors && data.errors.length > 0) {
                     successMsg += ` (${data.errors.length}명 오류 발생)`;
-                    // 오류 상세 내용 로깅 (선택 사항)
                     console.warn('추가 오류 발생 학생:', data.errors);
                 }
                 showMessage(addMessageEl, successMsg, 'success');
-                addStudentTbody.innerHTML = ''; // 입력 테이블 초기화
-                addStudentInputRow(); // 새 입력 행 추가
-                loadStudentList(); // 학생 목록 새로고침
+
+                // 입력 행 비우고 새 빈 행 하나만 남기기
+                addStudentTbody.innerHTML = '';
+                addStudentInputRow();
+
+                // 기존 목록 새로고침
+                loadStudentList();
             } else {
                 showMessage(addMessageEl, `명단 추가 실패: ${data.message || '알 수 없는 서버 오류'}`, 'error');
             }
         } catch (err) {
-            // apiCall 내부에서 인증 오류는 처리됨
             console.error('명단 추가 API 호출 오류:', err);
             showMessage(addMessageEl, `오류 발생: ${err.message}`, 'error');
         } finally {
             addStudentsBtn.disabled = false;
         }
-    }); // End of addStudentsBtn click listener
-
-}); // End of DOMContentLoaded
+    });
+});
 </script>
 
 </body>
