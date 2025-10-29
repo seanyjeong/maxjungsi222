@@ -152,6 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCounselingList = [];
     let currentGunFilter = 'all';
     let currentSearchTerm = '';
+    
+    let cutoffDataCache = {}; // 컷점수 캐시 변수
 
     const handleAuthError = () => { console.error("Authentication error!"); alert('인증 만료. 다시 로그인하세요.'); window.top.location.href = LOGIN_PAGE; };
     const getToken = () => localStorage.getItem('jwt_token');
@@ -165,35 +167,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatRegion = (a, c) => [a, c].filter(Boolean).join(' ') || '-';
 
     const loadStudents = async () => { const y = yearSelect.value; studentSelect.innerHTML = '<option value="">- 로딩 중... -</option>'; try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${y}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) { handleAuthError(); return; } const d = await r.json(); if (d.success && d.students) { allStudents = d.students; allStudents.sort((a,b)=>a.student_name.localeCompare(b.student_name,'ko')); studentSelect.innerHTML = '<option value="">- 학생 선택 -</option>'; allStudents.forEach(s => { studentSelect.innerHTML += `<option value="${s.student_id}">${s.student_name} (${s.school_name || '정보없음'})</option>`; }); } else { allStudents = []; studentSelect.innerHTML = '<option value="">- 학생 없음 -</option>'; } } catch (e) { console.error('학생 로딩 실패', e); studentSelect.innerHTML = '<option value="">- 로딩 오류 -</option>'; if (e.message === '로그인 만료') handleAuthError(); } };
-const loadUniversities = async (year) => {
-    const k = year;
-    if (universityDataCache[k]) return universityDataCache[k];
-    console.log(`[${year}] 대학 로딩...`);
-    try {
-        const tk = getToken();
-        if (!tk) throw new Error('로그인 만료');
-
-        // 🔥 여기 수정!!
-        const r = await fetch(`${SVR_JUNGSI}/jungsi/schools/${year}`, {
-            headers: { 'Authorization': `Bearer ${tk}` }
-        });
-
-        if (r.status === 401 || r.status === 403) { handleAuthError(); return []; }
-        const d = await r.json();
-        if (d.success && d.list) {
-            universityDataCache[k] = d.list;
-            console.log(`[${year}] 대학 ${d.list.length}개 로드 완료.`);
-            return d.list;
-        } else {
-            console.warn("대학 로딩 실패:", d.message);
+    
+    const loadUniversities = async (year) => {
+        const k = year;
+        if (universityDataCache[k]) return universityDataCache[k];
+        console.log(`[${year}] 대학 로딩...`);
+        try {
+            const tk = getToken();
+            if (!tk) throw new Error('로그인 만료');
+            const r = await fetch(`${SVR_JUNGSI}/jungsi/schools/${year}`, {
+                headers: { 'Authorization': `Bearer ${tk}` }
+            });
+            if (r.status === 401 || r.status === 403) { handleAuthError(); return []; }
+            const d = await r.json();
+            if (d.success && d.list) {
+                universityDataCache[k] = d.list;
+                console.log(`[${year}] 대학 ${d.list.length}개 로드 완료.`);
+                return d.list;
+            } else {
+                console.warn("대학 로딩 실패:", d.message);
+                return [];
+            }
+        } catch (e) {
+            console.error('대학 로딩 오류:', e);
+            if (e.message === '로그인 만료') handleAuthError();
             return [];
         }
-    } catch (e) {
-        console.error('대학 로딩 오류:', e);
-        if (e.message === '로그인 만료') handleAuthError();
-        return [];
-    }
-};
+    };
 
     const fetchFormulaDetails = async (uid, year) => { const k = `${uid}-${year}`; if (universityFormulas[k]) return universityFormulas[k]; if (!uid) return null; try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/formula-details?U_ID=${uid}&year=${year}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) throw new Error('인증 오류'); const d = await r.json(); if (!d.success) throw new Error(d.message || '요강 로딩 실패'); universityFormulas[k] = d.formula; return d.formula; } catch (e) { console.error('요강 로딩 실패', e); if (e.message.includes('인증')) handleAuthError(); return null; } };
     const calculateSuneung = async (stu, uid, year) => { if (!stu || !stu.scores) return null; try { const si = convertScoresToSuneungFormat(stu.scores); const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/calculate`, { method: 'POST', headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${tk}` }, body: JSON.stringify({ U_ID:uid, year, studentScores: si }) }); if (r.status === 401 || r.status === 403) throw new Error('인증 오류'); const d = await r.json(); if (!d.success) throw new Error(d.message||'수능 계산 실패'); return Number(d.result?.totalScore || 0); } catch (e) { console.error('수능 계산 에러:', e); if (e.message.includes('인증')) handleAuthError(); return null; } };
@@ -201,9 +201,41 @@ const loadUniversities = async (year) => {
     const fetchTop10Score = async (uid, year) => { try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/counseling/stats/${uid}/${year}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) throw new Error('인증 오류'); const d = await r.json(); return (d.success && d.top10Score != null) ? Number(d.top10Score) : null; } catch (e) { console.error(`Top10 조회 오류 (U_ID:${uid})`, e); if (e.message.includes('인증')) handleAuthError(); return null; } };
     const loadCurrentCounselingList = async (sid, year) => { try { const tk = getToken(); if (!tk) throw new Error('로그인 만료'); const r = await fetch(`${SVR_JUNGSI}/jungsi/counseling/wishlist/${sid}/${year}`, { headers: { 'Authorization': `Bearer ${tk}` } }); if (r.status === 401 || r.status === 403) throw new Error('인증 오류'); const d = await r.json(); currentCounselingList = (d.success && d.wishlist) ? d.wishlist : []; console.log("Current counseling list loaded:", currentCounselingList.length); } catch (e) { console.error('상담 목록 로딩 오류:', e); currentCounselingList = []; if (e.message.includes('인증')) handleAuthError(); } };
 
+    // 컷점수 전체 로딩 함수
+    const loadAllCutoffScores = async (year) => {
+        const k = year;
+        if (cutoffDataCache[k]) return cutoffDataCache[k];
+        console.log(`[${year}] 컷점수 로딩...`);
+        try {
+            const tk = getToken();
+            if (!tk) throw new Error('로그인 만료');
+            const r = await fetch(`${SVR_JUNGSI}/jungsi/cutoffs/${year}`, {
+                headers: { 'Authorization': `Bearer ${tk}` }
+            });
+            if (r.status === 401 || r.status === 403) { handleAuthError(); return new Map(); }
+            const d = await r.json();
+            if (d.success && d.cutoffs) {
+                const cutoffMap = new Map();
+                d.cutoffs.forEach(item => {
+                    cutoffMap.set(item.U_ID, item);
+                });
+                cutoffDataCache[k] = cutoffMap;
+                console.log(`[${year}] 컷점수 ${cutoffMap.size}개 맵 변환 완료.`);
+                return cutoffMap;
+            } else {
+                console.warn("컷점수 로딩 실패:", d.message);
+                return new Map();
+            }
+        } catch (e) {
+            console.error('컷점수 로딩 오류:', e);
+            if (e.message === '로그인 만료') handleAuthError();
+            return new Map();
+        }
+    };
+
     function updateStudentInfoCard(stu) { const c = studentInfoContainer; if (!stu || !c) { if (c) c.style.display='none'; return; } c.querySelector('#selected-student-name').textContent = stu.student_name || '-'; c.querySelector('#selected-school-name').textContent = stu.school_name || '정보없음'; c.querySelector('#selected-gender').textContent = stu.gender || '-'; const s = stu.scores || {}; const fmtS = (sub,std,pct,g)=>{ const p=[]; if(std!=null) p.push(`표 ${std}`); if(pct!=null) p.push(`백 ${pct}`); if(g!=null) p.push(`<strong class="grade-emphasis">${g}</strong>등급`); return p.length?p.join(' / '):'-'; }; const fmtG = (g)=> (g!=null)?`<strong class="grade-emphasis">${g}</strong>등급`:'-'; const el = (id)=>c.querySelector('#'+id); el('score-kor').innerHTML = `국어(${s.국어_선택과목 || '?' }): ${fmtS(s.국어_선택과목,s.국어_표준점수,s.국어_백분위,s.국어_등급)}`; el('score-math').innerHTML= `수학(${s.수학_선택과목 || '?' }): ${fmtS(s.수학_선택과목,s.수학_표준점수,s.수학_백분위,s.수학_등급)}`; el('score-eng').innerHTML = `영어: ${fmtG(s.영어_등급)}`; el('score-hist').innerHTML= `한국사: ${fmtG(s.한국사_등급)}`; el('score-inq1').innerHTML= `탐구1(${s.탐구1_선택과목 || '?' }): ${fmtS(s.탐구1_선택과목,s.탐구1_표준점수,s.탐구1_백분위,s.탐구1_등급)}`; el('score-inq2').innerHTML= `탐구2(${s.탐구2_선택과목 || '?' }): ${fmtS(s.탐구2_선택과목,s.탐구2_표준점수,s.탐구2_백분위,s.탐구2_등급)}`; c.style.display='block'; }
 
-const populateUniversityTable = async () => {
+    const populateUniversityTable = async () => {
         if (!selectedStudentData) { tbody.innerHTML = '<tr class="loading-row"><td colspan="13">학생을 먼저 선택해주세요.</td></tr>'; return; }
         const year = yearSelect.value;
         tbody.innerHTML = '<tr class="loading-row"><td colspan="13"><i class="fas fa-spinner fa-spin"></i> 대학별 점수 정보 로딩 중...</td></tr>';
@@ -212,43 +244,29 @@ const populateUniversityTable = async () => {
         if (!universities || universities.length === 0) { tbody.innerHTML = '<tr class="loading-row"><td colspan="13">해당 학년도 대학 목록이 없습니다.</td></tr>'; return; }
 
         await loadCurrentCounselingList(selectedStudentData.student_id, year);
+        
+        const cutoffMap = await loadAllCutoffScores(year); // 컷점수 맵 로드
 
-const searchTerm = currentSearchTerm.trim().toLowerCase();
+        const searchTerm = currentSearchTerm.trim().toLowerCase();
 
-const filteredUniversities = universities.filter(uni => {
-    const gunMatch =
-        currentGunFilter === 'all' ||
-        (uni.gun && uni.gun.startsWith(currentGunFilter));
-
-    // 대학명
-    const hayUni  = (uni.university || '').toLowerCase();
-    // 학과명
-    const hayDept = (uni.department || '').toLowerCase();
-    // 군 (가군/나군/다군)도 검색에 포함시키자. "가군"으로 검색하면 바로 필터 가능하게.
-    const hayGun  = (uni.gun || '').toLowerCase();
-
-    // 지역 후보를 다 합쳐서 본다.
-    // 1) 기존에 쓰던 uni.광역 / uni.시구
-    // 2) 혹시 백엔드에서 region, city 이런 이름으로 보내고 있을 수도 있으니까 그것도 같이 본다.
-    const hayRegionAll = [
-        uni.광역,
-        uni.시구,
-        uni.region,
-        uni.city,
-        uni.지역,
-        uni.주소
-    ].filter(Boolean).join(' ').toLowerCase();
-
-    const searchMatch =
-        !searchTerm ||
-        hayUni.includes(searchTerm) ||
-        hayDept.includes(searchTerm) ||
-        hayGun.includes(searchTerm) ||
-        hayRegionAll.includes(searchTerm);
-
-    return gunMatch && searchMatch;
-});
-
+        const filteredUniversities = universities.filter(uni => {
+            const gunMatch =
+                currentGunFilter === 'all' ||
+                (uni.gun && uni.gun.startsWith(currentGunFilter));
+            const hayUni  = (uni.university || '').toLowerCase();
+            const hayDept = (uni.department || '').toLowerCase();
+            const hayGun  = (uni.gun || '').toLowerCase();
+            const hayRegionAll = [
+                uni.광역, uni.시구, uni.region, uni.city, uni.지역, uni.주소
+            ].filter(Boolean).join(' ').toLowerCase();
+            const searchMatch =
+                !searchTerm ||
+                hayUni.includes(searchTerm) ||
+                hayDept.includes(searchTerm) ||
+                hayGun.includes(searchTerm) ||
+                hayRegionAll.includes(searchTerm);
+            return gunMatch && searchMatch;
+        });
 
         if (filteredUniversities.length === 0) { tbody.innerHTML = '<tr class="loading-row"><td colspan="13">조건에 맞는 대학이 없습니다.</td></tr>'; return; }
 
@@ -260,20 +278,21 @@ const filteredUniversities = universities.filter(uni => {
                     fetchTop10Score(uni.U_ID, year)
                 ]);
 
-                // *** 로그 추가 ***: 백엔드에서 받은 formula 객체 전체를 콘솔에 출력
                 console.log(`[U_ID: ${uni.U_ID}] Received Formula Data:`, formula);
 
                 if (!formula) {
-                    // *** 로그 추가 ***: Formula 로딩 실패 시 로그
                     console.warn(`[U_ID: ${uni.U_ID}] Formula data is null or undefined. Skipping row.`);
-                    return null; // formula 없으면 행 생성 X
+                    return null; 
                 }
 
+                // 맵에서 컷점수 조회
+                const cutoffs = cutoffMap.get(uni.U_ID) || {}; 
+                const branchCut = cutoffs.지점_수능컷; 
+                const maxCut = cutoffs.맥스_수능컷;     
 
                 const isInList = currentCounselingList.some(item => item.대학학과_ID == uni.U_ID);
                 const region = formatRegion(formula.광역, formula.시구);
-
-                // *** 로그 추가 ***: 모집 정원 값 확인
+                
                 const 모집정원_값 = formula['모집정원'];
                 console.log(`[U_ID: ${uni.U_ID}] 모집 정원 값:`, 모집정원_값, `(타입: ${typeof 모집정원_값})`);
 
@@ -289,8 +308,8 @@ const filteredUniversities = universities.filter(uni => {
                     <td>${formatStage(formula.단계별)}</td>
                     <td class="my-score">${myScore !== null ? `<strong>${myScore.toFixed(2)}</strong>` : '<span style="color:red;">오류</span>'}</td>
                     <td class="top-score">${top10Score !== null ? `<strong>${top10Score.toFixed(2)}</strong>` : '-'}</td>
-                    <td>500</td> 
-                    <td>500</td> 
+                    <td>${branchCut != null ? branchCut : '-'}</td> 
+                    <td>${maxCut != null ? maxCut : '-'}</td> 
                     <td class="action-buttons">
                         <button class="btn btn-sm ${isInList ? 'btn-success' : 'btn-primary'} add-to-list-btn"
                                 data-uid="${uni.U_ID}" data-gun="${formula.군 || uni.gun}"
@@ -334,6 +353,8 @@ const filteredUniversities = universities.filter(uni => {
         const U_ID = button.dataset.uid; const gun = button.dataset.gun;
         if (!gun) { showToast('군 정보 없음.', true); return; }
         button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        // ⭐️ '추가'는 bulk-save 방식 유지 (가장 안전함)
         try {
             await loadCurrentCounselingList(selectedStudentData.student_id, yearSelect.value);
             const currentGunCount = currentCounselingList.filter(item => item.모집군 === gun).length;
@@ -342,25 +363,22 @@ const filteredUniversities = universities.filter(uni => {
 
             const tk = getToken(); if (!tk) throw new Error('로그인 만료');
 
-            // [해결책] counsel.html 과 동일하게 /bulk-save 를 호출하도록 수정
-            // 1. 현재 목록에 새 항목 추가
             currentCounselingList.push({
                 모집군: gun,
                 대학학과_ID: U_ID,
-                학생_ID: selectedStudentData.student_id, // ⭐️ 학생 ID도 추가 (필수)
-                학년도: yearSelect.value,             // ⭐️ 학년도도 추가 (필수)
+                학생_ID: selectedStudentData.student_id,
+                학년도: yearSelect.value,
                 상담_수능점수: null, 상담_내신점수: null, 상담_실기기록: null,
                 상담_실기반영점수: null, 상담_계산총점: null
             });
 
-            // 2. /bulk-save API 호출
             const res = await fetch(`${SVR_JUNGSI}/jungsi/counseling/wishlist/bulk-save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tk}` },
                 body: JSON.stringify({
                     학생_ID: selectedStudentData.student_id,
                     학년도: yearSelect.value,
-                    wishlistItems: currentCounselingList // 전체 목록 전송
+                    wishlistItems: currentCounselingList 
                 })
             });
 
@@ -372,7 +390,6 @@ const filteredUniversities = universities.filter(uni => {
                 button.innerHTML = '<i class="fas fa-check"></i> 추가됨';
                 button.classList.replace('btn-primary', 'btn-success');
                 button.disabled = true;
-                // 제외 버튼 생성 및 추가
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-sm btn-danger remove-from-list-btn';
                 removeBtn.dataset.uid = U_ID; removeBtn.dataset.gun = gun;
@@ -380,7 +397,6 @@ const filteredUniversities = universities.filter(uni => {
                 removeBtn.addEventListener('click', handleRemoveFromListClick);
                 button.parentNode.appendChild(removeBtn);
             } else {
-                // 실패 시 롤백
                 currentCounselingList = currentCounselingList.filter(item => item.대학학과_ID != U_ID);
                 throw new Error(data.message || `추가 실패 (${res.status})`);
             }
@@ -396,7 +412,7 @@ const filteredUniversities = universities.filter(uni => {
         }
     };
 
-    // ⭐️ 상담 목록 제외 버튼 핸들러 (bulk-save 방식으로 수정)
+    // ⭐️ 상담 목록 제외 버튼 핸들러 (bulk-save -> /remove API 호출로 수정)
     const handleRemoveFromListClick = async (event) => {
         const button = event.target.closest('button');
         if (!selectedStudentData) { showToast('학생 먼저 선택.', true); return; }
@@ -410,20 +426,16 @@ const filteredUniversities = universities.filter(uni => {
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
         try {
-            // 1. 현재 목록에서 이 항목을 *제외한* 새 목록 생성
-            const newList = currentCounselingList.filter(item =>
-                !(item.대학학과_ID == U_ID && item.학생_ID == studentId && item.학년도 == year)
-            );
-
+            // ⭐️ 1. /remove API 호출 (백엔드에 이미 존재)
             const tk = getToken(); if (!tk) throw new Error('로그인 만료');
-            // 2. /bulk-save API 호출
-            const res = await fetch(`${SVR_JUNGSI}/jungsi/counseling/wishlist/bulk-save`, {
-                method: 'POST',
+            
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/counseling/wishlist/remove`, { // ⭐️ API 엔드포인트 변경
+                method: 'POST', // ⭐️ POST 방식
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tk}` },
                 body: JSON.stringify({
                     학생_ID: studentId,
                     학년도: year,
-                    wishlistItems: newList // 제외된 목록 전송
+                    대학학과_ID: U_ID // ⭐️ 지울 대학 ID만 전송
                 })
             });
             const data = await res.json();
@@ -440,7 +452,11 @@ const filteredUniversities = universities.filter(uni => {
                     addButton.disabled = false;
                 }
                 button.remove(); // 제외 버튼 자신 제거
-                currentCounselingList = newList; // 내부 캐시 업데이트
+                
+                // ⭐️ 2. 프론트엔드 내부 캐시(currentCounselingList)에서도 제거
+                currentCounselingList = currentCounselingList.filter(item =>
+                    !(item.대학학과_ID == U_ID && item.학생_ID == studentId && item.학년도 == year)
+                );
             } else {
                 throw new Error(data.message || `제외 실패 (${res.status})`);
             }
@@ -457,20 +473,31 @@ const filteredUniversities = universities.filter(uni => {
 
     // --- 이벤트 리스너 ---
     studentSelect.addEventListener('change', async (e)=>{ const id = e.target.value; if (id) { selectedStudentData = allStudents.find(s=>s.student_id==id); updateStudentInfoCard(selectedStudentData); await populateUniversityTable(); } else { selectedStudentData = null; updateStudentInfoCard(null); tbody.innerHTML = '<tr class="loading-row"><td colspan="13">학생을 선택해주세요.</td></tr>'; } });
-    yearSelect.addEventListener('change', async ()=>{ await loadStudents(); selectedStudentData = null; studentSelect.value = ''; updateStudentInfoCard(null); universityFormulas = {}; universityDataCache = {}; await populateUniversityTable(); });
+    
+    yearSelect.addEventListener('change', async ()=>{ 
+        await loadStudents(); 
+        selectedStudentData = null; 
+        studentSelect.value = ''; 
+        updateStudentInfoCard(null); 
+        universityFormulas = {}; 
+        universityDataCache = {}; 
+        cutoffDataCache = {}; // ⭐️ 컷점수 캐시 초기화
+        await populateUniversityTable(); 
+    });
+
     filterButtons.forEach(button => { button.addEventListener('click', () => { filterButtons.forEach(btn => btn.classList.remove('active')); button.classList.add('active'); currentGunFilter = button.dataset.gunFilter; populateUniversityTable(); }); });
     searchInput.addEventListener('input', () => {
-        // ⭐️ 검색 입력 시 딜레이(디바운스) 추가
          clearTimeout(searchInput.timer);
          searchInput.timer = setTimeout(() => {
              currentSearchTerm = searchInput.value;
              populateUniversityTable();
-         }, 300); // 300ms 딜레이
+         }, 300); 
     });
 
     // --- 페이지 초기 로드 ---
     loadStudents();
-    loadUniversities(yearSelect.value);
+    loadUniversities(yearSelect.value); 
+    loadAllCutoffScores(yearSelect.value); 
 
 });
 </script>
