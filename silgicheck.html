@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>정시 실기모드 설정</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f3f4f6;
+      --card: #fff;
+      --border: #e5e7eb;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin: 0 0 10px 0;
+      color: #111827;
+      font-size: 1.4rem;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    select, input {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    thead {
+      background: #eff6ff;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    th {
+      text-align: left;
+      white-space: nowrap;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .btn {
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .btn-save {
+      background: #10b981;
+      color: white;
+    }
+    .btn-edit {
+      background: #f59e0b;
+      color: white;
+    }
+    .status {
+      position: fixed;
+      right: 10px;
+      bottom: 10px;
+      background: rgba(0,0,0,.75);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: .8rem;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+    .status.show { opacity: 1; }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: .7rem;
+      background: #e5e7eb;
+      color: #111827;
+    }
+  </style>
+</head>
+<body>
+  <h1><i class="fas fa-dumbbell"></i> 정시 실기모드 설정</h1>
+  <div class="toolbar">
+    <label>
+      학년도:
+      <select id="year-select">
+        <option value="2026">2026</option>
+        <option value="2027">2027</option>
+      </select>
+    </label>
+    <label>
+      작업자:
+      <select id="worker-select">
+        <option value="">전체</option>
+        <option value="대전">대전</option>
+        <option value="강남">강남</option>
+        <option value="울산">울산</option>
+        <option value="대구">대구</option>
+      </select>
+    </label>
+  </div>
+
+  <table id="mode-table">
+    <thead>
+      <tr>
+        <th style="width:40px;">#</th>
+        <th>대학명</th>
+        <th>학과명</th>
+        <th style="width:80px;">실기</th>
+        <th style="width:120px;">현재모드</th>
+        <th style="width:140px;">변경</th>
+        <th style="width:70px;">액션</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="7">로딩 중...</td></tr>
+    </tbody>
+  </table>
+
+  <div id="status" class="status"></div>
+
+<script>
+    const API_BASE = 'https://supermax.kr'; // 너 서버
+    const yearSel = document.getElementById('year-select');
+    const workerSel = document.getElementById('worker-select');
+    const tbody = document.querySelector('#mode-table tbody');
+    const statusBox = document.getElementById('status');
+
+    // 쿼리스트링으로 들어온 값 적용 ( ?worker=대전&year=2026 )
+    const params = new URLSearchParams(location.search);
+    if (params.get('year')) yearSel.value = params.get('year');
+    if (params.get('worker')) workerSel.value = params.get('worker');
+
+    function showStatus(msg, isError = false) {
+      statusBox.textContent = msg;
+      statusBox.style.background = isError ? 'rgba(220,38,38,.85)' : 'rgba(0,0,0,.75)';
+      statusBox.classList.add('show');
+      setTimeout(() => statusBox.classList.remove('show'), 2000);
+    }
+
+    async function loadList() {
+      const year = yearSel.value;
+      const worker = workerSel.value;
+      
+      if (!worker) {
+          tbody.innerHTML = '<tr><td colspan="7">작업자를 선택하세요.</td></tr>';
+          return;
+      }
+      
+      tbody.innerHTML = '<tr><td colspan="7">로딩 중...</td></tr>';
+      try {
+        const res = await fetch(`${API_BASE}/jungsi/practical-mode/list?year=${year}&worker=${encodeURIComponent(worker)}`);
+        const data = await res.json();
+        if (!data.success) {
+          tbody.innerHTML = `<tr><td colspan="7" style="color:red;">${data.message || '로드 실패'}</td></tr>`;
+          return;
+        }
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7">데이터가 없습니다. (할당량 0)</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        data.items.forEach((row, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row._idx}</td>
+            <td>${row.대학명 || '-'}</td>
+            <td>${row.학과명 || '-'}</td>
+            <td>${row.실기 || '-'}</td>
+            <td>
+              <span class="badge" data-current="${row.실기모드 || 'basic'}">
+                ${row.실기모드 || 'basic'}
+              </span>
+            </td>
+            <td>
+              <select data-mode-input="${row._idx}">
+                <option value="basic" ${row.실기모드 === 'basic' ? 'selected' : ''}>basic</option>
+                <option value="special" ${row.실기모드 === 'special' ? 'selected' : ''}>special</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn ${row.실기모드 ? 'btn-edit' : 'btn-save'}" data-save="${row._idx}">
+                <i class="fas fa-save"></i> ${row.실기모드 ? '수정' : '저장'}
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // ⭐️⭐️⭐️ [수정된 버튼 이벤트 리스너] ⭐️⭐️⭐️
+        tbody.querySelectorAll('button[data-save]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            
+            // 1. 에러 방지를 위해 미리 요소를 찾아 저장
+            const clickedButton = e.currentTarget;
+            const tr = clickedButton.closest('tr');
+            if (!tr) return; // 혹시 모를 에러 방지
+
+            const badge = tr.querySelector('[data-current]');
+            const select = tr.querySelector(`select[data-mode-input="${clickedButton.dataset.save}"]`);
+
+            if (!badge || !select) {
+                console.error('HTML 구조 오류: badge 또는 select를 찾을 수 없습니다.');
+                return;
+            }
+
+            const rowId = clickedButton.dataset.save;
+            const mode = select.value;
+
+            // 2. 버튼 즉시 비활성화 (중복 클릭 및 레이스 컨디션 방지)
+            clickedButton.disabled = true;
+            clickedButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            let originalButtonHTML = `<i class="fas ${mode === 'special' ? 'fa-pen' : 'fa-save'}"></i> ${mode === 'special' ? '수정' : '저장'}`;
+
+            try {
+              const res2 = await fetch(`${API_BASE}/jungsi/practical-mode/set`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: Number(rowId), mode })
+              });
+              
+              const data2 = await res2.json();
+
+              // 3. (핵심) await 이후, 버튼이 DOM에서 사라졌는지 확인
+              if (!document.body.contains(clickedButton)) {
+                  console.log('저장되었으나, 뷰가 리프레시되어 UI 업데이트를 건너뜁니다.');
+                  return; // 함수 종료
+              }
+
+              if (!data2.success) {
+                showStatus(data2.message || '저장 실패', true);
+                // 실패 시 버튼 원상 복구
+                clickedButton.innerHTML = originalButtonHTML;
+                return;
+              }
+              
+              // 성공 시 화면 반영
+              badge.textContent = mode;
+              badge.dataset.current = mode;
+              clickedButton.classList.remove('btn-save');
+              clickedButton.classList.add('btn-edit');
+              clickedButton.innerHTML = '<i class="fas fa-pen"></i> 수정';
+              showStatus('저장 완료');
+
+            } catch (err) {
+              console.error(err);
+              showStatus('통신 오류', true);
+              // 4. 통신 오류 시에도 버튼이 존재하면 원상 복구
+              if (document.body.contains(clickedButton)) {
+                  clickedButton.innerHTML = originalButtonHTML;
+              }
+            } finally {
+              // 5. 모든 작업 완료 후 버튼 활성화 (버튼이 아직 존재한다면)
+              if (document.body.contains(clickedButton)) {
+                  clickedButton.disabled = false;
+              }
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="7" style="color:red;">통신 오류: ${err.message}</td></tr>`;
+      }
+    }
+
+    yearSel.addEventListener('change', loadList);
+    workerSel.addEventListener('change', loadList);
+
+    // 처음 로드
+    loadList();
+  </script>
+</body>
+</html>
