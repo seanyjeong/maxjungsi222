@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="version" content="1.0.1" />
     <title>MAX 정시 엔진</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -192,18 +196,11 @@
         .admin-only { display: none; }
         body.is-admin .admin-only { display: block; }
 
-        /* MAX_LIVE 메뉴 비활성 스타일 */
+        /* MAX_LIVE 메뉴 스타일 */
         .nav-menu > li > a#max-live-link {
             color: #f59e0b;
-            cursor: not-allowed;
+            cursor: pointer;
             text-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
-        }
-        .nav-menu > li > a#max-live-link .coming-soon-text {
-            font-size: 0.8em;
-            font-weight: 400;
-            color: var(--text-secondary);
-            margin-left: 4px;
-            text-shadow: none;
         }
         .nav-menu > li:hover > a#max-live-link {
             background-color: #fffbeb;
@@ -301,7 +298,11 @@
                 </li>
 
                 <li>
-                    <a id="max-live-link">MAX_LIVE <span class="coming-soon-text">(추후공개예정)</span></a>
+                    <a href="#" id="max-live-link">MAX_LIVE</a>
+                    <ul class="dropdown-menu">
+                        <li><a data-href="school_app.html">상담지원정보</a></li>
+                        <li><a href="#" style="color: #9ca3af; cursor: not-allowed;">실제지원정보 (추후)</a></li>
+                    </ul>
                 </li>
 
                 <li>
@@ -655,7 +656,6 @@
     </script>
 </body>
 </html>
-
 
 
 
