@@ -408,6 +408,24 @@
         return;
       }
 
+      // ⭐️ 빈칸 경고: 선택과목은 있는데 점수가 없는 학생 확인
+      const emptyScoreStudents = [];
+      items.forEach(item => {
+        const hasSubject = item.국어_선택과목 || item.수학_선택과목 || item.탐구1_선택과목 || item.탐구2_선택과목;
+        const hasScore = item.국어_표준점수 || item.수학_표준점수 || item.탐구1_표준점수 || item.탐구2_표준점수;
+        if (hasSubject && !hasScore) {
+          const student = students.find(s => s.student_id === item.student_id);
+          if (student) emptyScoreStudents.push(student.student_name);
+        }
+      });
+
+      if (emptyScoreStudents.length > 0) {
+        const confirmMsg = `⚠️ 다음 ${emptyScoreStudents.length}명의 점수가 비어있습니다:\n\n${emptyScoreStudents.slice(0, 10).join(', ')}${emptyScoreStudents.length > 10 ? ` 외 ${emptyScoreStudents.length - 10}명` : ''}\n\n정말 저장하시겠습니까?\n(빈 점수로 저장되면 기존 데이터가 삭제됩니다!)`;
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+      }
+
       saveBtn.disabled = true;
       showMsg('저장 중...', true); // 저장 중 메시지는 하단에 잠시 표시
       try {
@@ -482,5 +500,4 @@
   </script>
 </body>
 </html>
-
 
