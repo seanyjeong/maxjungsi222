@@ -122,6 +122,54 @@
             color: var(--primary-color);
         }
 
+        /* 모집인원 스타일 */
+        .stat-item .value.quota {
+            color: #7c3aed;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 2px solid #a78bfa;
+        }
+
+        /* 총지원자 경쟁률별 스타일 */
+        .stat-item .value.competition-low {
+            color: #059669;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 2px solid #34d399;
+        }
+
+        .stat-item .value.competition-normal {
+            color: #2563eb;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 2px solid #60a5fa;
+        }
+
+        .stat-item .value.competition-high {
+            color: #d97706;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 2px solid #fbbf24;
+        }
+
+        .stat-item .value.competition-extreme {
+            color: #dc2626;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 2px solid #f87171;
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+        }
+
         /* Applicants Table */
         .applicants-table-container {
             background: var(--card-bg);
@@ -459,6 +507,10 @@
         <!-- Stats Bar -->
         <div class="stats-bar" id="stats-bar" style="display: none;">
             <div class="stat-item">
+                <div class="label">모집인원</div>
+                <div class="value" id="quota-count">0명</div>
+            </div>
+            <div class="stat-item">
                 <div class="label">총 지원자</div>
                 <div class="value" id="total-applicants">0명</div>
             </div>
@@ -643,7 +695,7 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    displayApplicants(data.applicants, data.stats);
+                    displayApplicants(data.applicants, data.stats, data.university);
                 } else {
                     throw new Error(data.message || '데이터를 불러오는데 실패했습니다.');
                 }
@@ -685,13 +737,14 @@
             renderApplicantCards(sorted);
         }
 
-        function displayApplicants(applicants, stats) {
+        function displayApplicants(applicants, stats, university) {
             const container = document.getElementById('applicants-container');
             const statsBar = document.getElementById('stats-bar');
 
             // 전역 변수에 저장
             currentApplicants = applicants || [];
             currentStats = stats || {};
+            const quota = university?.quota || 0;
 
             if (!applicants || applicants.length === 0) {
                 statsBar.style.display = 'none';
@@ -713,7 +766,32 @@
 
             // 통계 표시
             statsBar.style.display = 'flex';
-            document.getElementById('total-applicants').textContent = `${stats.total_count}명`;
+
+            // 모집인원 스타일 적용
+            const quotaEl = document.getElementById('quota-count');
+            quotaEl.textContent = `${quota}명`;
+            quotaEl.className = 'value quota';
+
+            // 총지원자 - 경쟁률에 따라 색상 변경
+            const totalEl = document.getElementById('total-applicants');
+            const totalCount = stats.total_count || 0;
+            totalEl.textContent = `${totalCount}명`;
+
+            // 경쟁률 계산 및 클래스 적용
+            let competitionClass = 'value';
+            if (quota > 0) {
+                const ratio = totalCount / quota;
+                if (ratio < 1) {
+                    competitionClass = 'value competition-low';  // 미달 (초록)
+                } else if (ratio < 2) {
+                    competitionClass = 'value competition-normal';  // 1~2배 (파랑)
+                } else if (ratio < 3) {
+                    competitionClass = 'value competition-high';  // 2~3배 (주황)
+                } else {
+                    competitionClass = 'value competition-extreme';  // 3배 이상 (빨강 + 애니메이션)
+                }
+            }
+            totalEl.className = competitionClass;
             document.getElementById('avg-suneung').textContent = `${avgSuneung.toFixed(2)}점`;
             document.getElementById('max-suneung').textContent = `${maxSuneung.toFixed(2)}점`;
             document.getElementById('min-suneung').textContent = `${minSuneung.toFixed(2)}점`;
