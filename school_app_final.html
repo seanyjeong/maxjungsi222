@@ -747,18 +747,26 @@
                             </div>
                             ` : ''}
                             <div class="total-row">
+                                <div class="item">
+                                    <span class="label">수능점수</span>
+                                    <span class="value">${applicant.suneung_score ? applicant.suneung_score.toFixed(2) : '-'}</span>
+                                </div>
                                 ${applicant.naeshin_score ? `
                                 <div class="item">
-                                    <span class="label">내신점수</span>
+                                    <span class="label">내신</span>
                                     <span class="value">${applicant.naeshin_score.toFixed(2)}</span>
                                 </div>
                                 ` : ''}
                                 ${applicant.practical_score ? `
                                 <div class="item">
-                                    <span class="label">실기점수</span>
+                                    <span class="label">실기</span>
                                     <span class="value">${applicant.practical_score.toFixed(2)}</span>
                                 </div>
                                 ` : ''}
+                                <div class="item">
+                                    <span class="label">총점</span>
+                                    <span class="value highlight">${applicant.total_score ? applicant.total_score.toFixed(2) : '-'}</span>
+                                </div>
                             </div>
                             ${resultBadges}
                         </div>
