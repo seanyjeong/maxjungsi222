@@ -658,12 +658,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (최종_결과_최초 === '예비') { const reserveNum = card.querySelector('.reserve-number-input').value.trim(); 최종_결과_최초 = reserveNum ? `예비 ${reserveNum}번` : '예비'; }
 
                 const savePromise = calculateSilgiPromise.then(silgiResult => {
+                    // ⭐️ 화면에 표시된 수능점수/총점 가져오기
+                    const displayedSuneungScore = parseFloat(card.querySelector('.score-suneung')?.textContent) || 0;
+                    const displayedTotalScore = parseFloat(card.querySelector('.score-total')?.textContent) || 0;
+
                     const saveData = {
                         학생_ID: studentId, 학년도: year, 모집군: gun, 대학학과_ID: parseInt(deptId),
+                        지원_수능점수: displayedSuneungScore, // ⭐️ 수능점수 추가
                         지원_내신점수: naeshinInputVal, // ⭐️ 수정된 변수 사용
                         지원_실기기록: finalPracticalRecords,
                         지원_실기총점: silgiResult.totalScore,
                         지원_실기상세: silgiResult.breakdown,
+                        지원_총점: displayedTotalScore, // ⭐️ 총점 추가
                         결과_1단계: card.querySelector('.stage1-select').value, 결과_최초: 최종_결과_최초, 결과_최종: card.querySelector('.final-select').value,
                         최종등록_여부: card.querySelector('.register-select').value === 'true', 메모: card.querySelector('.memo-input').value.trim() || null
                     };
