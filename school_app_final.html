@@ -204,6 +204,21 @@
             opacity: 1;
         }
 
+        /* 최종합격 스타일 */
+        .applicant-card.final-pass {
+            background: linear-gradient(to right, #dcfce7 0%, #f0fdf4 100%);
+            border: 2px solid #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        .applicant-card.final-pass .card-header {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .applicant-card.final-pass .card-header .rank::before {
+            content: '🎉 ';
+        }
+
         .card-header {
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             padding: 10px 16px;
@@ -690,6 +705,7 @@
             const cardsHTML = applicants.map((applicant, index) => {
                 const rank = index + 1;
                 const isMyBranch = myBranch && applicant.branch === myBranch;
+                const isFinalPass = applicant.result_final === '합격';
 
                 // 수능 성적 텍스트
                 const suneungScores = [
@@ -728,7 +744,7 @@
                 }
 
                 return `
-                    <div class="applicant-card ${isMyBranch ? 'my-branch' : ''}">
+                    <div class="applicant-card ${isMyBranch ? 'my-branch' : ''} ${isFinalPass ? 'final-pass' : ''}">
                         <div class="card-header">
                             <span class="rank">#${rank}</span>
                             <span class="name">${applicant.name || '-'}</span>
