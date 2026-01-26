@@ -204,19 +204,54 @@
             opacity: 1;
         }
 
-        /* 최종합격 스타일 */
-        .applicant-card.final-pass {
+        /* 합격 스타일 (최초합 또는 최종합) */
+        .applicant-card.result-pass {
             background: linear-gradient(to right, #dcfce7 0%, #f0fdf4 100%);
             border: 2px solid #22c55e;
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
         }
 
-        .applicant-card.final-pass .card-header {
+        .applicant-card.result-pass .card-header {
             background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
         }
 
-        .applicant-card.final-pass .card-header .rank::before {
-            content: '🎉 ';
+        .applicant-card.result-pass .card-header .rank::after {
+            content: ' 합격';
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        /* 예비 1~5번 스타일 */
+        .applicant-card.result-wait-high {
+            background: linear-gradient(to right, #e0e7ff 0%, #eef2ff 100%);
+            border: 2px solid #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .applicant-card.result-wait-high .card-header {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        }
+
+        /* 예비 6~10번 스타일 */
+        .applicant-card.result-wait-mid {
+            background: linear-gradient(to right, #fef3c7 0%, #fffbeb 100%);
+            border: 2px solid #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        }
+
+        .applicant-card.result-wait-mid .card-header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        /* 예비 11번 이후 스타일 */
+        .applicant-card.result-wait-low {
+            background: linear-gradient(to right, #f1f5f9 0%, #f8fafc 100%);
+            border: 2px solid #94a3b8;
+            box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+        }
+
+        .applicant-card.result-wait-low .card-header {
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
         }
 
         .card-header {
@@ -698,6 +733,36 @@
             return `<span class="badge ${badgeClass}"><i class="${icon}"></i> ${type}: ${result}</span>`;
         }
 
+        function parseWaitlistNumber(result) {
+            if (!result) return null;
+            const match = result.match(/예비\s*(\d+)/);
+            return match ? parseInt(match[1], 10) : null;
+        }
+
+        function getResultTierClass(applicant) {
+            const first = applicant.result_first;
+            const final_ = applicant.result_final;
+
+            // 합격 체크 (최초합, 최종합, 합격 등 - 불합격 제외)
+            const isPass = (r) => r && r.includes('합') && !r.includes('불합');
+            if (isPass(first) || isPass(final_)) {
+                return 'result-pass';
+            }
+
+            // 예비번호 추출 (최초/최종 중 더 좋은 번호 사용)
+            const firstNum = parseWaitlistNumber(first);
+            const finalNum = parseWaitlistNumber(final_);
+            const nums = [firstNum, finalNum].filter(n => n !== null);
+
+            if (nums.length === 0) return '';
+
+            const bestNum = Math.min(...nums);
+
+            if (bestNum >= 1 && bestNum <= 5) return 'result-wait-high';
+            if (bestNum >= 6 && bestNum <= 10) return 'result-wait-mid';
+            return 'result-wait-low';
+        }
+
         function renderApplicantCards(applicants) {
             const container = document.getElementById('applicants-container');
             const myBranch = getBranchFromToken();
@@ -705,7 +770,7 @@
             const cardsHTML = applicants.map((applicant, index) => {
                 const rank = index + 1;
                 const isMyBranch = myBranch && applicant.branch === myBranch;
-                const isFinalPass = applicant.result_final === '합격';
+                const resultTierClass = getResultTierClass(applicant);
 
                 // 수능 성적 텍스트
                 const suneungScores = [
@@ -744,7 +809,7 @@
                 }
 
                 return `
-                    <div class="applicant-card ${isMyBranch ? 'my-branch' : ''} ${isFinalPass ? 'final-pass' : ''}">
+                    <div class="applicant-card ${isMyBranch ? 'my-branch' : ''} ${resultTierClass}">
                         <div class="card-header">
                             <span class="rank">#${rank}</span>
                             <span class="name">${applicant.name || '-'}</span>
