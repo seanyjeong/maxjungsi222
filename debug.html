@@ -90,7 +90,7 @@
         <button data-filter="?">미확인 <span class="filter-count" id="count-?">0</span></button>
       </div>
       <label class="small">학년도:
-        <input id="year-input" type="number" min="2024" max="2030" value="2026" style="padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
+        <input id="year-input" type="number" min="2024" max="2030" value="2027" style="padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
       </label>
     </div>
     <div id="message-area" class="message info hidden"></div>
@@ -182,7 +182,7 @@
     }
 
     async function runDebugger() {
-      const YEAR = parseInt(yearInput.value, 10) || 2026;
+      const YEAR = parseInt(yearInput.value, 10) || 2027;
       messageArea.textContent = `[${YEAR}] 규칙 로드 중...`;
       messageArea.className = 'message info';
       messageArea.classList.remove('hidden');
@@ -304,7 +304,7 @@
       const btn = e.target.closest('button[data-action="save"]');
       if (!btn) return;
       const uid = btn.getAttribute('data-uid');
-      const YEAR = parseInt(yearInput.value, 10) || 2026;
+      const YEAR = parseInt(yearInput.value, 10) || 2027;
       const status = document.querySelector(`input[name="status-${uid}"]:checked`)?.value || '?';
       const memo = document.getElementById(`memo-${uid}`)?.value || '';
       btn.disabled = true;

@@ -367,8 +367,8 @@
             <div class="chip">
                 <label for="year-select"><i class="fas fa-calendar-alt"></i> 대상 학년도</label>
                 <select id="year-select">
-                    <option value="2026">2026</option>
                     <option value="2027">2027</option>
+                    <option value="2026">2026</option>
                 </select>
             </div>
             <div class="chip">
@@ -1828,7 +1828,7 @@ async function generateCounselPDF() {
     const schoolName = document.getElementById('selected-school-name')?.textContent || '';
     const gender = document.getElementById('selected-gender')?.textContent || '';
     const yearSelect = document.getElementById('year-select');
-    const year = yearSelect?.value || '2026';
+    const year = yearSelect?.value || '2027';
 
     // 점수 정보 가져오기
     const scoreKor = document.getElementById('score-kor')?.textContent || '';
@@ -2125,7 +2125,7 @@ async function printCounselPage() {
     const schoolName = document.getElementById('selected-school-name')?.textContent || '';
     const gender = document.getElementById('selected-gender')?.textContent || '';
     const yearSelect = document.getElementById('year-select');
-    const year = yearSelect?.value || '2026';
+    const year = yearSelect?.value || '2027';
 
     // 점수 정보 가져오기
     const scoreKor = document.getElementById('score-kor')?.textContent || '';
