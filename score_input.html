@@ -127,7 +127,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1><i class="fas fa-clipboard-check"></i> 수능 성적표 일괄 입력</h1>
+      <h1><i class="fas fa-clipboard-check"></i> 성적표 일괄 입력</h1>
       <div class="controls">
         <div class="year-selector">
           <label for="year-select">학년도</label>
@@ -135,6 +135,15 @@
             <option value="2027">2027</option>
             <option value="2026">2026</option>
             <option value="2028">2028</option>
+          </select>
+        </div>
+        <div class="year-selector">
+          <label for="exam-select">모형</label>
+          <select id="exam-select">
+            <option value="3월">3월 모의</option>
+            <option value="6월">6월 모의</option>
+            <option value="9월">9월 모의</option>
+            <option value="수능">수능</option>
           </select>
         </div>
         <button class="btn btn-outline" id="reload-btn"><i class="fas fa-rotate"></i> 학생/성적 새로고침</button>
@@ -194,6 +203,7 @@
     </div>
   </div>
 
+  <script src="utils/examSchedule.js"></script>
   <script>
     // ============ 환경 상수 ============
     const SVR_JUNGSI = 'https://supermax.kr';
@@ -201,10 +211,14 @@
 
     // ============ DOM ============
     const yearSelect = document.getElementById('year-select');
+    const examSelect = document.getElementById('exam-select');
     const reloadBtn = document.getElementById('reload-btn');
     const saveBtn = document.getElementById('save-btn');
     const tbody = document.getElementById('tbody');
     const messageEl = document.getElementById('message');
+
+    // Auto-select default exam
+    examSelect.value = getDefaultExam(parseInt(yearSelect.value));
 
     // ============ 상태 ============
     let students = [];
@@ -331,7 +345,8 @@
         const token = getToken(); if (!token) return handleAuthError();
 
         // 1) 학생 목록(지점 기준)
-        const resSt = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}`, {
+        const exam = examSelect.value;
+        const resSt = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}&exam=${exam}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (resSt.status === 401 || resSt.status === 403) return handleAuthError();
@@ -345,7 +360,7 @@
           const resSc = await fetch(`${SVR_JUNGSI}/jungsi/scores/list`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ year, student_ids: ids })
+            body: JSON.stringify({ year, student_ids: ids, exam: examSelect.value })
           });
           if (resSc.status === 401 || resSc.status === 403) return handleAuthError();
           const dataSc = await resSc.json();
@@ -432,7 +447,7 @@
         const res = await fetch(`${SVR_JUNGSI}/jungsi/scores/officialize-bulk`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ year, items })
+          body: JSON.stringify({ year, exam: examSelect.value, items })
         });
         if (res.status === 401 || res.status === 403) return handleAuthError();
         const data = await res.json();
@@ -494,7 +509,11 @@
 
       await loadStudentsAndScores();
     });
-    yearSelect.addEventListener('change', loadStudentsAndScores);
+    yearSelect.addEventListener('change', () => {
+      examSelect.value = getDefaultExam(parseInt(yearSelect.value));
+      loadStudentsAndScores();
+    });
+    examSelect.addEventListener('change', loadStudentsAndScores);
     reloadBtn.addEventListener('click', loadStudentsAndScores);
     saveBtn.addEventListener('click', saveAll);
   </script>

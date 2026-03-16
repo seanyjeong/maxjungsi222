@@ -99,6 +99,15 @@
                     <option value="2028">2028</option>
                 </select>
             </div>
+            <div class="chip">
+                <label for="exam-select"><i class="fas fa-file-alt"></i> 모형</label>
+                <select id="exam-select">
+                    <option value="3월">3월 모의</option>
+                    <option value="6월">6월 모의</option>
+                    <option value="9월">9월 모의</option>
+                    <option value="수능">수능</option>
+                </select>
+            </div>
             <button class="btn btn-outline" id="reload-btn"><i class="fas fa-rotate"></i> 새로고침</button>
             <button type="button" id="save-all-btn" class="btn btn-primary" disabled><i class="fas fa-save"></i> 전체 저장 및 변환</button>
             <!-- ⭐️ 추가: 최신 기준 업데이트 버튼 -->
@@ -147,6 +156,7 @@
     </div>
 </div>
 
+<script src="utils/examSchedule.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // 서버 주소 및 로그인 페이지
@@ -155,11 +165,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // HTML 요소
     const yearSelect = document.getElementById('year-select');
+    const examSelect = document.getElementById('exam-select');
     const scoreTbody = document.getElementById('score-tbody');
     const saveAllBtn = document.getElementById('save-all-btn');
     const recalcBtn  = document.getElementById('recalc-btn');
     const reloadBtn = document.getElementById('reload-btn');
     const messageEl = document.getElementById('message');
+
+    // Auto-select default exam based on date
+    examSelect.value = getDefaultExam(parseInt(yearSelect.value));
 
     let userBranchName = '';
     const INQUIRY_SUBJECTS = {
@@ -203,7 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showMsg(''); saveAllBtn.disabled = true;
       try {
         const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료');
-        const response = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${selectedYear}`, {
+        const selectedExam = examSelect.value;
+        const response = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${selectedYear}&exam=${selectedExam}`, {
           headers: { 'Authorization': `Bearer ${currentToken}` }
         });
         const data = await response.json();
@@ -329,7 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 이벤트 리스너 ---
-    yearSelect.addEventListener('change', loadStudentScores);
+    yearSelect.addEventListener('change', () => {
+      examSelect.value = getDefaultExam(parseInt(yearSelect.value));
+      loadStudentScores();
+    });
+    examSelect.addEventListener('change', loadStudentScores);
     reloadBtn.addEventListener('click', loadStudentScores);
 
     // --- 전체 저장 (변경된 행만) ---
@@ -371,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${SVR_JUNGSI}/jungsi/students/scores/bulk-set-wide`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
-                body: JSON.stringify({ 학년도: selectedYear, 입력유형: 'raw', studentScores: studentScoresData })
+                body: JSON.stringify({ 학년도: selectedYear, 모형: examSelect.value, 입력유형: 'raw', studentScores: studentScoresData })
             });
             const data = await response.json();
             if (response.status === 401 || response.status === 403) throw new Error('인증 오류');
@@ -440,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const r = await fetch(`${SVR_JUNGSI}/jungsi/students/scores/recompute`, {
           method: 'POST',
           headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${currentToken}` },
-          body: JSON.stringify({ year: selectedYear, exam_type: '수능', scope: 'branch' })
+          body: JSON.stringify({ year: selectedYear, exam_type: examSelect.value, scope: 'branch' })
         });
         const data = await r.json();
         if (!data.success) throw new Error(data.message || '실패');

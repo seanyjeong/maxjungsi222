@@ -372,6 +372,15 @@
                 </select>
             </div>
             <div class="chip">
+                <label for="exam-select"><i class="fas fa-file-alt"></i> 모형</label>
+                <select id="exam-select">
+                    <option value="3월">3월</option>
+                    <option value="6월">6월</option>
+                    <option value="9월">9월</option>
+                    <option value="수능">수능</option>
+                </select>
+            </div>
+            <div class="chip">
                 <label for="cut-type-select"><i class="fas fa-cut"></i> 컷 타입</label>
                 <select id="cut-type-select">
                     <option value="branch">지점</option>
@@ -546,14 +555,19 @@
     </div>
 </div>
 
+<script src="utils/examSchedule.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const SVR_JUNGSI = 'https://supermax.kr';
     const LOGIN_PAGE = 'jungsilogin.html';
 
     const yearSelect = document.getElementById('year-select');
+    const examSelect = document.getElementById('exam-select');
     const studentSelect = document.getElementById('student-select');
     const cutTypeSelect = document.getElementById('cut-type-select');
+
+    // Auto-select default exam
+    examSelect.value = getDefaultExam(parseInt(yearSelect.value));
     const cutSuneungHeader = document.getElementById('cut-suneung-header');
     const cutTotalHeader = document.getElementById('cut-total-header');
 
@@ -731,7 +745,8 @@ function debounce(func, delay) {
         try {
             const token = getToken();
             if (!token) throw new Error('로그인 만료');
-            const res = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}`, {
+            const exam = examSelect?.value || '수능';
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}&exam=${exam}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.status === 401 || res.status === 403) { handleAuthError(); return; }
@@ -1741,6 +1756,7 @@ function debounce(func, delay) {
     });
 
     yearSelect.addEventListener('change', async ()=>{
+        examSelect.value = getDefaultExam(parseInt(yearSelect.value));
         selectedStudentData = null;
         studentSelect.value='';
         resetResultArea();
@@ -1748,9 +1764,17 @@ function debounce(func, delay) {
 
         document.getElementById('empty-state-message').style.display = 'block';
         document.querySelectorAll('.gun-section').forEach(sec => sec.style.display = 'none');
-        
+
         await loadStudents();
         await loadFilterData();
+    });
+
+    examSelect.addEventListener('change', async ()=>{
+        selectedStudentData = null;
+        studentSelect.value='';
+        resetResultArea();
+        updateStudentInfoCard(null);
+        await loadStudents();
     });
 
     function updateStudentInfoCard(std) {
