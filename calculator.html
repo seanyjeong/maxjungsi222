@@ -71,6 +71,15 @@
                     <option value="2026">2026</option>
                 </select>
             </div>
+            <div class="year-selector">
+                <label for="exam-select">모형:</label>
+                <select id="exam-select">
+                    <option value="3월">3월 모의</option>
+                    <option value="6월">6월 모의</option>
+                    <option value="9월">9월 모의</option>
+                    <option value="수능">수능</option>
+                </select>
+            </div>
         </div>
     </div>
     
@@ -119,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const LOGIN_PAGE = 'jungsilogin.html'; // ⭐️ .html 붙임
     const branchNameDisplay = document.getElementById('branch-name-display');
     const yearSelect = document.getElementById('year-select');
+    const examSelect = document.getElementById('exam-select');
 
     // --- 새 페이지 요소 ---
     const gunSelect = document.getElementById('gun-select');
@@ -207,10 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. 지점 학생 목록 + 성적 불러오기
     const loadStudents = async () => {
         const year = yearSelect.value;
+        const exam = examSelect.value;
         resultsTbody.innerHTML = `<tr><td colspan="10">학생 목록 로딩 중...</td></tr>`;
         try {
             const currentToken = getToken(); if (!currentToken) throw new Error('로그인 만료'); // ⭐️
-            const res = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}`, {
+            const res = await fetch(`${SVR_JUNGSI}/jungsi/students/list-by-branch?year=${year}&exam=${exam}`, {
                 headers: { 'Authorization': `Bearer ${currentToken}` }
             });
             if (res.status === 401 || res.status === 403) { handleAuthError(); return; } // ⭐️
@@ -566,6 +577,13 @@ document.addEventListener('DOMContentLoaded', () => {
         universitySelect.disabled = true;
         departmentSelect.innerHTML = '<option value="">- 학과 선택 -</option>';
         departmentSelect.disabled = true;
+        resultsThead.innerHTML = '';
+        resultsTbody.innerHTML = '';
+    });
+
+    // 모형 변경 시 — 학생 성적만 다시 로드 (대학 목록은 동일)
+    examSelect.addEventListener('change', () => {
+        loadStudents();
         resultsThead.innerHTML = '';
         resultsTbody.innerHTML = '';
     });
