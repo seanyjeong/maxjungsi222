@@ -2,353 +2,103 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>정시 계산 엔진 디버거</title>
-  <style>
-    body { font-family: sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-    .container { max-width: 1200px; margin: 20px auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    h1 { color: #333; }
-    .controls { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
-    button { background-color: #dc3545; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: 700; }
-    button:hover { background-color: #c82333; }
-    #results-container { margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>디버그 노트 · 맥스정시</title>
 
-    .filter-group { display: flex; gap: 5px; border: 1px solid #ccc; border-radius: 8px; padding: 4px; }
-    .filter-group button {
-      background-color: #f8f9fa;
-      color: #333;
-      padding: 8px 14px;
-      font-size: 0.9em;
-      font-weight: 500;
-      border: 1px solid transparent;
-    }
-    .filter-group button:hover { background-color: #e2e6ea; }
-    .filter-group button.active {
-      background-color: #007bff;
-      color: white;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,.25);
-    }
-    .filter-count {
-      margin-left: 6px;
-      background-color: #e9ecef;
-      color: #495057;
-      padding: 2px 6px;
-      border-radius: 8px;
-      font-size: 0.9em;
-    }
-    button.active .filter-count {
-      background-color: #fff;
-      color: #007bff;
-    }
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/light/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 
-    .result-card {
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-      transition: background-color 0.3s;
-    }
-    .result-card.correct { background: #e7f1ff; }
-    .result-card.incorrect { background: #fdecea; }
-
-    .result-card h3 { background-color: #f8f9fa; padding: 10px 15px; margin: 0; font-size: 1.05em; border-bottom: 1px solid #ddd; display:flex; justify-content:space-between; gap:10px; }
-    .total-score { font-size: 2em; font-weight: bold; color: #007bff; text-align: center; padding: 14px; }
-    .breakdown-table { width: 100%; border-collapse: collapse; }
-    .breakdown-table td { padding: 6px 12px; border-top: 1px solid #eee; }
-    .breakdown-table td:first-child { font-weight: bold; }
-    .breakdown-table td:last-child { text-align: right; }
-    .message { margin-top: 15px; font-weight: bold; min-height: 20px; padding: 10px; border-radius: 4px; }
-    .message.info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; }
-
-    .calculation-log { background-color: #272822; color: #f8f8f2; padding: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; border-radius: 0 0 10px 10px; }
-    .calculation-log h4 { margin: 0 0 10px 0; color: #a6e22e; border-bottom: 1px solid #555; padding-bottom: 5px; }
-
-    .judge { display: flex; align-items: center; gap: 12px; padding: 10px 15px; border-top: 1px solid #eee; }
-    .judge .status { display: flex; gap: 8px; }
-    .judge textarea { width: 100%; min-height: 70px; resize: vertical; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95em; }
-    .judge .row { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-    .small { font-size: 0.85em; color: #666; }
-    .save-row { display:flex; justify-content: flex-end; gap:10px; align-items:center; padding: 8px 15px; border-top: 1px dashed #eee; }
-    .badge { padding:2px 8px; border-radius:999px; background:#eee; font-size: 12px; }
-    .badge.ok { background:#e7f7ee; color:#0f5132; }
-    .badge.ng { background:#fdecea; color:#842029; }
-    .badge.unknown { background:#eef1ff; color:#1d3c78; }
-  </style>
+  <!-- 공통 자산 -->
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/sidebar.css">
+  <link rel="stylesheet" href="assets/css/topbar.css">
+  <link rel="stylesheet" href="assets/css/buttons.css">
+  <link rel="stylesheet" href="assets/css/toast.css">
+  <link rel="stylesheet" href="assets/css/modal.css">
+  <link rel="stylesheet" href="assets/css/combobox.css">
+  <!-- 페이지 전용 -->
+  <link rel="stylesheet" href="debug.css">
 </head>
-<body>
-  <div class="container">
-    <h1>정시 계산 엔진 디버거</h1>
-    <p>규칙이 들어간 학교들만 한 번에 계산해서 맞는지 표시하고 메모 남기는 용도.</p>
-    <div class="controls">
-      <button id="run-debug-btn">🔴 디버깅 시작</button>
-      <div id="filter-controls" class="filter-group">
-        <button data-filter="all" class="active">전체 <span class="filter-count" id="count-all">0</span></button>
-        <button data-filter="Y">맞음 <span class="filter-count" id="count-Y">0</span></button>
-        <button data-filter="N">틀림 <span class="filter-count" id="count-N">0</span></button>
-        <button data-filter="?">미확인 <span class="filter-count" id="count-?">0</span></button>
-      </div>
-      <label class="small">학년도:
-        <input id="year-input" type="number" min="2024" max="2030" value="2027" style="padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
-      </label>
+<body data-page="debug" data-title="디버그 노트" data-category="관리자">
+
+  <div class="app-shell" id="appShell">
+    <div id="sidebar-slot"></div>
+
+    <div class="main">
+
+      <header class="topbar">
+        <div class="page-path">
+          <span>관리자</span>
+          <span class="sep">/</span>
+          <span class="current">디버그 노트</span>
+        </div>
+        <div class="topbar-actions">
+          <div class="combobox no-search topbar-combo" id="yearSel" style="min-width:130px;"></div>
+          <button class="btn btn-primary" id="runBtn">
+            <i class="ph-light ph-play-circle"></i> 디버깅 시작
+          </button>
+        </div>
+      </header>
+
+      <section class="page-content">
+
+        <!-- 설명 + 필터 -->
+        <div class="intro-card">
+          <div class="intro-head">
+            <div class="intro-title">
+              <i class="ph-light ph-bug"></i>
+              <span>정시 계산 엔진 디버거</span>
+            </div>
+            <p class="intro-sub">
+              규칙이 들어간 학교들만 한 번에 계산해서 맞는지 표시하고 메모를 남깁니다.
+              <b>디버깅 시작</b> 버튼을 눌러 실행하세요.
+            </p>
+          </div>
+          <div class="filter-bar" id="filterBar">
+            <button class="fbtn active" data-filter="all">
+              <i class="ph-light ph-list-bullets"></i> 전체 <span class="count" id="count-all">0</span>
+            </button>
+            <button class="fbtn" data-filter="Y">
+              <i class="ph-light ph-check-circle"></i> 맞음 <span class="count" id="count-Y">0</span>
+            </button>
+            <button class="fbtn" data-filter="N">
+              <i class="ph-light ph-x-circle"></i> 틀림 <span class="count" id="count-N">0</span>
+            </button>
+            <button class="fbtn" data-filter="?">
+              <i class="ph-light ph-question"></i> 미확인 <span class="count" id="count-unk">0</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="status-bar" id="statusBar" hidden>
+          <i class="ph-fill ph-info"></i>
+          <span id="statusText">—</span>
+        </div>
+
+        <div id="resultsContainer" class="results-grid">
+          <div class="empty-state">
+            <i class="ph-light ph-play-circle"></i>
+            <h3><b>디버깅 시작</b> 버튼을 눌러 규칙을 로드하세요</h3>
+            <p>학년도를 바꾸면 해당 연도의 규칙 저장 학교들이 대상입니다.</p>
+          </div>
+        </div>
+
+      </section>
     </div>
-    <div id="message-area" class="message info hidden"></div>
-    <div id="results-container"></div>
   </div>
 
-  <script>
-    const SVR_JUNGSI = 'https://supermax.kr';
-    const resultsContainer = document.getElementById('results-container');
-    const runBtn = document.getElementById('run-debug-btn');
-    const messageArea = document.getElementById('message-area');
-    const yearInput = document.getElementById('year-input');
-    const filterControls = document.getElementById('filter-controls');
-
-    let currentFilter = 'all';
-    const getToken = () => localStorage.getItem('jwt_token');
-
-    // 디버그용 점수
-    const studentScoresForDebug = {
-      "subjects": [
-        { "name": "국어", "subject": "화법과작문", "std": 124, "percentile": 88, "grade": 3 },
-        { "name": "수학", "subject": "확률과통계", "std": 125, "percentile": 90, "grade": 2 },
-        { "name": "영어", "grade": 2 },
-        { "name": "한국사", "grade": 1 },
-        { "name": "탐구", "subject": "세계사", "std": 63, "percentile": 85, "grade": 3 },
-        { "name": "탐구", "subject": "정치와법", "std": 64, "percentile": 91, "grade": 2 }
-      ]
-    };
-
-    let notesMap = {};
-
-    function updateFilterCounts() {
-      const cards = document.querySelectorAll('.result-card');
-      let countY = 0;
-      let countN = 0;
-      let countUnknown = 0;
-
-      cards.forEach(card => {
-        if (card.classList.contains('correct')) countY++;
-        else if (card.classList.contains('incorrect')) countN++;
-        else countUnknown++;
-      });
-
-      document.getElementById('count-all').textContent = cards.length;
-      document.getElementById('count-Y').textContent = countY;
-      document.getElementById('count-N').textContent = countN;
-      document.getElementById('count-?').textContent = countUnknown;
-    }
-
-    function applyFilter() {
-      const cards = document.querySelectorAll('.result-card');
-      cards.forEach(card => {
-        let cardStatus = '?';
-        if (card.classList.contains('correct')) cardStatus = 'Y';
-        else if (card.classList.contains('incorrect')) cardStatus = 'N';
-
-        card.style.display =
-          (currentFilter === 'all' || currentFilter === cardStatus) ? 'flex' : 'none';
-      });
-    }
-
-    async function fetchDebugNotes(year) {
-      const res = await fetch(`${SVR_JUNGSI}/jungsi/debug-notes?year=${year}`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'debug-notes 로딩 실패');
-      notesMap = data.notes || {};
-    }
-
-    async function saveDebugNote(U_ID, year, is_correct, memo) {
-      const res = await fetch(`${SVR_JUNGSI}/jungsi/debug-notes/set`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getToken()}`
-        },
-        body: JSON.stringify({ U_ID, year, is_correct, memo })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'debug-notes 저장 실패');
-      return true;
-    }
-
-    function badgeForStatus(s) {
-      if (s === 'Y') return '<span class="badge ok">맞음</span>';
-      if (s === 'N') return '<span class="badge ng">틀림</span>';
-      return '<span class="badge unknown">미확인</span>';
-    }
-
-    async function runDebugger() {
-      const YEAR = parseInt(yearInput.value, 10) || 2027;
-      messageArea.textContent = `[${YEAR}] 규칙 로드 중...`;
-      messageArea.className = 'message info';
-      messageArea.classList.remove('hidden');
-      resultsContainer.innerHTML = '';
-
-      try {
-        // 1) 메모 먼저
-        await fetchDebugNotes(YEAR);
-
-        // 2) 학교 목록
-        const res = await fetch(`${SVR_JUNGSI}/jungsi/schools/${YEAR}`, {
-          headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message || '학교 목록 로딩 실패');
-
-        // 응답 정규화
-        const rows =
-          Array.isArray(data?.schools) ? data.schools :
-          Array.isArray(data?.list)    ? data.list    :
-          Array.isArray(data)          ? data         :
-          [];
-
-        // 규칙 있는 애들만
-        const saved = rows.filter(s =>
-          s.계산유형 === '특수공식' ||
-          s.selection_rules ||
-          s.bonus_rules ||
-          s.score_config
-        );
-
-        if (!saved.length) {
-          messageArea.textContent = '규칙 저장된 학교 없음.';
-          updateFilterCounts();
-          applyFilter();
-          return;
-        }
-
-        messageArea.textContent = `${saved.length}개 계산 중...`;
-
-        // 3) 각 학교 계산
-        const results = await Promise.all(saved.map(school =>
-          fetch(`${SVR_JUNGSI}/jungsi/calculate`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${getToken()}`
-            },
-            body: JSON.stringify({ U_ID: school.U_ID, year: YEAR, studentScores: studentScoresForDebug })
-          }).then(r => r.json())
-        ));
-
-        // 4) 렌더
-        resultsContainer.innerHTML = '';
-        saved.forEach((school, idx) => {
-          const r = results[idx];
-          const note = notesMap[school.U_ID] || { is_correct: '?', memo: '' };
-
-          // 🔥 여기서 키 순서대로 때린다
-          const uniName  = school.대학명 || school.university || school.univ_name || school.univ || '';
-          const deptName = school.학과명 || school.department || school.major || school.dept_name || '';
-
-          const cardClass =
-            note.is_correct === 'Y' ? 'correct' :
-            note.is_correct === 'N' ? 'incorrect' : '';
-
-          let html = `<div class="result-card ${cardClass}" data-uid="${school.U_ID}">`;
-          html += `<h3><span>[${school.U_ID}] ${uniName} - ${deptName}</span><span class="small">${badgeForStatus(note.is_correct)}</span></h3>`;
-
-          if (r.success) {
-            const calc = r.result;
-            html += `<div class="total-score">${calc.totalScore}</div><table class="breakdown-table">`;
-            for (const [k, v] of Object.entries(calc.breakdown)) {
-              const num = (typeof v === 'number') ? v : Number(v);
-              const val = Number.isFinite(num) ? num.toFixed(3) : v;
-              html += `<tr><td>${k}</td><td>${val}</td></tr>`;
-            }
-            html += `</table>
-              <div class="judge">
-                <div class="row">
-                  <div class="status">
-                    <label><input type="radio" name="status-${school.U_ID}" value="Y" ${note.is_correct==='Y'?'checked':''}> 맞음</label>
-                    <label><input type="radio" name="status-${school.U_ID}" value="N" ${note.is_correct==='N'?'checked':''}> 틀림</label>
-                    <label><input type="radio" name="status-${school.U_ID}" value="?" ${note.is_correct==='?'?'checked':''}> 미확인</label>
-                  </div>
-                  <textarea id="memo-${school.U_ID}" placeholder="메모">${note.memo||''}</textarea>
-                </div>
-              </div>
-              <div class="save-row">
-                <span class="small">최근: ${note.updated_at ? new Date(note.updated_at).toLocaleString() : '-'}</span>
-                <button data-action="save" data-uid="${school.U_ID}">💾 저장</button>
-              </div>
-            `;
-            if (calc.calculationLog) {
-              const safeLog = Array.isArray(calc.calculationLog)
-                ? calc.calculationLog.map(l => String(l).replace(/</g, '&lt;')).join('\n')
-                : String(calc.calculationLog).replace(/</g, '&lt;');
-              html += `<div class="calculation-log"><h4>계산 과정</h4>${safeLog}</div>`;
-            }
-          } else {
-            html += `<p style="padding:20px;color:red;">계산 실패: ${r.message}</p>`;
-          }
-
-          html += `</div>`;
-          resultsContainer.insertAdjacentHTML('beforeend', html);
-        });
-
-        messageArea.textContent = '모든 계산 완료 ✅';
-        updateFilterCounts();
-        applyFilter();
-      } catch (err) {
-        alert(err.message);
-        messageArea.textContent = err.message;
-      }
-    }
-
-    // 저장 이벤트
-    resultsContainer.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button[data-action="save"]');
-      if (!btn) return;
-      const uid = btn.getAttribute('data-uid');
-      const YEAR = parseInt(yearInput.value, 10) || 2027;
-      const status = document.querySelector(`input[name="status-${uid}"]:checked`)?.value || '?';
-      const memo = document.getElementById(`memo-${uid}`)?.value || '';
-      btn.disabled = true;
-      const prev = btn.textContent;
-      btn.textContent = '저장중...';
-      try {
-        await saveDebugNote(uid, YEAR, status, memo);
-
-        const card = document.querySelector(`.result-card[data-uid="${uid}"]`);
-        const header = card.querySelector('h3 .small');
-        header.innerHTML = badgeForStatus(status);
-        card.classList.remove('correct', 'incorrect');
-        if (status === 'Y') card.classList.add('correct');
-        else if (status === 'N') card.classList.add('incorrect');
-
-        updateFilterCounts();
-        applyFilter();
-
-        btn.textContent = '저장됨 ✔';
-        setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 800);
-      } catch (err) {
-        alert('저장 실패: ' + err.message);
-        btn.textContent = prev;
-        btn.disabled = false;
-      }
-    });
-
-    // 필터 버튼
-    filterControls.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-filter]');
-      if (!btn) return;
-      currentFilter = btn.getAttribute('data-filter');
-      filterControls.querySelector('button.active').classList.remove('active');
-      btn.classList.add('active');
-      applyFilter();
-    });
-
-    runBtn.addEventListener('click', runDebugger);
-
-    if (!getToken()) {
-      alert('로그인이 필요합니다. 규칙 설정 페이지(/setting)에서 로그인해주세요.');
-      messageArea.textContent = '로그인이 필요합니다.';
-      messageArea.classList.remove('hidden');
-    }
-  </script>
+  <!-- 공통 JS -->
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/modal.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/bootstrap.js"></script>
+  <script src="assets/js/combobox.js"></script>
+  <!-- 페이지 전용 -->
+  <script src="debug.js"></script>
 </body>
 </html>

@@ -1,0 +1,285 @@
+/* ============================================================
+   gachaejeom.new.css — 정시 가채점
+   score_input 스타일 그대로 + 원점수 컬럼 추가 (27컬럼)
+   ============================================================ */
+
+.main { padding: 0; }
+.page-content {
+  padding: 0 24px 48px;
+  max-width: 1500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* topbar combo 너비 */
+[data-page="gachaejeom"] .topbar-actions #yearCombo { min-width: 108px; }
+[data-page="gachaejeom"] .topbar-actions #examCombo { min-width: 118px; }
+
+/* ── Summary 카드 (간결, score_input 의 .summary-card 와 통일) ── */
+.summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+.summary-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.summary-card .summary-label {
+  font-size: 10.5px; color: var(--text-3);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+}
+.summary-card .summary-value {
+  font-size: 24px; font-weight: 700; letter-spacing: -0.03em;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+  display: flex; align-items: baseline; gap: 4px;
+}
+.summary-card .summary-value .unit { font-size: 11.5px; color: var(--text-3); font-weight: 500; }
+.summary-card .summary-value .pct {
+  margin-left: 4px; font-size: 11.5px; color: var(--accent); font-weight: 500;
+}
+.summary-card.accent .summary-value { color: var(--accent); }
+.summary-card.warn .summary-value { color: var(--warn); }
+.summary-card.warn.active { background: var(--warn-soft); border-color: #fde68a; }
+
+/* ── hint banner ── */
+.hint-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--accent-soft); border: 1px solid var(--accent-ring);
+  border-radius: var(--r-sm); font-size: 12.5px; color: var(--accent-strong); line-height: 1.55;
+}
+.hint-banner i { color: var(--accent); font-size: 16px; flex-shrink: 0; }
+.hint-banner b { font-weight: 600; }
+.hint-banner .dot { color: var(--text-3); }
+
+/* ═════════════════════════════════════════════════════════════
+   Table — score_input 과 완전히 동일한 스타일
+   ═════════════════════════════════════════════════════════════ */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: visible;
+  box-shadow: var(--shadow-soft);
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+/* ── col widths (1452px 안 fit) ──
+   70 + 36 + 36 + (48+46) + (80+48+48+48+46)*2 + (48+46) + (80+48+48+48+46)*2
+   = 70 + 72 + 94 + 270*2 + 94 + 270*2 = 70+72+94+540+94+540 = 1410 */
+.score-table col.c-name   { width: 70px; }
+.score-table col.c-info   { width: 36px; }  /* 학년 */
+.score-table col.c-info-sm{ width: 36px; }  /* 성별 */
+.score-table col.c-subj   { width: 80px; }  /* 선택과목 */
+.score-table col.c-raw    { width: 48px; }  /* 원점수 */
+.score-table col.c-std    { width: 48px; }  /* 표준 */
+.score-table col.c-perc   { width: 48px; }  /* 백분위 */
+.score-table col.c-grade  { width: 46px; }  /* 등급 */
+
+/* 행 안 콤보는 기본 min-width 무시 */
+.score-table .combobox { min-width: 0; }
+
+/* ── Head ── */
+.score-table thead th {
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  position: sticky;
+  z-index: 3;
+  white-space: nowrap;
+}
+.score-table thead tr.head-1 th {
+  top: 64px;
+  height: 30px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.score-table thead tr.head-2 th {
+  top: 94px;
+  height: 28px;
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.score-table thead th.grp {
+  color: var(--accent-strong);
+  font-weight: 600;
+  background: var(--surface-2);
+}
+.score-table thead th.grp.hist { box-shadow: inset 3px 0 0 0 #a8a29e; }
+.score-table thead th.grp.kor  { box-shadow: inset 3px 0 0 0 #5eead4; }
+.score-table thead th.grp.math { box-shadow: inset 3px 0 0 0 #93c5fd; }
+.score-table thead th.grp.eng  { box-shadow: inset 3px 0 0 0 #fdba74; }
+.score-table thead th.grp.t1   { box-shadow: inset 3px 0 0 0 #fcd34d; }
+.score-table thead th.grp.t2   { box-shadow: inset 3px 0 0 0 #c4b5fd; }
+
+.score-table thead th + th.grp { border-left: 1px solid var(--border); }
+.score-table thead tr.head-2 th.subj-first { border-left: 1px solid var(--border); }
+
+/* ── Body ── */
+.score-table tbody td {
+  padding: 0;
+  height: 40px;
+  border-bottom: 1px solid var(--border-soft);
+  text-align: center;
+  vertical-align: middle;
+  color: var(--text);
+  background: var(--surface);
+  transition: background .12s var(--ease-out);
+}
+.score-table tbody tr:nth-child(even) td { background: var(--surface-2); }
+.score-table tbody tr:hover td { background: var(--accent-soft); }
+.score-table tbody tr.dirty td { background: var(--warn-soft); }
+.score-table tbody tr.dirty:hover td { background: var(--warn-soft); }
+
+/* ── 공식 성적 입력 학생 — 가채점 잠금 ── */
+.score-table tbody tr.locked td { background: var(--surface-3) !important; color: var(--text-3); }
+.score-table tbody tr.locked:hover td { background: var(--surface-3) !important; }
+.score-table tbody tr.locked .raw-input,
+.score-table tbody tr.locked .combo-display {
+  cursor: not-allowed; opacity: 0.5; pointer-events: none;
+}
+.score-table tbody tr.locked .score-display { color: var(--text-3); }
+
+/* 공식 성적 뱃지 */
+.official-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  margin-left: 6px; padding: 2px 7px;
+  background: var(--accent-soft); color: var(--accent-strong);
+  border: 1px solid var(--accent-ring); border-radius: 99px;
+  font-size: 10px; font-weight: 600; font-family: 'Geist', monospace;
+  vertical-align: middle;
+}
+.official-pill i { font-size: 10px; }
+
+/* ── Name / 학년 / 성별 ── */
+.cell-name {
+  padding: 0 10px 0 14px !important;
+  text-align: left !important;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-info,
+.cell-grade,
+.cell-gender {
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* JS 가 만드는 raw-input → score_input 의 cell-in 과 동일 스타일 */
+.score-table .raw-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: center;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .12s var(--ease-out), background .12s var(--ease-out), box-shadow .12s var(--ease-out);
+  -moz-appearance: textfield;
+}
+.score-table .raw-input::-webkit-outer-spin-button,
+.score-table .raw-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.score-table .raw-input::placeholder { color: var(--text-3); }
+.score-table tbody tr:hover .raw-input { border-color: var(--border); background: var(--surface); }
+.score-table .raw-input:hover { border-color: var(--text-3) !important; background: var(--surface) !important; }
+.score-table .raw-input:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  z-index: 2;
+  position: relative;
+}
+
+/* JS 가 만드는 score-display (자동 변환 결과) — 옅게 표시 */
+.score-table .score-display {
+  display: inline-block;
+  font-size: 12px;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  min-height: 1.1em;
+}
+.score-table .score-display:empty::before { content: '—'; color: var(--text-3); }
+.score-table .score-display.is-grade { color: var(--accent-strong); font-weight: 600; }
+
+/* ── Inline inputs (ghost → border on hover/focus) ── */
+.cell-in {
+  width: 100%;
+  height: 40px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: center;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .12s var(--ease-out), background .12s var(--ease-out), box-shadow .12s var(--ease-out);
+  -moz-appearance: textfield;
+}
+.cell-in::-webkit-outer-spin-button,
+.cell-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cell-in::placeholder { color: var(--text-3); }
+.score-table tbody tr:hover .cell-in { border-color: var(--border); background: var(--surface); }
+.cell-in:hover { border-color: var(--text-3) !important; background: var(--surface) !important; }
+.cell-in:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  z-index: 2;
+  position: relative;
+}
+
+/* ── 자동 변환 결과 (표/백/등급) — read-only display ── */
+.cell-out {
+  display: block;
+  padding: 0 4px;
+  font-size: 12px;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.cell-out.empty { color: var(--text-3); }
+.cell-out.grade { color: var(--accent-strong); font-weight: 600; }
+
+/* ── 탐구 선택과목 inline combobox override ── */
+.score-table .combo-display {
+  height: 36px !important;
+  padding: 0 20px 0 8px;
+  font-size: 11.5px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+.score-table tbody tr:hover .combo-display { border-color: var(--border); background: var(--surface); }
+.score-table .combo-display:hover { border-color: var(--text-3); background: var(--surface); }
+.score-table .combobox.open .combo-display { border-color: var(--accent); background: var(--surface); }
+.score-table .combo-display .label { font-size: 11.5px; }
+
+/* empty state */
+.empty-row td { padding: 40px; text-align: center; color: var(--text-3); font-size: 12.5px; }

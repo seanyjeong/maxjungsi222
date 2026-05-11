@@ -1,0 +1,407 @@
+/* ============================================================ */
+/* school_app.new.css — 맥스라이브 (학교별 전지점 지원자 현황)     */
+/* ============================================================ */
+
+.main { padding: 0; }
+.page-content { padding: 0 24px 48px; max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.branch-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; background: var(--accent-soft); border: 1px solid var(--accent-ring);
+  border-radius: 99px; font-size: 11.5px; color: var(--accent-strong);
+}
+.branch-chip i { font-size: 14px; }
+
+/* ── Picker hero ── */
+.picker-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 24px 28px;
+  margin-top: 20px;
+  display: flex; flex-direction: column; gap: 18px;
+  box-shadow: var(--shadow-soft);
+}
+.picker-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.picker-label { display: flex; align-items: center; gap: 12px; }
+.picker-label > i { font-size: 26px; color: var(--accent); flex-shrink: 0; }
+.picker-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.picker-sub { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+
+.cascade { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+.cascade-step {
+  display: flex; align-items: center; gap: 12px;
+  flex: 1 1 320px; min-width: 320px; position: relative;
+}
+.cascade-step label {
+  font-size: 11px; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;
+  margin-right: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cascade-step .combobox { flex: 1; min-width: 260px; }
+.cascade-step.is-disabled { opacity: 0.5; pointer-events: none; }
+.step-badge {
+  width: 22px; height: 22px; border-radius: 99px;
+  background: var(--accent-soft); color: var(--accent-strong);
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; font-family: 'Geist Mono', monospace;
+  flex-shrink: 0;
+}
+.cascade-arrow { color: var(--text-3); display: flex; align-items: center; padding: 0 2px; }
+.cascade-arrow i { font-size: 16px; }
+
+/* ── 통계 strip ── */
+.stats-strip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.stat-item {
+  padding: 0 14px;
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+}
+.stat-item:last-of-type { border-right: 0; }
+.stat-sort {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+.stat-label {
+  font-size: 11px; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500;
+}
+.stat-value {
+  font-size: 17px; font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  font-family: 'Geist Mono', 'Pretendard', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.stat-primary .stat-value { color: var(--accent-strong); font-size: 20px; }
+
+/* ── 지원자 카드 ── */
+.applicants-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.applicants-head {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+}
+.applicants-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+}
+.applicants-title i { font-size: 16px; color: var(--accent); }
+.applicants-title .dim { color: var(--text-3); font-weight: 400; font-size: 12px; margin-left: 4px; }
+
+.applicants-legend {
+  display: flex; gap: 12px; align-items: center;
+  font-size: 11.5px; color: var(--text-2);
+}
+.applicants-legend .legend { display: inline-flex; align-items: center; gap: 5px; }
+.applicants-legend .dot { width: 8px; height: 8px; border-radius: 99px; }
+.dot-mine { background: var(--accent); }
+.dot-other { background: var(--text-3); }
+
+#applicantsContainer { padding: 0; }
+.applicants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 12px;
+}
+
+/* ── 지원자 표 (table view) ── */
+.applicants-table-wrap {
+  overflow-x: auto;
+  border-top: 1px solid var(--border-soft);
+}
+.applicants-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: center;
+  table-layout: auto;
+}
+.applicants-table thead th {
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.applicants-table tbody td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  color: var(--text);
+}
+.applicants-table tbody tr:hover td { background: var(--surface-2); }
+.applicants-table tbody tr.is-mine td { background: var(--accent-soft); }
+.applicants-table tbody tr.is-mine:hover td { background: var(--accent-soft); filter: brightness(0.98); }
+.applicants-table .col-rank {
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  color: var(--text-3);
+  width: 44px;
+}
+.applicants-table .col-name { font-weight: 600; color: var(--text); }
+.applicants-table .col-total {
+  font-weight: 700;
+  color: var(--accent-strong);
+  font-size: 13px;
+}
+.applicants-table .sm { font-size: 11px; color: var(--text-2); }
+
+.applicant-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  transition: all 180ms var(--ease);
+}
+.applicant-card > div {
+  text-align: center;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.applicant-card > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.applicant-card:hover { border-color: var(--border); box-shadow: var(--shadow-soft); }
+.applicant-card.is-mine {
+  background: var(--accent-soft);
+  border-color: var(--accent-ring);
+}
+.applicant-card .col-rank {
+  font-family: 'Geist Mono', monospace;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.applicant-card .col-name { font-weight: 600; color: var(--text); }
+.applicant-card .col-school { color: var(--text-2); font-size: 12px; }
+.applicant-card .col-practical { color: var(--text-2); font-size: 11.5px; }
+.applicant-card .col-total {
+  font-weight: 700;
+  color: var(--accent-strong);
+  font-size: 13px;
+}
+.applicant-card .sm { font-size: 10.5px; color: var(--text-3); margin-right: 3px; }
+.applicant-card .grade-text { font-weight: 600; }
+
+/* ── 카드 list 헤더 ── */
+.applicants-list-wrap {
+  overflow-x: auto;
+  padding: 14px;
+}
+.applicants-list-head {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.applicants-list-head > div { text-align: center; white-space: nowrap; }
+.applicants-list { display: flex; flex-direction: column; gap: 6px; }
+
+/* ── 이상 데이터 ── */
+.applicant-card.has-anomaly {
+  border-color: rgba(234, 88, 12, 0.4);
+  background: rgba(254, 243, 231, 0.4);
+}
+.applicant-card.anomaly-error {
+  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(254, 226, 226, 0.35);
+}
+.dark .applicant-card.has-anomaly { background: rgba(234, 88, 12, 0.08); }
+.dark .applicant-card.anomaly-error { background: rgba(220, 38, 38, 0.1); }
+.anomaly-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 10.5px; font-weight: 600;
+  background: rgba(234, 88, 12, 0.12);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  font-family: inherit;
+}
+.anomaly-chip i { font-size: 11px; }
+.anomaly-chip.anomaly-error {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.card-header {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.card-header .rank {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-3);
+  background: var(--surface);
+  padding: 2px 7px; border-radius: 99px;
+  flex-shrink: 0;
+}
+.card-header .name { font-weight: 600; font-size: 13.5px; color: var(--text); letter-spacing: -0.01em; }
+.card-header .branch {
+  font-size: 11px; color: var(--text-2);
+  background: var(--surface); padding: 2px 7px; border-radius: 99px;
+  font-family: 'Geist Mono', monospace;
+}
+.applicant-card.is-mine .card-header .branch {
+  background: var(--accent); color: #fff;
+}
+.card-header .school {
+  font-size: 11.5px; color: var(--text-3);
+  margin-left: auto;
+}
+
+.compact-row {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 11.5px; line-height: 1.55;
+}
+.compact-row .label {
+  flex-shrink: 0;
+  font-size: 10px; font-weight: 600;
+  color: var(--text-3); text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: 'Geist Mono', monospace;
+  padding-top: 3px;
+  min-width: 28px;
+}
+.compact-row .content {
+  flex: 1;
+  color: var(--text-2);
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+}
+.score-item {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.grade-text { font-weight: 700; }
+.grade-1, .grade-2 { color: #16a34a; }
+.grade-3, .grade-4 { color: var(--info); }
+.grade-5, .grade-6 { color: var(--warn); }
+.grade-7, .grade-8, .grade-9 { color: var(--danger); }
+
+.total-row {
+  display: flex; gap: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-soft);
+  flex-wrap: wrap;
+}
+.total-row .item {
+  display: flex; flex-direction: column; gap: 1px;
+  flex: 1; min-width: 60px;
+}
+.total-row .item .label {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.total-row .item .value {
+  font-size: 13px; font-weight: 600;
+  color: var(--text);
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.total-row .item .value.highlight {
+  color: var(--accent-strong);
+  font-size: 15px;
+}
+
+/* 경쟁률 색상 (총 지원자) */
+.stat-value.competition-low { color: #16a34a; }
+.stat-value.competition-normal { color: var(--info); }
+.stat-value.competition-high { color: var(--warn); }
+.stat-value.competition-extreme { color: var(--danger); animation: pulse 1.4s var(--ease-out) infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+
+/* ── 상태 ── */
+.empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-3);
+}
+.empty-state .empty-icon { margin-bottom: 10px; }
+.empty-state .empty-icon i { font-size: 40px; color: var(--text-3); }
+.empty-state .empty-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--text-2); margin-bottom: 4px;
+}
+.empty-state .empty-sub {
+  font-size: 11.5px; color: var(--text-3);
+  max-width: 400px; margin: 0 auto;
+  line-height: 1.5;
+}
+
+.loading-state {
+  padding: 40px;
+  text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--text-2); font-size: 13px;
+}
+.loading-state i { font-size: 18px; color: var(--accent); }
+.spin { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 반응형 ── */
+@media (max-width: 900px) {
+  .applicants-grid { grid-template-columns: 1fr; }
+  .cascade { flex-direction: column; align-items: stretch; }
+  .cascade-arrow { display: none; }
+  .stats-strip { justify-content: flex-start; }
+  .stat-sort { margin-left: 0; width: 100%; }
+}

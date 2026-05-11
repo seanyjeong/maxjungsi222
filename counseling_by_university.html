@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>학교별 상담 현황 · 맥스정시</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/light/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/sidebar.css">
+  <link rel="stylesheet" href="assets/css/topbar.css">
+  <link rel="stylesheet" href="assets/css/buttons.css">
+  <link rel="stylesheet" href="assets/css/toast.css">
+  <link rel="stylesheet" href="assets/css/modal.css">
+  <link rel="stylesheet" href="assets/css/combobox.css">
+  <link rel="stylesheet" href="counseling_by_university.css">
+</head>
+<body data-page="counseling_by_university" data-title="학교별 상담 현황" data-category="컨설팅">
+  <div class="app-shell" id="appShell">
+    <div id="sidebar-slot"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="page-path">
+          <span>컨설팅</span>
+          <span class="sep">/</span>
+          <span class="current">학교별 상담</span>
+        </div>
+        <div class="topbar-actions">
+          <div class="combobox no-search topbar-combo" id="year-select" style="min-width:130px;"></div>
+          <div class="gun-chips" id="gunChips">
+            <button class="gun-chip active" data-gun="">전체</button>
+            <button class="gun-chip" data-gun="가">가군</button>
+            <button class="gun-chip" data-gun="나">나군</button>
+            <button class="gun-chip" data-gun="다">다군</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="page-content">
+
+        <!-- 대학 선택 picker -->
+        <div class="picker-card">
+          <div class="picker-head">
+            <div class="picker-label">
+              <i class="ph-fill ph-graduation-cap"></i>
+              <div>
+                <div class="picker-title">학교별 <em>상담 학생</em> 현황</div>
+                <div class="picker-sub">우리 지점에서 상담 저장한 학생을 대학 기준으로 확인합니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="picker-combo-row">
+            <label class="picker-combo-label">대학 · 학과</label>
+            <div class="combobox" id="university-select" style="flex:1;min-width:200px;max-width:560px;"></div>
+          </div>
+        </div>
+
+        <!-- 컷 정보 바 -->
+        <div class="cut-bar" id="cutBar" hidden>
+          <div class="cut-row cut-max">
+            <span class="cut-tag"><i class="ph-fill ph-crown-simple"></i>맥스컷</span>
+            <span class="cut-item"><em class="lbl">수능</em><em class="val" data-field="max-suneung">—</em></span>
+            <span class="cut-item"><em class="lbl">총점</em><em class="val" data-field="max-total">—</em></span>
+            <span class="cut-item"><em class="lbl">25년</em><em class="val" data-field="max-25">—</em></span>
+            <span class="cut-item"><em class="lbl">26년</em><em class="val" data-field="max-26">—</em></span>
+          </div>
+          <div class="cut-row cut-mine">
+            <span class="cut-tag"><i class="ph-fill ph-map-pin"></i><span id="cutMineLabel">지점컷</span></span>
+            <span class="cut-item"><em class="lbl">수능</em><em class="val" data-field="mine-suneung">—</em></span>
+            <span class="cut-item"><em class="lbl">총점</em><em class="val" data-field="mine-total">—</em></span>
+            <span class="cut-item"><em class="lbl">25년</em><em class="val" data-field="mine-25">—</em></span>
+            <span class="cut-item"><em class="lbl">26년</em><em class="val" data-field="mine-26">—</em></span>
+          </div>
+        </div>
+
+        <!-- 통계 strip -->
+        <div class="stats-strip" id="statsStrip" hidden>
+          <div class="stat-item stat-primary">
+            <span class="stat-label">상담 학생</span>
+            <span class="stat-value num" id="statTotal">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">평균 수능</span>
+            <span class="stat-value num" id="statAvgSuneung">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">수능 최고</span>
+            <span class="stat-value num" id="statMaxSuneung">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">평균 총점</span>
+            <span class="stat-value num" id="statAvgTotal">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">총점 최고</span>
+            <span class="stat-value num" id="statMaxTotal">—</span>
+          </div>
+          <div class="stat-sort">
+            <span class="stat-label">정렬</span>
+            <div class="sort-pills" id="sortPills">
+              <button class="sort-pill active" data-sort="total_score">총점 ↓</button>
+              <button class="sort-pill" data-sort="suneung_score">수능 ↓</button>
+              <button class="sort-pill" data-sort="created_at">저장순</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 지원자 list -->
+        <div class="applicants-card">
+          <div class="applicants-head">
+            <div class="applicants-title">
+              <i class="ph-fill ph-graduation-cap"></i>
+              <span>상담 학생</span>
+              <span class="dim" id="applicantsHint">대학을 선택하면 상담 학생이 표시됩니다</span>
+            </div>
+          </div>
+
+          <div id="applicantsContainer">
+            <div class="empty-state">
+              <div class="empty-icon"><i class="ph-light ph-graduation-cap"></i></div>
+              <div class="empty-title">대학을 선택하세요</div>
+              <div class="empty-sub">상단에서 학년도·군·대학을 선택하면 우리 지점의 상담 저장 학생 목록이 표시됩니다.</div>
+            </div>
+          </div>
+
+          <div class="loading-state" id="loadingState" hidden>
+            <i class="ph-light ph-circle-notch spin"></i>
+            <span>불러오는 중…</span>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/modal.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/bootstrap.js"></script>
+  <script src="assets/js/combobox.js"></script>
+  <script src="counseling_by_university.js"></script>
+</body>
+</html>

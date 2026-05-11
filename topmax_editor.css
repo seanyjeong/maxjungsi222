@@ -1,0 +1,185 @@
+/* ============================================================ */
+/* topmax_editor.new.css — 최고표점 대량 편집                   */
+/* ============================================================ */
+
+.main { padding: 0; }
+.page-content {
+  padding: 0 24px 48px;
+  max-width: 1500px;
+  margin: 0 auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* ── Hero ── */
+.page-hero {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  margin-top: 20px;
+  box-shadow: var(--shadow-soft);
+}
+.page-hero .hero-icon {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  background: var(--accent-soft); color: var(--accent-strong);
+  display: grid; place-items: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.page-hero .hero-body { min-width: 0; }
+.page-hero .hero-title {
+  margin: 0;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--text);
+}
+.page-hero .hero-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px; color: var(--text-2);
+}
+
+/* ── Control bar ── */
+.control-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+}
+.control-bar .ctrl-group {
+  display: flex; align-items: center; gap: 8px;
+}
+.control-bar .ctrl-label {
+  font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-3); font-weight: 500;
+}
+.control-bar .ctrl-spacer { flex: 1; }
+
+/* native select — 컴포박스 톤에 맞춰 경량 */
+.select-native {
+  height: 34px; padding: 0 30px 0 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text); font-size: 13px;
+  font-family: inherit;
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-3) 50%),
+    linear-gradient(135deg, var(--text-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 50%,
+    calc(100% - 11px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease);
+}
+.select-native:hover { border-color: var(--text-3); }
+.select-native:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  background-color: var(--surface);
+}
+
+/* ── Hint banner ── */
+.hint-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-ring);
+  border-radius: var(--r-sm);
+  font-size: 12.5px; color: var(--accent-strong); line-height: 1.55;
+}
+.hint-banner i { color: var(--accent); font-size: 16px; flex-shrink: 0; }
+.hint-banner b { font-weight: 600; }
+
+/* ── Grid / Table ── */
+.grid-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.grid-scroll {
+  overflow: auto;
+  max-width: 100%;
+}
+.topmax-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 1200px;
+}
+.topmax-table thead th {
+  background: var(--surface-2); color: var(--text-3);
+  font-weight: 500; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  text-align: center; padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky; top: 0; z-index: 1;
+}
+.topmax-table thead th:first-child {
+  background: var(--surface-3);
+  color: var(--text-2);
+  position: sticky; left: 0; z-index: 2;
+}
+.topmax-table tbody td {
+  padding: 8px;
+  text-align: center;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.topmax-table tbody td:first-child {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
+  text-align: left;
+  padding-left: 16px;
+  font-family: inherit;
+  position: sticky; left: 0; z-index: 1;
+}
+
+.topmax-table input.score {
+  width: 90px; height: 30px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease), box-shadow 150ms var(--ease);
+  -moz-appearance: textfield;
+}
+.topmax-table input.score::-webkit-outer-spin-button,
+.topmax-table input.score::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.topmax-table input.score:hover {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+.topmax-table input.score:focus {
+  outline: 0;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* ── Status message ── */
+.status-msg {
+  min-height: 20px;
+  padding: 0 4px;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-2);
+}
+.status-msg.is-success { color: var(--accent); }
+.status-msg.is-error { color: var(--danger); }
+.status-msg.is-info { color: var(--info); }

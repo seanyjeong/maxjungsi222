@@ -1,0 +1,119 @@
+<!--
+  sidebar.html — 공용 사이드바 (fetch include 용)
+  주입 위치: <div id="sidebar-slot"></div>
+  활성 표시: bootstrap.js 가 body.dataset.page 와 .nav-item[data-page] 매칭 후 .active 부여
+-->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="brand-text">
+      <span class="name">맥스정시엔진</span>
+      <span class="sub">v2.26.04</span>
+    </div>
+    <button class="sidebar-toggle" id="toggleSidebar" aria-label="사이드바 접기">
+      <i class="ph-light ph-sidebar"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group nav-group-solo">
+      <a class="nav-item" data-page="welcome" href="welcome.html">
+        <i class="ph-light ph-house"></i><span>대시보드</span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">인사이트</div>
+      <a class="nav-item nav-item-live" data-page="school_app_final" href="school_app_final.html">
+        <i class="ph-fill ph-broadcast"></i><span>맥스라이브</span><span class="live-badge">LIVE</span>
+      </a>
+      <a class="nav-item" data-page="grade_distribution" href="grade_distribution.html">
+        <i class="ph-light ph-chart-line-up"></i><span>성적 분포</span>
+      </a>
+      <a class="nav-item" data-page="university_overview" href="university_overview.html">
+        <i class="ph-light ph-buildings"></i><span>대학 정보</span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">등록 관리</div>
+      <a class="nav-item" data-page="add_student" href="add_student.html">
+        <i class="ph-light ph-user-plus"></i><span>학생 추가</span>
+      </a>
+      <a class="nav-item" data-page="gachaejeom" href="gachaejeom.html">
+        <i class="ph-light ph-exam"></i><span>가채점 입력</span>
+      </a>
+      <a class="nav-item" data-page="score_input" href="score_input.html">
+        <i class="ph-light ph-pencil-simple-line"></i><span>성적표 입력</span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">컨설팅</div>
+      <a class="nav-item" data-page="calculator" href="calculator.html">
+        <i class="ph-light ph-calculator"></i><span>통합 계산기</span>
+      </a>
+      <a class="nav-item" data-page="counsel" href="counsel.html">
+        <i class="ph-light ph-chat-centered-dots"></i><span>개인 상담</span>
+      </a>
+      <a class="nav-item" data-page="school_app" href="school_app.html">
+        <i class="ph-light ph-graph"></i><span>컨설팅 허브</span>
+      </a>
+      <a class="nav-item" data-page="counseling_by_university" href="counseling_by_university.html">
+        <i class="ph-light ph-graduation-cap"></i><span>학교별 상담</span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">지원 수합</div>
+      <a class="nav-item" data-page="final_apply" href="final_apply.html">
+        <i class="ph-light ph-flag-checkered"></i><span>대학 지원 수합</span>
+      </a>
+      <a class="nav-item" data-page="final_apply_list" href="final_apply_list.html">
+        <i class="ph-light ph-clipboard-text"></i><span>본원 지원 현황</span>
+      </a>
+    </div>
+
+    <div class="nav-group nav-group-solo">
+      <a class="nav-item" data-page="cut_editor" href="cut_editor.html">
+        <i class="ph-light ph-scissors"></i><span>정시컷 편집</span>
+      </a>
+    </div>
+
+    <div class="nav-group" data-group="admin">
+      <div class="nav-group-label">관리자 편집</div>
+      <a class="nav-item" data-page="gradecut_editor" href="gradecut_editor.html">
+        <i class="ph-light ph-ranking"></i><span>등급컷 편집</span>
+      </a>
+      <a class="nav-item" data-page="scores_editor" href="scores_editor.html">
+        <i class="ph-light ph-translate"></i><span>영어/한국사</span>
+      </a>
+      <a class="nav-item" data-page="silgi_editor" href="silgi-editor.html">
+        <i class="ph-light ph-barbell"></i><span>실기 에디터</span>
+      </a>
+      <a class="nav-item" data-page="topmax_editor" href="topmax_editor.html">
+        <i class="ph-light ph-trend-up"></i><span>최고표점</span>
+      </a>
+      <a class="nav-item" data-page="setting" href="setting.html">
+        <i class="ph-light ph-gear-six"></i><span>수능환산편집</span>
+      </a>
+      <a class="nav-item" data-page="debug" href="debug.html">
+        <i class="ph-light ph-bug"></i><span>디버그 노트</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="sidebar-foot-user">
+      <div class="avatar-dot" id="sidebarAvatar">JH</div>
+      <div class="user-meta">
+        <span class="name" id="sidebarUserName">정한결 T</span>
+        <span class="role" id="sidebarUserBranch">일산본원 · 상담</span>
+      </div>
+    </div>
+    <div class="sidebar-foot-actions">
+      <button class="mini-btn" data-action="logout" aria-label="로그아웃">
+        <i class="ph-light ph-sign-out"></i><span>로그아웃</span>
+      </button>
+    </div>
+  </div>
+</aside>

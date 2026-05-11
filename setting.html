@@ -1,836 +1,260 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>정시 규칙 설정</title>
-  <style>
-    :root { --primary-color:#007bff; --border-color:#dee2e6; --bg-color:#f8f9fa; --text-color:#212529; --font-size-base:16px; --saved-color:#e7f3ff; }
-    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; margin:0; background:#f4f4f4; color:var(--text-color); font-size:var(--font-size-base); }
-    .container { width:95%; max-width:1800px; margin:0 auto; padding:20px; }
-    header { display:flex; justify-content:space-between; align-items:center; padding:15px 30px; background:var(--primary-color); color:#fff; margin-bottom:20px; }
-    header h1 { margin:0; font-size:1.6em; }
-    header .header-controls { display:flex; align-items:center; gap:20px; }
-    input,button,select { width:100%; padding:12px; margin-bottom:10px; border-radius:5px; border:1px solid var(--border-color); box-sizing:border-box; font-size:1em; }
-    select { background:#fff; color:#333; font-weight:bold; }
-    header select { width:180px; padding:8px; margin:0; }
-    button { background:var(--primary-color); color:#fff; cursor:pointer; border:none; font-weight:bold; transition:background-color .2s; }
-    button:hover { opacity:.9; }
-    .main-layout { display:flex; gap:30px; }
-    .sidebar { flex-shrink:0; width:400px; background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,.05); padding:20px; height:fit-content; }
-    .content { flex-grow:1; min-width:0; }
-    .school-index { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; }
-    .school-index button { width:auto; padding:8px 12px; font-size:1em; background:#e9ecef; color:var(--text-color); }
-    .school-index button.active { background:var(--primary-color); color:#fff; }
-    .gun-filter { display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap; }
-    .gun-filter button { width:auto; padding:6px 10px; background:#edf2ff; color:#1f2937; font-size:.85rem; }
-    .gun-filter button.active { background:#4f46e5; color:#fff; }
-    .school-list { list-style:none; padding:0; margin:0; max-height:70vh; overflow-y:auto; border:1px solid var(--border-color); border-radius:4px; background:#fff; }
-    .school-list li { padding:12px 15px; cursor:pointer; border-bottom:1px solid #f1f1f1; font-size:.95em; }
-    .school-list li:last-child { border-bottom:none; }
-    .school-list li:hover { background:#f1f3f5; }
-    .school-list li.saved { background:var(--saved-color); }
-    .school-list li.saved:hover { background:#dbeaff; }
-    .school-list li.selected { background:var(--primary-color) !important; color:#fff !important; font-weight:bold; }
-    .group-header { position:sticky; top:0; background:#fff; z-index:1; padding:6px 10px; font-weight:700; border-top:1px solid var(--border-color); border-bottom:1px solid var(--border-color); }
-    .school-pill { display:inline-block; margin-left:6px; padding:1px 6px; font-size:.78em; background:#eef5ff; border:1px solid #cfe2ff; border-radius:999px; color:#2653d4; }
-    .rule-editor { border:1px solid var(--border-color); padding:25px; border-radius:8px; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.05); }
-    .rule-editor h2,.rule-editor h3 { margin-top:0; padding-bottom:15px; border-bottom:1px solid var(--border-color); margin-bottom:20px; }
-    .rule-group,.bonus-rule,.score-config-group,.special-formula-group { border:1px dashed var(--border-color); padding:20px; margin-bottom:20px; border-radius:4px; background:var(--bg-color); }
-    .rule-header,.bonus-rule-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-    label { margin-right:15px; font-size:1.05em; }
-    input[type="checkbox"] { width:auto; margin-right:5px; transform:scale(1.3); vertical-align:middle; }
-    input[type="number"],input[type="text"],select,textarea { width:auto; padding:8px; display:inline-block; font-size:1em; }
-    textarea { width:100%; height:100px; }
-    .rule-type-select { width:180px; }
-    input.rule-weights,input.rule-count,input.bonus-value { width:120px; }
-    input.bonus-subjects { flex-grow:1; }
-    .delete-rule-btn { background:#dc3545; font-size:.8em; padding:5px 8px; width:auto; }
-    .editor-actions { margin-top:20px; display:flex; gap:10px; }
-    .editor-actions button { background:#6c757d; }
-    .editor-footer { margin-top:30px; }
-    .primary-btn { background:#28a745; }
-    .message { margin-top:15px; font-weight:bold; min-height:20px; font-size:1.1em; }
-    .message.success { color:#28a745; }
-    .message.error { color:#dc3545; }
-    .hidden { display:none !important; }
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:1000; }
-    .modal-content { background:#fff; padding:40px; border-radius:8px; width:100%; max-width:400px; box-shadow:0 5px 15px rgba(0,0,0,.3); }
-    .score-config-group>div { margin-bottom:15px; align-items:center; display:flex; gap:10px; }
-    .button-group { display:flex; gap:5px; }
-    .button-group button { width:auto; padding:8px 15px; font-size:.9em; background:#e9ecef; color:var(--text-color); font-weight:normal; }
-    .button-group button.active { background:var(--primary-color); color:#fff; font-weight:bold; }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>환경 설정 · 맥스정시</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/light/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+  <!-- 공통 자산 -->
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/sidebar.css">
+  <link rel="stylesheet" href="assets/css/topbar.css">
+  <link rel="stylesheet" href="assets/css/buttons.css">
+  <link rel="stylesheet" href="assets/css/toast.css">
+  <link rel="stylesheet" href="assets/css/modal.css">
+  <link rel="stylesheet" href="assets/css/combobox.css">
+  <!-- 페이지 전용 -->
+  <link rel="stylesheet" href="setting.css">
 </head>
-<body>
-  <!-- 로그인 모달 -->
-  <div id="login-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <h2>정시 규칙 설정 로그인</h2>
-      <form id="login-form">
-        <input type="text" id="userid" placeholder="아이디" required />
-        <input type="password" id="password" placeholder="비밀번호" required />
-        <button type="submit">로그인</button>
-      </form>
-      <p id="login-message" class="message"></p>
-    </div>
-  </div>
+<body data-page="setting" data-title="환경 설정" data-category="관리자">
 
-  <!-- 실제 앱 -->
-  <div id="app-container" class="hidden">
-    <header>
-      <h1>정시 선택반영 규칙 설정</h1>
-      <div class="header-controls">
-        <label for="year-selector" style="color:#fff;font-weight:bold;">학년도:</label>
-        <select id="year-selector">
-          <option value="2027">2027학년도</option>
-          <option value="2026">2026학년도</option>
-          <option value="2028">2028학년도</option>
-        </select>
-        <button id="logout-btn">로그아웃</button>
-      </div>
-    </header>
+  <div class="app-shell" id="appShell">
+    <div id="sidebar-slot"></div>
 
-    <div class="container main-layout">
-      <!-- 왼쪽: 대학 목록 -->
-      <div class="sidebar">
-        <h2>대학 목록</h2>
-        <!-- 초성 -->
-        <div id="school-index" class="school-index"></div>
-        <!-- 군 필터 -->
-        <div id="gun-filter" class="gun-filter">
-          <button data-gun="전체" class="active">전체</button>
-          <button data-gun="가군">가군</button>
-          <button data-gun="나군">나군</button>
-          <button data-gun="다군">다군</button>
-          <button data-gun="기타">기타</button>
+    <div class="main">
+
+      <header class="topbar">
+        <div class="page-path">
+          <span>관리자</span>
+          <span class="sep">/</span>
+          <span class="current">환경 설정</span>
         </div>
-        <ul id="school-list" class="school-list"></ul>
-      </div>
-
-      <!-- 오른쪽: 설정 에디터 -->
-      <div class="content">
-        <div id="rule-editor" class="rule-editor hidden">
-          <h2 id="editor-title"></h2>
-
-          <h3>계산 유형</h3>
-          <div class="special-formula-group">
-            <label>이 학과의 계산 방식을 선택하세요:</label>
-            <select id="formula-type-select">
-              <option value="기본비율">기본 비율 계산 (대부분)</option>
-              <option value="특수공식">특수 공식 사용</option>
+        <div class="topbar-actions">
+          <div class="year-pill">
+            <label for="year-selector"><i class="ph-light ph-calendar-blank"></i> 학년도</label>
+            <select id="year-selector" class="select-native">
+              <option value="2027">2027학년도</option>
+              <option value="2026">2026학년도</option>
+              <option value="2028">2028학년도</option>
             </select>
-            <div id="special-formula-wrapper" class="hidden" style="margin-top:15px;">
-              <label for="special-formula-text">특수 공식 내용:</label>
-              <textarea id="special-formula-text" placeholder="이곳에 해당 학교만의 특수 계산식을 입력하세요..."></textarea>
-            </div>
           </div>
+        </div>
+      </header>
 
-          <div id="default-rules-wrapper">
-            <h3 style="margin-top:40px;">전체 계산 방식</h3>
-            <div class="score-config-group">
-              <label>이 학교의 전체 점수 계산 방식을 선택하세요:</label>
-              <div id="calc-method-buttons" class="button-group">
-                <button data-method="환산" class="active">환산 계산</button>
-                <button data-method="직접">직접 계산</button>
-              </div>
-            </div>
+      <section class="page-content">
 
-            <h3 style="margin-top:40px;">총점(만점)</h3>
-            <div class="score-config-group" id="total-score-group">
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <div class="button-group" id="total-buttons">
-                  <button data-value="1000" class="active">1000점</button>
-                  <button data-value="500">500점</button>
-                  <button data-value="300">300점</button>
-                  <button data-value="custom">직접입력</button>
-                </div>
-                <label>직접입력:
-                  <input type="number" id="total-custom" placeholder="예: 750" min="100" max="2000" style="width:140px;" />
-                </label>
-              </div>
-              <div class="small" style="margin-top:6px;">학교마다 만점(총점)이 1000/500/300 등으로 다를 수 있어요. 저장 시 DB에 고정됩니다.</div>
-            </div>
-
-            <h3 style="margin-top:40px;">과목별 점수 종류</h3>
-            <div id="score-config-container" class="score-config-group">
-              <div>
-                <label>국어/수학:</label>
-                <select id="km-type">
-                  <option value="백분위">백분위</option>
-                  <option value="표준점수">표준점수</option>
-                  <option value="등급">등급</option>
-                </select>
-                <select id="km-max-score-method" class="hidden">
-                  <option value="fixed_200">200점 만점 기준</option>
-                  <option value="highest_of_year">당해 최고점 기준</option>
-                </select>
-              </div>
-              <div>
-                <label>영어:</label>
-                <select id="eng-type">
-                  <option value="grade_conversion">등급별 환산점수 (DB)</option>
-                  <option value="fixed_max_score">고정 만점 기준</option>
-                </select>
-                <div id="eng-max-score-buttons" class="button-group hidden">
-                  <button data-value="100">100점</button>
-                  <button data-value="200">200점</button>
-                </div>
-              </div>
-              <div>
-                <label>탐구:</label>
-                <select id="inq-type">
-                  <option value="백분위">백분위</option>
-                  <option value="표준점수">표준점수</option>
-                  <option value="변환표준점수">변환표준점수</option>
-                  <option value="등급">등급</option>
-                </select>
-                <select id="inq-max-score-method" class="hidden">
-                  <option value="fixed_100">100점 만점 기준</option>
-                  <option value="highest_of_year">당해 최고점 기준</option>
-                </select>
-              </div>
-            </div>
-
-            <h3 style="margin-top:40px;">기타 설정</h3>
-            <div id="other-settings-container" class="score-config-group">
-              <div>
-                <label>
-                  <input type="checkbox" id="chk-history-first">
-                  한국사 가산점 우선 적용 (가산점을 먼저 더한 후 수능 비율 환산)
-                </label>
-              </div>
-            </div>
-            
-            <h3 style="margin-top:40px;">선택 반영 규칙</h3>
-            <div id="rule-groups-container"></div>
-            <div class="editor-actions">
-              <button id="add-rule-btn">➕ 선택 규칙 추가</button>
-              <button id="set-default-btn">⚪ 기본 반영으로 설정</button>
-            </div>
-
-            <h3 style="margin-top:40px;">가산점 규칙</h3>
-            <div id="bonus-rules-container"></div>
-            <div class="editor-actions">
-              <button id="add-bonus-rule-btn">➕ 가산점 규칙 추가</button>
-            </div>
-          </div>
-
-          <div class="editor-footer">
-            <button id="save-btn" class="primary-btn">💾 모든 규칙 저장</button>
-            <p id="editor-message" class="message"></p>
+        <!-- 헤더 카드 -->
+        <div class="page-hero">
+          <div class="hero-icon"><i class="ph-light ph-gear-six"></i></div>
+          <div class="hero-body">
+            <h1 class="hero-title">정시 선택반영 규칙 설정</h1>
+            <p class="hero-sub">학교·학과별 계산 방식, 총점, 과목 유형, 선택 반영/가산점 규칙을 편집합니다.</p>
           </div>
         </div>
 
-        <div id="welcome-message">
-          <p>작업할 학년도를 선택하고, 왼쪽 목록에서 학교를 선택하세요.</p>
+        <div class="layout">
+
+          <!-- 좌측: 대학 목록 -->
+          <aside class="list-col">
+            <div class="card list-card">
+              <div class="card-head">
+                <h2 class="card-title"><i class="ph-light ph-buildings"></i> 대학 목록</h2>
+              </div>
+
+              <!-- 초성 필터 -->
+              <div id="school-index" class="chip-row chip-row-initial"></div>
+
+              <!-- 군 필터 -->
+              <div id="gun-filter" class="chip-row chip-row-gun">
+                <button class="chip-btn active" data-gun="전체">전체</button>
+                <button class="chip-btn" data-gun="가군">가군</button>
+                <button class="chip-btn" data-gun="나군">나군</button>
+                <button class="chip-btn" data-gun="다군">다군</button>
+                <button class="chip-btn" data-gun="기타">기타</button>
+              </div>
+
+              <ul id="school-list" class="school-list"></ul>
+            </div>
+          </aside>
+
+          <!-- 우측: 에디터 -->
+          <main class="edit-col">
+
+            <!-- Welcome -->
+            <div id="welcome-message" class="welcome-card">
+              <div class="welcome-icon"><i class="ph-light ph-cursor-click"></i></div>
+              <div class="welcome-body">
+                <h3>학교를 선택하세요</h3>
+                <p>상단에서 학년도를 선택하고, 왼쪽 목록에서 편집할 학과를 고르세요.</p>
+              </div>
+            </div>
+
+            <!-- Rule editor -->
+            <div id="rule-editor" class="rule-editor hidden">
+              <div class="editor-head">
+                <h2 id="editor-title" class="editor-title"></h2>
+              </div>
+
+              <!-- 계산 유형 -->
+              <section class="section">
+                <h3 class="section-title"><i class="ph-light ph-function"></i> 계산 유형</h3>
+                <div class="form-group">
+                  <label class="form-label">이 학과의 계산 방식을 선택하세요</label>
+                  <select id="formula-type-select" class="select-native">
+                    <option value="기본비율">기본 비율 계산 (대부분)</option>
+                    <option value="특수공식">특수 공식 사용</option>
+                  </select>
+                  <div id="special-formula-wrapper" class="hidden special-wrap">
+                    <label class="form-label" for="special-formula-text">특수 공식 내용</label>
+                    <textarea id="special-formula-text" placeholder="이곳에 해당 학교만의 특수 계산식을 입력하세요..."></textarea>
+                  </div>
+                </div>
+              </section>
+
+              <div id="default-rules-wrapper">
+
+                <!-- 전체 계산 방식 -->
+                <section class="section">
+                  <h3 class="section-title"><i class="ph-light ph-scales"></i> 전체 계산 방식</h3>
+                  <div class="form-group">
+                    <label class="form-label">이 학교의 전체 점수 계산 방식</label>
+                    <div id="calc-method-buttons" class="pill-group">
+                      <button class="pill-btn active" data-method="환산">환산 계산</button>
+                      <button class="pill-btn" data-method="직접">직접 계산</button>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- 총점 -->
+                <section class="section">
+                  <h3 class="section-title"><i class="ph-light ph-target"></i> 총점 (만점)</h3>
+                  <div class="form-group">
+                    <div class="inline-controls">
+                      <div id="total-buttons" class="pill-group">
+                        <button class="pill-btn active" data-value="1000">1000점</button>
+                        <button class="pill-btn" data-value="500">500점</button>
+                        <button class="pill-btn" data-value="300">300점</button>
+                        <button class="pill-btn" data-value="custom">직접입력</button>
+                      </div>
+                      <label class="inline-input">
+                        직접입력
+                        <input type="number" id="total-custom" placeholder="예: 750" min="100" max="2000">
+                      </label>
+                    </div>
+                    <p class="form-hint">학교마다 만점(총점)이 1000/500/300 등으로 다를 수 있습니다. 저장 시 DB에 고정됩니다.</p>
+                  </div>
+                </section>
+
+                <!-- 과목별 점수 종류 -->
+                <section class="section">
+                  <h3 class="section-title"><i class="ph-light ph-list-numbers"></i> 과목별 점수 종류</h3>
+                  <div id="score-config-container" class="form-grid">
+                    <div class="form-row">
+                      <label class="form-label">국어 / 수학</label>
+                      <div class="inline-controls">
+                        <select id="km-type" class="select-native">
+                          <option value="백분위">백분위</option>
+                          <option value="표준점수">표준점수</option>
+                          <option value="등급">등급</option>
+                        </select>
+                        <select id="km-max-score-method" class="select-native hidden">
+                          <option value="fixed_200">200점 만점 기준</option>
+                          <option value="highest_of_year">당해 최고점 기준</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-row">
+                      <label class="form-label">영어</label>
+                      <div class="inline-controls">
+                        <select id="eng-type" class="select-native">
+                          <option value="grade_conversion">등급별 환산점수 (DB)</option>
+                          <option value="fixed_max_score">고정 만점 기준</option>
+                        </select>
+                        <div id="eng-max-score-buttons" class="pill-group hidden">
+                          <button class="pill-btn" data-value="100">100점</button>
+                          <button class="pill-btn" data-value="200">200점</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-row">
+                      <label class="form-label">탐구</label>
+                      <div class="inline-controls">
+                        <select id="inq-type" class="select-native">
+                          <option value="백분위">백분위</option>
+                          <option value="표준점수">표준점수</option>
+                          <option value="변환표준점수">변환표준점수</option>
+                          <option value="등급">등급</option>
+                        </select>
+                        <select id="inq-max-score-method" class="select-native hidden">
+                          <option value="fixed_100">100점 만점 기준</option>
+                          <option value="highest_of_year">당해 최고점 기준</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- 기타 설정 -->
+                <section class="section">
+                  <h3 class="section-title"><i class="ph-light ph-sliders-horizontal"></i> 기타 설정</h3>
+                  <div id="other-settings-container" class="form-group">
+                    <label class="checkbox-row">
+                      <input type="checkbox" id="chk-history-first">
+                      <span>한국사 가산점 우선 적용 (가산점을 먼저 더한 후 수능 비율 환산)</span>
+                    </label>
+                  </div>
+                </section>
+
+                <!-- 선택 반영 규칙 -->
+                <section class="section">
+                  <h3 class="section-title"><i class="ph-light ph-check-square"></i> 선택 반영 규칙</h3>
+                  <div id="rule-groups-container" class="rules-list"></div>
+                  <div class="section-actions">
+                    <button class="btn btn-ghost" id="add-rule-btn"><i class="ph-light ph-plus"></i> 선택 규칙 추가</button>
+                    <button class="btn btn-ghost" id="set-default-btn"><i class="ph-light ph-arrow-counter-clockwise"></i> 기본 반영으로 설정</button>
+                  </div>
+                </section>
+
+                <!-- 가산점 규칙 -->
+                <section class="section">
+                  <h3 class="section-title"><i class="ph-light ph-plus-circle"></i> 가산점 규칙</h3>
+                  <div id="bonus-rules-container" class="rules-list"></div>
+                  <div class="section-actions">
+                    <button class="btn btn-ghost" id="add-bonus-rule-btn"><i class="ph-light ph-plus"></i> 가산점 규칙 추가</button>
+                  </div>
+                </section>
+              </div>
+
+              <!-- 저장 -->
+              <div class="editor-footer">
+                <button class="btn btn-primary btn-lg" id="save-btn">
+                  <i class="ph-light ph-floppy-disk"></i> 모든 규칙 저장
+                </button>
+                <p id="editor-message" class="status-msg"></p>
+              </div>
+            </div>
+          </main>
+
         </div>
-      </div>
+
+      </section>
     </div>
   </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const SVR_26SUSI = 'https://supermax.kr';
-  const SVR_JUNGSI = 'https://supermax.kr';
-
-  const yearSelector = document.getElementById('year-selector');
-  const loginModal = document.getElementById('login-modal');
-  const appContainer = document.getElementById('app-container');
-  const loginForm = document.getElementById('login-form');
-  const loginMessage = document.getElementById('login-message');
-  const schoolIndexEl = document.getElementById('school-index');
-  const schoolListEl = document.getElementById('school-list');
-  const ruleEditorEl = document.getElementById('rule-editor');
-  const welcomeMessageEl = document.getElementById('welcome-message');
-  const editorTitleEl = document.getElementById('editor-title');
-  const formulaTypeSelect = document.getElementById('formula-type-select');
-  const specialFormulaWrapper = document.getElementById('special-formula-wrapper');
-  const specialFormulaText = document.getElementById('special-formula-text');
-  const defaultRulesWrapper = document.getElementById('default-rules-wrapper');
-  const calcMethodButtons = document.getElementById('calc-method-buttons');
-  const kmType = document.getElementById('km-type');
-  const kmMaxScoreMethod = document.getElementById('km-max-score-method');
-  const engType = document.getElementById('eng-type');
-  const engMaxScoreButtons = document.getElementById('eng-max-score-buttons');
-  const inqType = document.getElementById('inq-type');
-  const inqMaxScoreMethod = document.getElementById('inq-max-score-method');
-  const ruleGroupsContainerEl = document.getElementById('rule-groups-container');
-  const bonusRulesContainerEl = document.getElementById('bonus-rules-container');
-  const editorMessageEl = document.getElementById('editor-message');
-  const logoutBtn = document.getElementById('logout-btn');
-  const addRuleBtn = document.getElementById('add-rule-btn');
-  const setDefaultBtn = document.getElementById('set-default-btn');
-  const addBonusRuleBtn = document.getElementById('add-bonus-rule-btn');
-  const saveBtn = document.getElementById('save-btn');
-  const totalButtons = document.getElementById('total-buttons');
-  const totalCustom  = document.getElementById('total-custom');
-  const chkHistoryFirst = document.getElementById('chk-history-first');
-  const gunFilterEl = document.getElementById('gun-filter');
-
-  let allSchools = [];
-  let currentSchool = null;
-  let currentTotalValue = 1000;
-  let currentOtherSettings = {};
-
-  // 🔥 추가: 현재 선택된 초성, 현재 선택된 군
-  let currentInitial = 'ㄱ';
-  let currentGun = '전체';
-
-  const KOREAN_CONSONANTS = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ".split('');
-
-  const getToken    = () => localStorage.getItem('jwt_token');
-  const setToken    = (t) => localStorage.setItem('jwt_token', t);
-  const removeToken = () => localStorage.removeItem('jwt_token');
-
-  function init() {
-    const token = getToken();
-    if (token) {
-      showApp();
-      loadSchools();
-    } else {
-      showLoginModal();
-    }
-  }
-
-  function showLoginModal() {
-    loginModal.classList.remove('hidden');
-    appContainer.classList.add('hidden');
-  }
-  function showApp() {
-    loginModal.classList.add('hidden');
-    appContainer.classList.remove('hidden');
-  }
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const userid = document.getElementById('userid').value;
-    const password = document.getElementById('password').value;
-    loginMessage.textContent = '로그인 중...';
-    try {
-      const response = await fetch(`${SVR_26SUSI}/26susi/login`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({userid,password})
-      });
-      const data = await response.json();
-      if (data.success && data.token) {
-        setToken(data.token);
-        showApp();
-        loadSchools();
-      } else {
-        loginMessage.textContent = data.message || '로그인 실패';
-        loginMessage.className = 'message error';
-      }
-    } catch (error) {
-      loginMessage.textContent = '로그인 서버에 연결할 수 없습니다.';
-      loginMessage.className = 'message error';
-    }
-  });
-
-  async function fetchFromServer(url, options = {}) {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-        'Authorization': `Bearer ${getToken()}`
-      }
-    });
-    if (response.status === 401 || response.status === 403) {
-      removeToken();
-      showLoginModal();
-      throw new Error('인증 실패');
-    }
-    return response.json();
-  }
-
-  // ✅ 여기 고친 loadSchools
-  async function loadSchools() {
-    const selectedYear = yearSelector.value;
-    ruleEditorEl.classList.add('hidden');
-    welcomeMessageEl.classList.remove('hidden');
-
-    try {
-      const data = await fetchFromServer(`${SVR_JUNGSI}/jungsi/schools/${selectedYear}`);
-      console.log('/jungsi/schools 응답:', data);
-
-      const rows =
-        Array.isArray(data?.schools) ? data.schools :
-        Array.isArray(data?.list)    ? data.list    :
-        Array.isArray(data)          ? data         :
-        [];
-
-      allSchools = rows;
-
-      renderSchoolIndex();
-      // 첫 로딩: ㄱ + 전체
-      currentInitial = 'ㄱ';
-      currentGun = '전체';
-      renderSchoolList(currentInitial, currentGun);
-    } catch (error) {
-      console.error('학교 목록 로딩 실패:', error);
-      schoolListEl.innerHTML = `<li>학교 목록을 불러오지 못했습니다.</li>`;
-    }
-  }
-
-  function renderSchoolIndex() {
-    schoolIndexEl.innerHTML = '';
-    KOREAN_CONSONANTS.forEach(c => {
-      const btn = document.createElement('button');
-      btn.textContent = c;
-      if (c === currentInitial) btn.classList.add('active');
-      btn.addEventListener('click', () => {
-        schoolIndexEl.querySelector('.active')?.classList.remove('active');
-        btn.classList.add('active');
-        currentInitial = c;               // 현재 초성 기억
-        renderSchoolList(currentInitial, currentGun);  // 군은 그대로
-      });
-      schoolIndexEl.appendChild(btn);
-    });
-  }
-
-  // 초성 얻기
-  function getConsonant(str) {
-    if (!str) return null;
-    const ch = str.trim()[0];
-    if (!ch) return null;
-    const code = ch.charCodeAt(0) - 0xAC00;
-    if (code < 0 || code > 11171) return null;
-    return KOREAN_CONSONANTS[Math.floor(code / 588)] ?? null;
-  }
-
-  // 군 정규화
-  function normGun(g) {
-    if (!g) return '기타';
-    const s = String(g).trim();
-    if (s.includes('가')) return '가군';
-    if (s.includes('나')) return '나군';
-    if (s.includes('다')) return '다군';
-    return s;
-  }
-
-  // ✅ 핵심: 초성 + 군으로 필터
-  function renderSchoolList(initial, gunFilter) {
-    schoolListEl.innerHTML = '';
-
-    // 1) 일단 전체에서 초성 먼저
-    let filtered = (allSchools || []).filter(s => {
-      const uniName = (s.대학명 || s.university || '').trim();
-      const c = getConsonant(uniName);
-      return c === initial;
-    });
-
-    // 2) 초성으로 0개면 전체로
-    if (filtered.length === 0) {
-      filtered = allSchools || [];
-    }
-
-    // 3) 군 필터 적용
-    if (gunFilter && gunFilter !== '전체') {
-      filtered = filtered.filter(s => normGun(s.군) === gunFilter);
-    }
-
-    // 4) 군 순서 정의
-    const orderGun = ['가군','나군','다군','기타'];
-    const buckets = { '가군':[], '나군':[], '다군':[], '기타':[] };
-
-    filtered.forEach(s => {
-      const g = normGun(s.군);
-      (buckets[g] || buckets['기타']).push(s);
-    });
-
-    const byName = (a,b) => {
-      const aName = (a.대학명 || a.university || '').trim();
-      const bName = (b.대학명 || b.university || '').trim();
-      const r1 = aName.localeCompare(bName, 'ko');
-      if (r1) return r1;
-      const aDept = (a.학과명 || a.department || '').trim();
-      const bDept = (b.학과명 || b.department || '').trim();
-      const r2 = aDept.localeCompare(bDept, 'ko');
-      if (r2) return r2;
-      return Number(a.U_ID) - Number(b.U_ID);
-    };
-
-    let printed = 0;
-
-    // 5) 군별로 출력
-    orderGun.forEach(gun => {
-      // 만약 군 필터가 있으면 그 군만 찍자
-      if (gunFilter !== '전체' && gun !== gunFilter) return;
-
-      const arr = buckets[gun];
-      if (!arr || arr.length === 0) return;
-
-      const head = document.createElement('li');
-      head.className = 'group-header';
-      head.textContent = `${gun} · ${initial}`;
-      schoolListEl.appendChild(head);
-
-      arr.sort(byName).forEach(school => {
-        const li = document.createElement('li');
-        li.dataset.uid = school.U_ID;
-        const uni = (school.대학명 || school.university || '(대학명 없음)').trim();
-        const dept = (school.학과명 || school.department || '').trim();
-        li.innerHTML = `[${uni}] ${dept} <span class="school-pill">${gun}</span>`;
-        if (school.selection_rules || school.bonus_rules || school.score_config || school.계산유형 === '특수공식') {
-          li.classList.add('saved');
-        }
-        li.addEventListener('click', () => handleSchoolClick(school.U_ID, li));
-        schoolListEl.appendChild(li);
-        printed++;
-      });
-    });
-
-    // 6) 그래도 안 찍혔으면 전체 뿌리기
-    if (printed === 0) {
-      (allSchools || []).forEach(school => {
-        const li = document.createElement('li');
-        li.dataset.uid = school.U_ID;
-        const uni = (school.대학명 || school.university || '(대학명 없음)').trim();
-        const dept = (school.학과명 || school.department || '').trim();
-        const g = normGun(school.군);
-        li.innerHTML = `[${uni}] ${dept} <span class="school-pill">${g}</span>`;
-        li.addEventListener('click', () => handleSchoolClick(school.U_ID, li));
-        schoolListEl.appendChild(li);
-      });
-    }
-  }
-
-  // 🔥 군 필터 버튼 클릭
-  gunFilterEl.addEventListener('click', (e) => {
-    if (e.target.tagName !== 'BUTTON') return;
-    gunFilterEl.querySelector('.active')?.classList.remove('active');
-    e.target.classList.add('active');
-    currentGun = e.target.dataset.gun;   // 현재 군 저장
-    renderSchoolList(currentInitial, currentGun);
-  });
-
-  async function handleSchoolClick(u_id, liElement) {
-    schoolListEl.querySelector('.selected')?.classList.remove('selected');
-    liElement.classList.add('selected');
-    try {
-      const data = await fetchFromServer(`${SVR_JUNGSI}/jungsi/school-details`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ U_ID: u_id, year: yearSelector.value })
-      });
-      if (data.success) {
-        currentSchool = data.data;
-        renderRuleEditor(currentSchool);
-      }
-    } catch (error) {
-      console.error('학과 정보 로딩 실패:', error);
-    }
-  }
-
-  function renderRuleEditor(schoolData) {
-    welcomeMessageEl.classList.add('hidden');
-    ruleEditorEl.classList.remove('hidden');
-
-    editorTitleEl.textContent = `[${schoolData.대학명}] ${schoolData.학과명} 규칙 설정`;
-
-    ruleGroupsContainerEl.innerHTML = '';
-    bonusRulesContainerEl.innerHTML = '';
-    editorMessageEl.innerHTML = '';
-
-    formulaTypeSelect.value = schoolData.계산유형 || '기본비율';
-    specialFormulaText.value = schoolData.특수공식 || '';
-    toggleDefaultRulesVisibility();
-
-    const calcMethod = schoolData.계산방식 || '환산';
-    calcMethodButtons.querySelector('.active')?.classList.remove('active');
-    calcMethodButtons.querySelector(`button[data-method="${calcMethod}"]`)?.classList.add('active');
-
-    const savedTotal = Number(schoolData.총점 || 1000);
-    currentTotalValue = savedTotal;
-    totalButtons.querySelector('.active')?.classList.remove('active');
-    const presetBtn = totalButtons.querySelector(`button[data-value="${savedTotal}"]`);
-    if (presetBtn) {
-      presetBtn.classList.add('active');
-      totalCustom.value = '';
-    } else {
-      totalButtons.querySelector('button[data-value="custom"]').classList.add('active');
-      totalCustom.value = savedTotal;
-    }
-
-    const config = schoolData.score_config ? (typeof schoolData.score_config === 'string' ? JSON.parse(schoolData.score_config) : schoolData.score_config) : {};
-    kmType.value = config.korean_math?.type || '백분위';
-    kmMaxScoreMethod.value = config.korean_math?.max_score_method || 'fixed_200';
-    engType.value = config.english?.type || 'grade_conversion';
-    engMaxScoreButtons.querySelector('.active')?.classList.remove('active');
-    if (config.english?.max_score) {
-      engMaxScoreButtons.querySelector(`button[data-value="${config.english.max_score}"]`)?.classList.add('active');
-    }
-    inqType.value = config.inquiry?.type || '백분위';
-    inqMaxScoreMethod.value = config.inquiry?.max_score_method || 'fixed_100';
-    toggleConditionalDropdowns();
-
-    try {
-      currentOtherSettings = schoolData.기타설정 ? JSON.parse(schoolData.기타설정) : {};
-    } catch {
-      currentOtherSettings = {};
-    }
-    chkHistoryFirst.checked = currentOtherSettings.한국사우선적용 === true;
-
-    const selectionRules = schoolData.selection_rules ? (typeof schoolData.selection_rules === 'string' ? JSON.parse(schoolData.selection_rules) : schoolData.selection_rules) : null;
-    const rulesArray = selectionRules ? (Array.isArray(selectionRules) ? selectionRules : [selectionRules]) : [];
-    if (rulesArray.length === 0) {
-      ruleGroupsContainerEl.innerHTML = '<p>현재 "기본 반영 비율"이 적용되어 있습니다.</p>';
-    } else {
-      rulesArray.forEach(rule => createRuleGroupUI(rule));
-    }
-
-    const bonusRules = schoolData.bonus_rules ? (typeof schoolData.bonus_rules === 'string' ? JSON.parse(schoolData.bonus_rules) : schoolData.bonus_rules) : null;
-    const bonusRulesArray = bonusRules ? (Array.isArray(bonusRules) ? bonusRules : [bonusRules]) : [];
-    if (bonusRulesArray.length === 0) {
-      bonusRulesContainerEl.innerHTML = '<p>설정된 가산점 규칙이 없습니다.</p>';
-    } else {
-      bonusRulesArray.forEach(rule => createBonusRuleUI(rule));
-    }
-  }
-
-  function toggleDefaultRulesVisibility() {
-    const isSpecial = formulaTypeSelect.value === '특수공식';
-    specialFormulaWrapper.classList.toggle('hidden', !isSpecial);
-    defaultRulesWrapper.classList.toggle('hidden', isSpecial);
-  }
-
-  function toggleConditionalDropdowns() {
-    kmMaxScoreMethod.classList.toggle('hidden', kmType.value !== '표준점수');
-    engMaxScoreButtons.classList.toggle('hidden', engType.value !== 'fixed_max_score');
-    const inqShowMax = ['표준점수','변환표준점수'].includes(inqType.value);
-    inqMaxScoreMethod.classList.toggle('hidden', !inqShowMax);
-  }
-
-  totalButtons.addEventListener('click', (e) => {
-    if (e.target.tagName !== 'BUTTON') return;
-    totalButtons.querySelector('.active')?.classList.remove('active');
-    e.target.classList.add('active');
-    const v = e.target.dataset.value;
-    if (v === 'custom') {
-      totalCustom.focus();
-    } else {
-      currentTotalValue = Number(v);
-      totalCustom.value = '';
-    }
-  });
-
-  function createRuleGroupUI(rule = null) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'rule-group';
-    const type = rule?.type || 'select_n';
-    groupDiv.innerHTML = `
-      <div class="rule-header">
-        <select class="rule-type-select">
-          <option value="select_n" ${type === 'select_n' ? 'selected' : ''}>N개 선택 (가중치 없음)</option>
-          <option value="select_ranked_weights" ${type === 'select_ranked_weights' ? 'selected' : ''}>순위별 가중치 (만능 규칙)</option>
-        </select>
-        <button class="delete-rule-btn">✖</button>
-      </div>
-      <div class="rule-body"></div>
-    `;
-    const ruleBody = groupDiv.querySelector('.rule-body');
-    const typeSelect = groupDiv.querySelector('.rule-type-select');
-
-    const renderBody = (selectedType, currentRule) => {
-      const subjects = ['국어','수학','영어','탐구','한국사'];
-      const fromSubjects = currentRule?.from || [];
-      let bodyHtml = `<label>대상 과목:</label>${
-        subjects.map(s => `<label><input type="checkbox" value="${s}" ${fromSubjects.includes(s) ? 'checked' : ''}>${s}</label>`).join('')
-      }<br><br>`;
-      if (selectedType === 'select_n') {
-        bodyHtml += `<label>위 과목 중 <input type="number" class="rule-count" value="${currentRule?.count || 1}" min="1"> 개 선택</label>`;
-      } else if (selectedType === 'select_ranked_weights') {
-        bodyHtml += `<label>순위별 가중치: <input type="text" class="rule-weights" placeholder="예: 0.35, 0.25, 0.2" value="${currentRule?.weights?.join(', ') || ''}"></label>
-          <p style="font-size:.8em;color:#666;margin:5px 0 0 0;">(대상 과목보다 가중치 개수가 적으면, 상위 과목만 선택하여 반영)</p>`;
-      }
-      ruleBody.innerHTML = bodyHtml;
-    };
-
-    renderBody(type, rule);
-
-    typeSelect.addEventListener('change', (e) => renderBody(e.target.value, null));
-    groupDiv.querySelector('.delete-rule-btn').addEventListener('click', () => groupDiv.remove());
-
-    const p = ruleGroupsContainerEl.querySelector('p');
-    if (p) p.remove();
-    ruleGroupsContainerEl.appendChild(groupDiv);
-  }
-
-  function createBonusRuleUI(rule = null) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'bonus-rule';
-    groupDiv.innerHTML = `
-      <div class="bonus-rule-header">
-        <label>과목명(콤마로 구분): <input type="text" class="bonus-subjects" placeholder="예: 미적분, 기하" value="${rule?.subjects?.join(', ') || ''}"></label>
-        <label>가산비율(소수점): <input type="number" class="bonus-value" step="0.001" placeholder="예: 0.06" value="${rule?.value || ''}"></label>
-        <button class="delete-rule-btn">✖</button>
-      </div>
-    `;
-    groupDiv.querySelector('.delete-rule-btn').addEventListener('click', () => groupDiv.remove());
-    const p = bonusRulesContainerEl.querySelector('p');
-    if (p) p.remove();
-    bonusRulesContainerEl.appendChild(groupDiv);
-  }
-
-  async function handleSaveRules() {
-    if (!currentSchool) return;
-    const selectedYear = yearSelector.value;
-    editorMessageEl.textContent = '저장 중...';
-
-    const scoreConfig = {
-      korean_math: { type: kmType.value },
-      english: { type: engType.value },
-      inquiry: { type: inqType.value }
-    };
-    if (kmType.value === '표준점수') {
-      scoreConfig.korean_math.max_score_method = kmMaxScoreMethod.value;
-    }
-    if (engType.value === 'fixed_max_score') {
-      const activeBtn = engMaxScoreButtons.querySelector('button.active');
-      if (activeBtn) scoreConfig.english.max_score = parseInt(activeBtn.dataset.value);
-    }
-    if (['표준점수','변환표준점수'].includes(inqType.value)) {
-      scoreConfig.inquiry.max_score_method = inqMaxScoreMethod.value;
-    }
-
-    const ruleGroups = ruleGroupsContainerEl.querySelectorAll('.rule-group');
-    const rulesToSave = [];
-    ruleGroups.forEach(group => {
-      const type = group.querySelector('.rule-type-select').value;
-      const from = Array.from(group.querySelectorAll('.rule-body input[type="checkbox"]:checked')).map(cb => cb.value);
-      const rule = { type, from };
-      if (type === 'select_n') {
-        rule.count = parseInt(group.querySelector('.rule-count').value);
-      } else if (type === 'select_ranked_weights') {
-        const weightsStr = group.querySelector('.rule-weights').value;
-        if (weightsStr) rule.weights = weightsStr.split(',').map(w => parseFloat(w.trim()));
-      }
-      rulesToSave.push(rule);
-    });
-    const finalSelectionRules = rulesToSave.length === 0 ? null : (rulesToSave.length === 1 ? rulesToSave[0] : rulesToSave);
-
-    const bonusRuleGroups = bonusRulesContainerEl.querySelectorAll('.bonus-rule');
-    const bonusRulesToSave = [];
-    bonusRuleGroups.forEach(group => {
-      const subjects = group.querySelector('.bonus-subjects').value.split(',').map(s => s.trim()).filter(Boolean);
-      const value = parseFloat(group.querySelector('.bonus-value').value);
-      if (subjects.length > 0 && !isNaN(value)) bonusRulesToSave.push({ type:'percent_bonus', subjects, value });
-    });
-    const finalBonusRules = bonusRulesToSave.length === 0 ? null : bonusRulesToSave;
-
-    const formulaType = formulaTypeSelect.value;
-    const formulaText = specialFormulaText.value;
-
-    const otherSettingsToSave = {
-      한국사우선적용: chkHistoryFirst.checked
-    };
-
-    if (totalButtons.querySelector('button[data-value="custom"]').classList.contains('active')) {
-      const val = Number(totalCustom.value);
-      if (!isFinite(val) || val <= 0) {
-        editorMessageEl.textContent = '총점 직접입력 값이 올바르지 않습니다.';
-        editorMessageEl.className = 'message error';
-        return;
-      }
-      currentTotalValue = val;
-    }
-
-    try {
-      const results = await Promise.all([
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/calc-method/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, method: document.getElementById('calc-method-buttons').querySelector('.active').dataset.method })
-        }),
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/rules/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, rules: finalSelectionRules })
-        }),
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/bonus-rules/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, rules: finalBonusRules })
-        }),
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/score-config/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, config: scoreConfig })
-        }),
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/special-formula/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, formula_type: formulaType, formula_text: formulaText })
-        }),
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/total/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, total: currentTotalValue })
-        }),
-        fetchFromServer(`${SVR_JUNGSI}/jungsi/other-settings/set`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ U_ID: currentSchool.U_ID, year: selectedYear, settings: otherSettingsToSave })
-        })
-      ]);
-
-      if (results.every(res => res.success)) {
-        editorMessageEl.textContent = '모든 규칙이 성공적으로 저장되었습니다.';
-        editorMessageEl.className = 'message success';
-
-        const listItem = document.getElementById('school-list').querySelector(`li[data-uid="${currentSchool.U_ID}"]`);
-        if (listItem) {
-          const isOtherSettingSaved = otherSettingsToSave.한국사우선적용 === true;
-          const isSaved = finalSelectionRules || finalBonusRules ||
-            (JSON.stringify(scoreConfig) !== '{}') ||
-            formulaType === '특수공식' ||
-            document.getElementById('calc-method-buttons').querySelector('.active').dataset.method !== '환산' ||
-            currentTotalValue !== 1000 ||
-            isOtherSettingSaved;
-          listItem.classList.toggle('saved', !!isSaved);
-        }
-
-        const schoolInList = allSchools.find(s => s.U_ID == currentSchool.U_ID);
-        if (schoolInList) {
-          schoolInList.selection_rules = finalSelectionRules;
-          schoolInList.bonus_rules = finalBonusRules;
-          schoolInList.score_config = scoreConfig;
-          schoolInList.계산유형 = formulaType;
-          schoolInList.총점 = currentTotalValue;
-          schoolInList.기타설정 = JSON.stringify(otherSettingsToSave);
-        }
-      } else {
-        editorMessageEl.textContent = '일부 규칙 저장에 실패했습니다. 서버 로그를 확인하세요.';
-        editorMessageEl.className = 'message error';
-      }
-    } catch (error) {
-      console.error('저장 에러:', error);
-      editorMessageEl.textContent = '서버 통신 오류';
-      editorMessageEl.className = 'message error';
-    }
-  }
-
-  logoutBtn.addEventListener('click', () => { removeToken(); showLoginModal(); });
-  addRuleBtn.addEventListener('click', () => createRuleGroupUI());
-  setDefaultBtn.addEventListener('click', () => {
-    document.getElementById('rule-groups-container').innerHTML = '<p>현재 "기본 반영 비율"이 적용되어 있습니다.</p>';
-  });
-  addBonusRuleBtn.addEventListener('click', () => createBonusRuleUI());
-  saveBtn.addEventListener('click', handleSaveRules);
-  yearSelector.addEventListener('change', loadSchools);
-  formulaTypeSelect.addEventListener('change', toggleDefaultRulesVisibility);
-  kmType.addEventListener('change', toggleConditionalDropdowns);
-  engType.addEventListener('change', toggleConditionalDropdowns);
-  inqType.addEventListener('change', toggleConditionalDropdowns);
-  document.getElementById('calc-method-buttons').addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON') {
-      document.getElementById('calc-method-buttons').querySelector('.active')?.classList.remove('active');
-      e.target.classList.add('active');
-    }
-  });
-  document.getElementById('eng-max-score-buttons').addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON') {
-      document.getElementById('eng-max-score-buttons').querySelector('.active')?.classList.remove('active');
-      e.target.classList.add('active');
-    }
-  });
-
-  init();
-});
-</script>
+  <!-- 공통 JS -->
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/modal.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/bootstrap.js"></script>
+  <!-- 페이지 전용 -->
+  <script src="setting.js"></script>
 </body>
 </html>

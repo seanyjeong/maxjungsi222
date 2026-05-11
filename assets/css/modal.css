@@ -1,0 +1,48 @@
+/* ============================================================
+ * modal.css — 공통 모달 shell (backdrop + card + head/body/title)
+ * Source: counsel.new.html lines 1431~1478
+ * Phase 2 Refactor 2026 — 병사 B
+ * 규칙: 하드코딩 컬러 금지, 모두 토큰 경유
+ * - counsel 원본 selector (.modal-overlay / .modal-shell) 를 Phase 2
+ *   명명규칙 (.modal-backdrop / .modal-card) 으로 이관 (규칙은 원본 그대로).
+ * - .show 가 활성 상태 (Phase 2 계약). counsel 원본은 .open 이었으나
+ *   bootstrap.js / modal.js 이 .show 를 표준으로 사용.
+ * - counsel 전용 .modal-eyebrow, 실기배점(silgi-table), cross-gun-* 은 제외.
+ * - .modal-close, .modal-footer 는 원본에 없어 생략 (후속 페이지 추가 시
+ *   필요하면 Phase 3 에서 신설).
+ * ============================================================ */
+
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(9,9,11,0.4);
+  display: grid; place-items: center;
+  padding: 40px 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 300ms var(--ease);
+  backdrop-filter: blur(4px);
+}
+.modal-backdrop.show { opacity: 1; pointer-events: auto; }
+.dark .modal-backdrop { background: rgba(0,0,0,0.65); }
+
+.modal-card {
+  border-radius: var(--r-2xl);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  max-width: 720px; width: 100%;
+  max-height: 85vh;
+  transform: translateY(16px) scale(0.98);
+  transition: transform 400ms var(--ease-out);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-modal);
+}
+.modal-backdrop.show .modal-card { transform: translateY(0) scale(1); }
+.modal-card.wide { max-width: 920px; }
+
+.modal-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.modal-title { font-size: 17px; font-weight: 700; letter-spacing: -0.03em; }
+.modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }

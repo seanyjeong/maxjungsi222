@@ -1,947 +1,157 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>학교별 지원자 현황</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2563eb;
-            --primary-dark: #1d4ed8;
-            --light-bg: #f8fafc;
-            --card-bg: #ffffff;
-            --border-color: #e2e8f0;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --danger-color: #ef4444;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--light-bg);
-            padding: 20px;
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        .header {
-            background: var(--card-bg);
-            padding: 20px 24px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .header h1 {
-            font-size: 1.8rem;
-            color: var(--primary-color);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--light-bg);
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .chip label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            white-space: nowrap;
-        }
-
-        select {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: #fff;
-            font-size: 0.95rem;
-            min-width: 200px;
-            cursor: pointer;
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            background: var(--card-bg);
-            padding: 16px 24px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-            display: flex;
-            gap: 30px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .stat-item .label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .stat-item .value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        /* 모집인원 스타일 */
-        .stat-item .value.quota {
-            color: #7c3aed;
-            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 2px solid #a78bfa;
-        }
-
-        /* 총지원자 경쟁률별 스타일 */
-        .stat-item .value.competition-low {
-            color: #059669;
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 2px solid #34d399;
-        }
-
-        .stat-item .value.competition-normal {
-            color: #2563eb;
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 2px solid #60a5fa;
-        }
-
-        .stat-item .value.competition-high {
-            color: #d97706;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 2px solid #fbbf24;
-        }
-
-        .stat-item .value.competition-extreme {
-            color: #dc2626;
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 2px solid #f87171;
-            animation: pulse-red 2s infinite;
-        }
-
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
-            50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
-        }
-
-        /* Applicants Table */
-        .applicants-table-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            overflow-x: auto;
-            margin-bottom: 20px;
-        }
-
-        .applicants-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        .applicants-table thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .applicants-table th {
-            padding: 12px 8px;
-            text-align: center;
-            font-weight: 600;
-            white-space: nowrap;
-            border-right: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .applicants-table th:last-child {
-            border-right: none;
-        }
-
-        .applicants-table tbody tr {
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s;
-        }
-
-        .applicants-table tbody tr:hover {
-            background-color: var(--light-bg);
-        }
-
-        .applicants-table td {
-            padding: 10px 8px;
-            text-align: center;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .applicants-table td:last-child {
-            border-right: none;
-        }
-
-        .applicants-table .rank-cell {
-            font-weight: 700;
-            color: var(--primary-color);
-            font-size: 1rem;
-        }
-
-        .applicants-table .name-cell {
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-        }
-
-        .applicants-table .total-cell {
-            font-weight: 700;
-            color: var(--primary-color);
-            font-size: 1.05rem;
-        }
-
-        .applicants-table .practical-records {
-            text-align: left;
-            font-size: 0.85rem;
-            line-height: 1.6;
-        }
-
-        .applicants-table .practical-records div {
-            white-space: nowrap;
-        }
-
-        /* Applicant Card - Compact */
-        .applicants-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .applicant-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .applicant-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.15);
-        }
-
-        /* 내 지점 강조 */
-        .applicant-card.my-branch {
-            background: linear-gradient(to right, #fffbeb 0%, #ffffff 100%);
-            border: 2px solid #f59e0b;
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-        }
-
-        .applicant-card.my-branch .card-header {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        }
-
-        .applicant-card.my-branch .card-header .branch {
-            font-weight: 700;
-            opacity: 1;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 10px 16px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.95rem;
-        }
-
-        .card-header .rank {
-            font-weight: 700;
-            font-size: 1.1rem;
-            min-width: 40px;
-        }
-
-        .card-header .name {
-            font-weight: 700;
-            font-size: 1.05rem;
-        }
-
-        .card-header .branch {
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-
-        .card-header .school {
-            opacity: 0.85;
-            font-size: 0.85rem;
-            margin-left: auto;
-        }
-
-        .card-body {
-            padding: 12px 16px;
-            font-size: 0.85rem;
-            line-height: 1.6;
-        }
-
-        .compact-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 0;
-            flex-wrap: wrap;
-        }
-
-        .compact-row .label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            min-width: 50px;
-        }
-
-        .compact-row .content {
-            color: var(--text-primary);
-            flex: 1;
-        }
-
-        .score-item {
-            display: inline-block;
-            margin-right: 12px;
-            white-space: nowrap;
-        }
-
-        .score-item:last-child {
-            margin-right: 0;
-        }
-
-        .total-row {
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 16px;
-            font-weight: 600;
-        }
-
-        .total-row .item {
-            flex: 1;
-        }
-
-        .total-row .label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            display: block;
-        }
-
-        .total-row .value {
-            font-size: 1.05rem;
-            color: var(--primary-color);
-        }
-
-        .total-row .value.highlight {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        /* Grade Text - No Background */
-        .grade-text {
-            font-weight: 600;
-        }
-
-        .grade-1, .grade-2 { color: #166534; }
-        .grade-3, .grade-4 { color: #1e40af; }
-        .grade-5, .grade-6 { color: #92400e; }
-        .grade-7, .grade-8, .grade-9 { color: #991b1b; }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            color: var(--border-color);
-            margin-bottom: 20px;
-        }
-
-        .empty-state h3 {
-            font-size: 1.3rem;
-            color: var(--text-secondary);
-            margin: 0 0 8px 0;
-        }
-
-        .empty-state p {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-        }
-
-        .loading i {
-            font-size: 2rem;
-            color: var(--primary-color);
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .applicants-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .header h1 {
-                font-size: 1.4rem;
-            }
-
-            .stats-bar {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>컨설팅 허브 · 맥스정시</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/light/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/sidebar.css">
+  <link rel="stylesheet" href="assets/css/topbar.css">
+  <link rel="stylesheet" href="assets/css/buttons.css">
+  <link rel="stylesheet" href="assets/css/toast.css">
+  <link rel="stylesheet" href="assets/css/modal.css">
+  <link rel="stylesheet" href="assets/css/combobox.css">
+  <link rel="stylesheet" href="school_app.css">
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>
-                <i class="fas fa-university"></i>
-                학교별 지원자 현황
-            </h1>
-            <div class="header-controls">
-                <div class="chip">
-                    <label for="year-select">연도</label>
-                    <select id="year-select">
-                        <option value="2027">2027학년도</option>
-                        <option value="2026">2026학년도</option>
-                        <option value="2025">2025학년도</option>
-                    </select>
-                </div>
-                <div class="chip">
-                    <label for="gun-select">
-                        <i class="fas fa-flag"></i>
-                        모집군
-                    </label>
-                    <select id="gun-select">
-                        <option value="">모집군을 선택하세요</option>
-                        <option value="가">가군</option>
-                        <option value="나">나군</option>
-                        <option value="다">다군</option>
-                    </select>
-                </div>
-                <div class="chip">
-                    <label for="university-select">
-                        <i class="fas fa-school"></i>
-                        대학 선택
-                    </label>
-                    <select id="university-select" disabled>
-                        <option value="">먼저 모집군을 선택하세요</option>
-                    </select>
-                </div>
+<body data-page="school_app" data-title="컨설팅 허브" data-category="컨설팅">
+  <div class="app-shell" id="appShell">
+    <div id="sidebar-slot"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="page-path">
+          <span>컨설팅</span>
+          <span class="sep">/</span>
+          <span class="current">컨설팅 허브</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="branch-chip">
+            <i class="ph-light ph-graph"></i>
+            <strong>전지점 상담 집계</strong>
+          </span>
+          <div class="combobox no-search topbar-combo" id="year-select" style="min-width:130px;"></div>
+        </div>
+      </header>
+
+      <section class="page-content">
+
+        <!-- 학과 선택 hero -->
+        <div class="picker-card">
+          <div class="picker-head">
+            <div class="picker-label">
+              <i class="ph-light ph-graph"></i>
+              <div>
+                <div class="picker-title">학교별 상담 저장 집계</div>
+                <div class="picker-sub">전지점에서 개인 상담에 저장한 학생들을 학교별로 모아 봅니다. (실제 지원 이전 단계)</div>
+              </div>
             </div>
+          </div>
+
+          <div class="cascade">
+            <div class="cascade-step" data-step="1">
+              <div class="step-badge">1</div>
+              <label>군</label>
+              <div class="combobox no-search" id="gun-select"></div>
+            </div>
+            <div class="cascade-step is-disabled" data-step="2">
+              <div class="step-badge">2</div>
+              <label>대학</label>
+              <div class="combobox" id="university-select"></div>
+            </div>
+            <div class="cascade-step is-disabled" data-step="3">
+              <div class="step-badge">3</div>
+              <label>학과</label>
+              <div class="combobox" id="department-select"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- Stats Bar -->
-        <div class="stats-bar" id="stats-bar" style="display: none;">
-            <div class="stat-item">
-                <div class="label">모집인원</div>
-                <div class="value" id="quota-count">0명</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">총 지원자</div>
-                <div class="value" id="total-applicants">0명</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">평균 수능</div>
-                <div class="value" id="avg-suneung">0점</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">수능 최고점</div>
-                <div class="value" id="max-suneung">0점</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">수능 최저점</div>
-                <div class="value" id="min-suneung">0점</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">평균 총점</div>
-                <div class="value" id="avg-total">0점</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">총점 최고</div>
-                <div class="value" id="max-total">0점</div>
-            </div>
-            <div class="stat-item">
-                <div class="label">총점 최저</div>
-                <div class="value" id="min-total">0점</div>
-            </div>
-            <div class="chip" style="margin-left: auto;">
-                <label for="sort-select">
-                    <i class="fas fa-sort"></i>
-                    정렬
-                </label>
-                <select id="sort-select">
-                    <option value="total_score">총점 높은 순</option>
-                    <option value="suneung_score">수능점수 높은 순</option>
-                    <option value="naeshin_score">내신점수 높은 순</option>
-                    <option value="practical_score">실기점수 높은 순</option>
-                    <option value="name">이름 순</option>
-                </select>
-            </div>
+        <!-- 통계 strip -->
+        <div class="stats-strip" id="statsStrip" hidden>
+          <div class="stat-item">
+            <span class="stat-label">모집인원</span>
+            <span class="stat-value num" id="statQuota">—</span>
+          </div>
+          <div class="stat-item stat-primary">
+            <span class="stat-label">총 지원자</span>
+            <span class="stat-value num" id="statTotal">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">평균 수능</span>
+            <span class="stat-value num" id="statAvgSuneung">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">수능 최고</span>
+            <span class="stat-value num" id="statMaxSuneung">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">수능 최저</span>
+            <span class="stat-value num" id="statMinSuneung">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">평균 총점</span>
+            <span class="stat-value num" id="statAvgTotal">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">총점 최고</span>
+            <span class="stat-value num" id="statMaxTotal">—</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">총점 최저</span>
+            <span class="stat-value num" id="statMinTotal">—</span>
+          </div>
+          <div class="stat-sort">
+            <span class="stat-label">정렬</span>
+            <div class="combobox no-search" id="sort-select"></div>
+          </div>
         </div>
 
-        <!-- Applicants Grid -->
-        <div id="applicants-container">
+        <!-- 지원자 grid -->
+        <div class="applicants-card">
+          <div class="applicants-head">
+            <div class="applicants-title">
+              <i class="ph-light ph-users-three"></i>
+              <span>지원자 목록</span>
+              <span class="dim" id="applicantsHint">학과를 선택하면 지원자가 표시됩니다</span>
+            </div>
+            <div class="applicants-legend" id="applicantsLegend" hidden>
+              <span class="legend"><span class="dot dot-mine"></span>우리 지점</span>
+              <span class="legend"><span class="dot dot-other"></span>타 지점</span>
+            </div>
+          </div>
+
+          <div id="applicantsContainer">
             <div class="empty-state">
-                <i class="fas fa-flag"></i>
-                <h3>모집군을 선택해주세요</h3>
-                <p>먼저 모집군을 선택한 후 대학을 선택하면 해당 학교 지원자 목록을 확인할 수 있습니다.</p>
+              <div class="empty-icon"><i class="ph-light ph-graph"></i></div>
+              <div class="empty-title">상단에서 군 / 대학을 선택하세요</div>
+              <div class="empty-sub">선택한 학과에 상담 저장된 전지점 학생들의 수능·실기·총점이 집계됩니다.</div>
             </div>
+          </div>
+
+          <div class="loading-state" id="loadingState" hidden>
+            <i class="ph-light ph-circle-notch spin"></i>
+            <span>불러오는 중…</span>
+          </div>
         </div>
+
+      </section>
     </div>
+  </div>
 
-    <script>
-        const SVR_JUNGSI = 'https://supermax.kr';
-        const LOGIN_PAGE = 'jungsilogin.html';
-
-        // 전역 변수로 지원자 데이터 저장
-        let currentApplicants = [];
-        let currentStats = {};
-
-        function getToken() {
-            return localStorage.getItem('jwt_token');
-        }
-
-        function getBranchFromToken() {
-            const token = getToken();
-            if (!token) return null;
-            try {
-                const payloadBase64Url = token.split('.')[1];
-                const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const binaryString = atob(payloadBase64);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                const decodedString = new TextDecoder().decode(bytes);
-                const decoded = JSON.parse(decodedString);
-                return decoded.branch || null;
-            } catch (e) {
-                console.error('토큰 파싱 실패:', e);
-                return null;
-            }
-        }
-
-        async function loadUniversityList(year, gun) {
-            const token = getToken();
-            if (!token) {
-                alert('로그인이 필요합니다.');
-                window.location.href = LOGIN_PAGE;
-                return;
-            }
-
-            console.log('🔍 loadUniversityList 호출:', { year, gun });
-
-            if (!gun) {
-                const universitySelect = document.getElementById('university-select');
-                universitySelect.disabled = true;
-                universitySelect.innerHTML = '<option value="">먼저 모집군을 선택하세요</option>';
-                return;
-            }
-
-            try {
-                console.log('📡 API 호출:', `${SVR_JUNGSI}/jungsi/schools/${year}`);
-                const res = await fetch(`${SVR_JUNGSI}/jungsi/schools/${year}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                console.log('📥 응답 상태:', res.status, res.statusText);
-
-                if (!res.ok) {
-                    throw new Error('대학 목록을 불러오는데 실패했습니다.');
-                }
-
-                const data = await res.json();
-                console.log('📦 받은 데이터:', data);
-                console.log('📦 list 배열:', data.list);
-                console.log('📦 list 타입:', typeof data.list, Array.isArray(data.list));
-
-                const universitySelect = document.getElementById('university-select');
-                universitySelect.innerHTML = '<option value="">대학을 선택하세요</option>';
-
-                if (data.success && Array.isArray(data.list)) {
-                    console.log('✅ 전체 대학 수:', data.list.length);
-
-                    // 선택한 군에 해당하는 대학만 필터링
-                    const filteredSchools = data.list.filter(uni => {
-                        console.log(`🔍 대학: ${uni.university} - ${uni.department}, 군: "${uni.gun}" === "${gun}"?`, uni.gun === gun);
-                        return uni.gun === gun;
-                    });
-
-                    console.log('✅ 필터링된 대학 수:', filteredSchools.length);
-
-                    if (filteredSchools.length === 0) {
-                        console.warn('⚠️ 해당 모집군에 대학이 없습니다');
-                        universitySelect.innerHTML = '<option value="">해당 모집군에 대학이 없습니다</option>';
-                        universitySelect.disabled = true;
-                        return;
-                    }
-
-                    filteredSchools.forEach(uni => {
-                        const option = document.createElement('option');
-                        option.value = uni.U_ID;
-                        option.textContent = `${uni.university} - ${uni.department}`;
-                        option.dataset.universityName = uni.university;
-                        option.dataset.major = uni.department;
-                        universitySelect.appendChild(option);
-                    });
-
-                    universitySelect.disabled = false;
-                    console.log('✅ 대학 목록 로드 완료');
-                } else {
-                    console.error('❌ 데이터 형식 오류:', data);
-                }
-            } catch (error) {
-                console.error('❌ 대학 목록 로드 실패:', error);
-                alert('대학 목록을 불러오는데 실패했습니다: ' + error.message);
-            }
-        }
-
-        async function loadApplicantsForUniversity(U_ID, year) {
-            const token = getToken();
-
-            if (!token) {
-                alert('로그인이 필요합니다.');
-                window.location.href = LOGIN_PAGE;
-                return;
-            }
-
-            const container = document.getElementById('applicants-container');
-            container.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i><br>데이터를 불러오는 중...</div>';
-
-            try {
-                // 새로운 백엔드 API 사용
-                const res = await fetch(`${SVR_JUNGSI}/jungsi/university-applicants/${U_ID}/${year}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!res.ok) {
-                    throw new Error('지원자 목록을 불러오는데 실패했습니다.');
-                }
-
-                const data = await res.json();
-
-                if (data.success) {
-                    displayApplicants(data.applicants, data.stats, data.university);
-                } else {
-                    throw new Error(data.message || '데이터를 불러오는데 실패했습니다.');
-                }
-
-            } catch (error) {
-                console.error('지원자 데이터 로드 실패:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>데이터를 불러오는데 실패했습니다</h3>
-                        <p>${error.message}</p>
-                    </div>
-                `;
-                document.getElementById('stats-bar').style.display = 'none';
-            }
-        }
-
-        function sortApplicants(sortBy) {
-            const sorted = [...currentApplicants];
-
-            switch(sortBy) {
-                case 'total_score':
-                    sorted.sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
-                    break;
-                case 'suneung_score':
-                    sorted.sort((a, b) => (b.suneung_score || 0) - (a.suneung_score || 0));
-                    break;
-                case 'naeshin_score':
-                    sorted.sort((a, b) => (b.naeshin_score || 0) - (a.naeshin_score || 0));
-                    break;
-                case 'practical_score':
-                    sorted.sort((a, b) => (b.practical_score || 0) - (a.practical_score || 0));
-                    break;
-                case 'name':
-                    sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko-KR'));
-                    break;
-            }
-
-            renderApplicantCards(sorted);
-        }
-
-        function displayApplicants(applicants, stats, university) {
-            const container = document.getElementById('applicants-container');
-            const statsBar = document.getElementById('stats-bar');
-
-            // 전역 변수에 저장
-            currentApplicants = applicants || [];
-            currentStats = stats || {};
-            const quota = university?.quota || 0;
-
-            if (!applicants || applicants.length === 0) {
-                statsBar.style.display = 'none';
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <h3>지원자가 없습니다</h3>
-                        <p>해당 대학에 지원한 학생이 없습니다.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // 수능 점수 통계 계산
-            const suneungScores = applicants.map(a => a.suneung_score || 0).filter(s => s > 0);
-            const avgSuneung = suneungScores.length > 0 ? (suneungScores.reduce((sum, s) => sum + s, 0) / suneungScores.length) : 0;
-            const maxSuneung = suneungScores.length > 0 ? Math.max(...suneungScores) : 0;
-            const minSuneung = suneungScores.length > 0 ? Math.min(...suneungScores) : 0;
-
-            // 통계 표시
-            statsBar.style.display = 'flex';
-
-            // 모집인원 스타일 적용
-            const quotaEl = document.getElementById('quota-count');
-            quotaEl.textContent = `${quota}명`;
-            quotaEl.className = 'value quota';
-
-            // 총지원자 - 경쟁률에 따라 색상 변경
-            const totalEl = document.getElementById('total-applicants');
-            const totalCount = stats.total_count || 0;
-            totalEl.textContent = `${totalCount}명`;
-
-            // 경쟁률 계산 및 클래스 적용
-            let competitionClass = 'value';
-            if (quota > 0) {
-                const ratio = totalCount / quota;
-                if (ratio < 1) {
-                    competitionClass = 'value competition-low';  // 미달 (초록)
-                } else if (ratio < 2) {
-                    competitionClass = 'value competition-normal';  // 1~2배 (파랑)
-                } else if (ratio < 3) {
-                    competitionClass = 'value competition-high';  // 2~3배 (주황)
-                } else {
-                    competitionClass = 'value competition-extreme';  // 3배 이상 (빨강 + 애니메이션)
-                }
-            }
-            totalEl.className = competitionClass;
-            document.getElementById('avg-suneung').textContent = `${avgSuneung.toFixed(2)}점`;
-            document.getElementById('max-suneung').textContent = `${maxSuneung.toFixed(2)}점`;
-            document.getElementById('min-suneung').textContent = `${minSuneung.toFixed(2)}점`;
-            document.getElementById('avg-total').textContent = `${stats.avg_score.toFixed(2)}점`;
-            document.getElementById('max-total').textContent = `${stats.max_score.toFixed(2)}점`;
-            document.getElementById('min-total').textContent = `${stats.min_score.toFixed(2)}점`;
-
-            // 초기 정렬 적용
-            const sortSelect = document.getElementById('sort-select');
-            sortApplicants(sortSelect.value);
-        }
-
-        function renderApplicantCards(applicants) {
-            const container = document.getElementById('applicants-container');
-            const myBranch = getBranchFromToken(); // 내 지점 정보 가져오기
-
-            // 컴팩트 카드 생성
-            const cardsHTML = applicants.map((applicant, index) => {
-                const rank = index + 1;
-                const isMyBranch = myBranch && applicant.branch === myBranch; // 내 지점 학생인지 확인
-
-                // 수능 성적 텍스트 생성 (간결한 형식)
-                const suneungScores = [
-                    `국어 표${applicant.korean_standard || '-'} 백${applicant.korean_percentile || '-'} <span class="grade-text grade-${applicant.korean_grade || '9'}">등${applicant.korean_grade || '-'}</span>`,
-                    `수학 표${applicant.math_standard || '-'} 백${applicant.math_percentile || '-'} <span class="grade-text grade-${applicant.math_grade || '9'}">등${applicant.math_grade || '-'}</span>`,
-                    `영어 <span class="grade-text grade-${applicant.english_grade || '9'}">등${applicant.english_grade || '-'}</span>`,
-                    `탐구1 표${applicant.inquiry1_standard || '-'} 백${applicant.inquiry1_percentile || '-'} <span class="grade-text grade-${applicant.inquiry1_grade || '9'}">등${applicant.inquiry1_grade || '-'}</span>`,
-                    `탐구2 표${applicant.inquiry2_standard || '-'} 백${applicant.inquiry2_percentile || '-'} <span class="grade-text grade-${applicant.inquiry2_grade || '9'}">등${applicant.inquiry2_grade || '-'}</span>`
-                ].map(s => `<span class="score-item">${s}</span>`).join('');
-
-                // 실기 기록 텍스트 생성
-                let practicalText = '-';
-                if (applicant.practical_records && typeof applicant.practical_records === 'object' && Object.keys(applicant.practical_records).length > 0) {
-                    practicalText = Object.entries(applicant.practical_records)
-                        .map(([종목명, 기록]) => `${종목명} ${기록}`)
-                        .join(', ');
-                }
-
-                return `
-                    <div class="applicant-card ${isMyBranch ? 'my-branch' : ''}">
-                        <div class="card-header">
-                            <span class="rank">#${rank}</span>
-                            <span class="name">${applicant.name || '-'}</span>
-                            <span class="branch">| ${applicant.branch || '-'}</span>
-                            <span class="school">${applicant.school_name || '-'}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="compact-row">
-                                <span class="label">수능</span>
-                                <span class="content">${suneungScores}</span>
-                            </div>
-                            ${practicalText !== '-' ? `
-                            <div class="compact-row">
-                                <span class="label">실기</span>
-                                <span class="content">${practicalText}</span>
-                            </div>
-                            ` : ''}
-                            <div class="total-row">
-                                <div class="item">
-                                    <span class="label">수능점수</span>
-                                    <span class="value">${applicant.suneung_score?.toFixed(2) || '-'}</span>
-                                </div>
-                                ${applicant.naeshin_score ? `
-                                <div class="item">
-                                    <span class="label">내신</span>
-                                    <span class="value">${applicant.naeshin_score.toFixed(2)}</span>
-                                </div>
-                                ` : ''}
-                                ${applicant.practical_score ? `
-                                <div class="item">
-                                    <span class="label">실기</span>
-                                    <span class="value">${applicant.practical_score.toFixed(2)}</span>
-                                </div>
-                                ` : ''}
-                                <div class="item">
-                                    <span class="label">총점</span>
-                                    <span class="value highlight">${applicant.total_score?.toFixed(2) || '-'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = `<div class="applicants-grid">${cardsHTML}</div>`;
-        }
-
-        // 초기화
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = getToken();
-            if (!token) {
-                alert('로그인이 필요합니다.');
-                window.location.href = LOGIN_PAGE;
-                return;
-            }
-
-            const yearSelect = document.getElementById('year-select');
-            const gunSelect = document.getElementById('gun-select');
-            const universitySelect = document.getElementById('university-select');
-            const sortSelect = document.getElementById('sort-select');
-
-            // 연도 변경 시
-            yearSelect.addEventListener('change', () => {
-                const selectedGun = gunSelect.value;
-                if (selectedGun) {
-                    loadUniversityList(yearSelect.value, selectedGun);
-                }
-            });
-
-            // 군 선택 시
-            gunSelect.addEventListener('change', () => {
-                const selectedGun = gunSelect.value;
-                loadUniversityList(yearSelect.value, selectedGun);
-
-                // 대학 선택 초기화
-                document.getElementById('applicants-container').innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-university"></i>
-                        <h3>대학을 선택해주세요</h3>
-                        <p>위에서 대학을 선택하면 해당 학교 지원자 목록을 확인할 수 있습니다.</p>
-                    </div>
-                `;
-                document.getElementById('stats-bar').style.display = 'none';
-            });
-
-            // 대학 선택 시
-            universitySelect.addEventListener('change', () => {
-                const selectedUID = universitySelect.value;
-                if (selectedUID) {
-                    loadApplicantsForUniversity(selectedUID, yearSelect.value);
-                } else {
-                    document.getElementById('applicants-container').innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-university"></i>
-                            <h3>대학을 선택해주세요</h3>
-                            <p>위에서 대학을 선택하면 해당 학교 지원자 목록을 확인할 수 있습니다.</p>
-                        </div>
-                    `;
-                    document.getElementById('stats-bar').style.display = 'none';
-                }
-            });
-
-            // 정렬 변경 시
-            sortSelect.addEventListener('change', () => {
-                if (currentApplicants.length > 0) {
-                    sortApplicants(sortSelect.value);
-                }
-            });
-        });
-    </script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/modal.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/bootstrap.js"></script>
+  <script src="assets/js/combobox.js"></script>
+  <script src="school_app.js"></script>
 </body>
 </html>

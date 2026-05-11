@@ -1,0 +1,22 @@
+# Claude Code 프로젝트 가이드 — 로컬 전용 (민감 정보 가능성)
+CLAUDE.md
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Node / Puppeteer 임시
+node_modules/
+
+# 백업 파일
+*.bak.*
+
+# 임시 / 실험 파일
+_*.html
+_*.js
+_*.css
+_*.json
+
+# 로그
+*.log
