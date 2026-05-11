@@ -28,7 +28,7 @@
   position: absolute;
   inset: auto 0 80px 0;
   height: 260px;
-  background: url('/assets/img/max-logo.png') center / contain no-repeat;
+  background: url('../img/max-logo.png') center / contain no-repeat;
   opacity: 0.05;
   pointer-events: none;
   z-index: 0;

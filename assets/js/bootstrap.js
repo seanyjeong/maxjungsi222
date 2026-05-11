@@ -23,7 +23,7 @@ try {
     var host = document.getElementById('sidebar-slot');
     if (!host) return;
     try {
-      var res = await fetch('/assets/sidebar.html', { cache: 'no-cache' });
+      var res = await fetch('assets/sidebar.html', { cache: 'no-cache' });
       if (!res.ok) {
         // 절대경로 실패 시 상대경로 fallback (정적 호스팅 루트가 다를 수 있음)
         res = await fetch('assets/sidebar.html', { cache: 'no-cache' });
@@ -126,7 +126,7 @@ try {
   function ensureWatermark() {
     // 이미 페이지에 .watermark-bg 가 있으면(구 counsel 등) 건드리지 않음
     if (document.querySelector('.watermark-bg')) return;
-    document.documentElement.style.setProperty('--watermark-url', "url('/assets/img/max-logo.png')");
+    document.documentElement.style.setProperty('--watermark-url', "url('assets/img/max-logo.png')");
     var wm = document.createElement('div');
     wm.className = 'watermark-bg';
     wm.setAttribute('aria-hidden', 'true');
