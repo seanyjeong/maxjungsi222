@@ -2632,20 +2632,7 @@
     const kor = num(sc.국어_백분위), mat = num(sc.수학_백분위);
     const t1 = num(sc.탐구1_백분위), t2 = num(sc.탐구2_백분위);
     const engGrade = sc.영어_등급;
-    const avg = (arr) => {
-      const vals = arr.filter(v => Number.isFinite(v));
-      if (!vals.length) return null;
-      return vals.reduce((a,b)=>a+b, 0) / vals.length;
-    };
-    const combos = [
-      { name: '국+수', val: avg([kor, mat]) },
-      { name: '국+수+탐1', val: avg([kor, mat, t1]) },
-      { name: '국+수+탐2', val: avg([kor, mat, t2]) },
-      { name: '국+탐1', val: avg([kor, t1]) },
-      { name: '국+탐2', val: avg([kor, t2]) },
-      { name: '수+탐1', val: avg([mat, t1]) },
-      { name: '수+탐2', val: avg([mat, t2]) },
-    ];
+    const combos = buildPercentileCombos({ kor, mat, t1, t2 });
 
     const pctPills = document.querySelectorAll('.pct-combos .combo-pill');
     if (pctPills.length >= 8) {
@@ -2660,7 +2647,8 @@
         const pill = pctPills[i + 1];
         if (!pill) return;
         pill.querySelector('.name').textContent = c.name;
-        pill.querySelector('.pct').textContent = c.val != null ? c.val.toFixed(1) : '-';
+        pill.hidden = !c.visible;
+        pill.querySelector('.pct').textContent = c.visible ? c.val.toFixed(1) : '-';
       });
     }
 
@@ -2792,9 +2780,36 @@
     }
   }
 
-  function num(v) { return v == null ? null : Number(v); }
+  function num(v) {
+    if (v == null || v === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function averageRequired(values) {
+    if (!values.length || values.some(v => !Number.isFinite(v))) return null;
+    return values.reduce((a, b) => a + b, 0) / values.length;
+  }
+
+  function buildPercentileCombos({ kor, mat, t1, t2 }) {
+    return [
+      { name: '국+수', val: averageRequired([kor, mat]) },
+      { name: '국+수+탐1', val: averageRequired([kor, mat, t1]) },
+      { name: '국+수+탐2', val: averageRequired([kor, mat, t2]) },
+      { name: '국+탐1', val: averageRequired([kor, t1]) },
+      { name: '국+탐2', val: averageRequired([kor, t2]) },
+      { name: '수+탐1', val: averageRequired([mat, t1]) },
+      { name: '수+탐2', val: averageRequired([mat, t2]) },
+    ].map(c => ({ ...c, visible: c.val != null }));
+  }
+
   function clearScoreUI() {
-    document.querySelectorAll('.pct-combos .combo-pill .pct').forEach(el => el.textContent = '-');
+    document.querySelectorAll('.pct-combos .combo-pill').forEach(pill => {
+      pill.hidden = false;
+      pill.classList.remove('primary');
+      const pct = pill.querySelector('.pct');
+      if (pct) pct.textContent = '-';
+    });
     const tbl = document.querySelector('.mini-score-table tbody');
     if (tbl) tbl.querySelectorAll('td').forEach(td => { td.textContent = '—'; td.classList.add('empty'); });
     const detailEl = document.getElementById('studentDetail');
@@ -4421,6 +4436,7 @@
     let maxVal = -Infinity, maxEl = null;
     pills.forEach(p => {
       p.classList.remove('primary');
+      if (p.hidden) return;
       const val = parseFloat(p.querySelector('.pct')?.textContent || '0');
       if (!isNaN(val) && val > maxVal) { maxVal = val; maxEl = p; }
     });
