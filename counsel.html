@@ -2401,7 +2401,8 @@
     });
 
     try {
-      const d = await api(`/jungsi/counseling/wishlist/${student.student_id}/${year}`);
+      const exam = document.getElementById('examSel').value;
+      const d = await api(`/jungsi/counseling/wishlist/${student.student_id}/${year}?exam=${encodeURIComponent(exam)}`);
       if (!d.success) { console.log('[loadWishlist] 저장된 상담 없음'); return; }
       const items = d.wishlist || [];
       console.log('[loadWishlist]', items.length + '개 복원');
@@ -3563,6 +3564,7 @@
 
     const studentId = STATE.selectedStudent.student_id;
     const year = document.getElementById('yearSel').value;
+    const exam = document.getElementById('examSel').value;
     const items = [];
 
     document.querySelectorAll('#gunBoard .uni-card-shell').forEach(card => {
@@ -3604,7 +3606,7 @@
     try {
       const d = await api('/jungsi/counseling/wishlist/bulk-save', {
         method: 'POST',
-        body: JSON.stringify({ 학생_ID: studentId, 학년도: year, wishlistItems: items }),
+        body: JSON.stringify({ 학생_ID: studentId, 학년도: year, 모형: exam, wishlistItems: items }),
       });
       if (d.success) {
         markSaved();

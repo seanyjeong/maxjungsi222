@@ -8,6 +8,7 @@
 
 (function () {
   const yearEl = document.getElementById('year-select');
+  const examEl = document.getElementById('exam-select');
   const gunEl = document.getElementById('gun-select');
   const uniEl = document.getElementById('university-select');
   const deptEl = document.getElementById('department-select');
@@ -30,6 +31,7 @@
 
   const STATE = {
     year: '2027',
+    exam: '6월',
     gun: '',
     university: '',
     U_ID: '',
@@ -121,7 +123,7 @@
     if (!STATE.U_ID) return;
     setLoading();
     try {
-      const r = await window.api(`/jungsi/university-applicants/${STATE.U_ID}/${STATE.year}`);
+      const r = await window.api(`/jungsi/university-applicants/${STATE.U_ID}/${STATE.year}?exam=${encodeURIComponent(STATE.exam)}`);
       loadingState.hidden = true;
       if (!r || !r.success) throw new Error((r && r.message) || '지원자 로딩 실패');
       STATE.applicants = r.applicants || [];
@@ -156,7 +158,7 @@
       `;
       statsStrip.hidden = true;
       legendEl.hidden = true;
-      hintEl.textContent = `${STATE.year}학년도 · 0명`;
+      hintEl.textContent = `${STATE.year}학년도 · ${STATE.exam} · 0명`;
       return;
     }
 
@@ -188,7 +190,7 @@
     statMaxTotal.textContent   = (totalVals.length ? Math.max(...totalVals) : 0).toFixed(2);
     statMinTotal.textContent   = (totalVals.length ? Math.min(...totalVals) : 0).toFixed(2);
 
-    hintEl.textContent = `${STATE.year}학년도 · ${totalCount}명`;
+    hintEl.textContent = `${STATE.year}학년도 · ${STATE.exam} · ${totalCount}명`;
     renderTable();
   }
 
@@ -287,7 +289,30 @@
     `;
   }
 
+  function getDefaultExamForYear(year) {
+    if (typeof window.getDefaultExam === 'function') return window.getDefaultExam(Number(year));
+    if (typeof getDefaultExam === 'function') return getDefaultExam(Number(year));
+    return '6월';
+  }
+
   // ── Combobox 초기화 ──
+  const examCombo = window.createCombobox(examEl, {
+    options: [
+      { value: '3월', label: '3월 모의고사' },
+      { value: '6월', label: '6월 모의고사' },
+      { value: '9월', label: '9월 모의고사' },
+      { value: '수능', label: '수능' },
+    ],
+    value: getDefaultExamForYear(2027),
+    searchable: false,
+    onChange: (v) => {
+      STATE.exam = v || getDefaultExamForYear(STATE.year);
+      if (STATE.U_ID) loadApplicants();
+      else emptyHint('군/대학을 선택하세요', '모의고사가 변경되었습니다.');
+    },
+  });
+  STATE.exam = examCombo.value || getDefaultExamForYear(STATE.year);
+
   const yearCombo = window.createCombobox(yearEl, {
     options: [
       { value: '2027', label: '2027학년도' },
@@ -298,6 +323,8 @@
     searchable: false,
     onChange: (v) => {
       STATE.year = v;
+      STATE.exam = getDefaultExamForYear(v);
+      examCombo.setValue(STATE.exam);
       STATE.U_ID = '';
       uniCombo.setValue('');
       if (typeof deptCombo !== 'undefined') deptCombo.setValue('');
