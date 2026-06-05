@@ -1897,6 +1897,7 @@
 
   /* ====== 학생 목록 로드 ====== */
   async function loadStudents() {
+    const previousStudentId = STATE.selectedStudent?.student_id || null;
     const year = document.getElementById('yearSel').value;
     const exam = document.getElementById('examSel').value;
     const label = document.getElementById('comboLabel');
@@ -1914,6 +1915,13 @@
       label.textContent = `- 학생 선택 (${STATE.allStudents.length}명) -`;
       renderComboList(STATE.allStudents, '');
       console.log('[loadStudents]', STATE.allStudents.length + '명 로드');
+      if (previousStudentId && STATE.allStudents.some(s => String(s.student_id) === String(previousStudentId))) {
+        selectStudent(previousStudentId);
+      } else if (previousStudentId) {
+        clearScoreUI();
+        clearCounselBoard();
+        triggerDrawerRerender();
+      }
     } catch (e) {
       if (e.message !== 'auth') console.error(e);
       label.textContent = '- 로딩 오류 -';
@@ -2382,11 +2390,7 @@
     updateGunCount(col);
   }
 
-  /* 저장된 상담 복원 */
-  async function loadWishlist() {
-    const student = STATE.selectedStudent;
-    if (!student) return;
-    const year = document.getElementById('yearSel').value;
+  function clearCounselBoard() {
     ['col-ga', 'col-na', 'col-da'].forEach(id => {
       const col = document.getElementById(id);
       if (!col) return;
@@ -2399,6 +2403,15 @@
       }
       updateGunCount(col);
     });
+    if (typeof syncDrawerWithBoard === 'function') syncDrawerWithBoard();
+  }
+
+  /* 저장된 상담 복원 */
+  async function loadWishlist() {
+    const student = STATE.selectedStudent;
+    if (!student) return;
+    const year = document.getElementById('yearSel').value;
+    clearCounselBoard();
 
     try {
       const exam = document.getElementById('examSel').value;
@@ -2811,10 +2824,20 @@
       const pct = pill.querySelector('.pct');
       if (pct) pct.textContent = '-';
     });
-    const tbl = document.querySelector('.mini-score-table tbody');
-    if (tbl) tbl.querySelectorAll('td').forEach(td => { td.textContent = '—'; td.classList.add('empty'); });
+    const table = document.querySelector('.mini-score-table');
+    if (table) {
+      table.querySelectorAll('thead th small').forEach(s => { s.textContent = ''; });
+      table.querySelectorAll('tbody td').forEach(td => { td.textContent = '—'; td.classList.add('empty'); });
+    }
     const detailEl = document.getElementById('studentDetail');
-    if (detailEl) detailEl.querySelectorAll('.subject-pill .meta').forEach(m => m.textContent = '-');
+    if (detailEl) {
+      const names = ['국어', '수학', '영어', '탐구1', '탐구2', '한국사'];
+      detailEl.querySelectorAll('.subject-pill').forEach((pill, idx) => {
+        const name = pill.querySelector('.name');
+        if (name && names[idx]) name.textContent = names[idx];
+        pill.querySelectorAll('.meta').forEach(m => { m.textContent = '-'; });
+      });
+    }
   }
 
   // combobox 상호작용
