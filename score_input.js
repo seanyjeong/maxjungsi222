@@ -21,10 +21,73 @@
     locked: false,
   };
 
+  const SCORE_FIELDS = [
+    '한국사_등급',
+    '국어_선택과목', '국어_표준점수', '국어_백분위', '국어_등급',
+    '수학_선택과목', '수학_표준점수', '수학_백분위', '수학_등급',
+    '영어_등급',
+    '탐구1_선택과목', '탐구1_표준점수', '탐구1_백분위', '탐구1_등급',
+    '탐구2_선택과목', '탐구2_표준점수', '탐구2_백분위', '탐구2_등급',
+  ];
+
   const $  = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const esc = window.escapeHtml || (s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])));
   const toast = window.showToast || ((m, t) => console.log('[toast]', t, m));
+
+  function scoreValue(row, field) {
+    if (!row) return null;
+    const value = row[field];
+    return value === undefined ? null : value;
+  }
+
+  function buildStudentScoreRow(student, scoreRows) {
+    const rows = Array.isArray(scoreRows) ? scoreRows : [];
+    const official = rows.find(x => x.입력유형 === 'official');
+    const raw = rows.find(x => x.입력유형 === 'raw');
+    const source = official || {};
+    return {
+      student_id: student.student_id,
+      student_name: student.student_name,
+      school_name: student.school_name || '',
+      gender: student.gender || '',
+      입력유형: official ? 'official' : (raw ? 'raw' : null),
+      한국사_등급: scoreValue(source, '한국사_등급'),
+      국어_선택과목: scoreValue(source, '국어_선택과목') || null,
+      국어_표준점수: scoreValue(source, '국어_표준점수'),
+      국어_백분위: scoreValue(source, '국어_백분위'),
+      국어_등급: scoreValue(source, '국어_등급'),
+      수학_선택과목: scoreValue(source, '수학_선택과목') || null,
+      수학_표준점수: scoreValue(source, '수학_표준점수'),
+      수학_백분위: scoreValue(source, '수학_백분위'),
+      수학_등급: scoreValue(source, '수학_등급'),
+      영어_등급: scoreValue(source, '영어_등급'),
+      탐구1_선택과목: scoreValue(source, '탐구1_선택과목') || null,
+      탐구1_표준점수: scoreValue(source, '탐구1_표준점수'),
+      탐구1_백분위: scoreValue(source, '탐구1_백분위'),
+      탐구1_등급: scoreValue(source, '탐구1_등급'),
+      탐구2_선택과목: scoreValue(source, '탐구2_선택과목') || null,
+      탐구2_표준점수: scoreValue(source, '탐구2_표준점수'),
+      탐구2_백분위: scoreValue(source, '탐구2_백분위'),
+      탐구2_등급: scoreValue(source, '탐구2_등급'),
+      _dirty: false,
+    };
+  }
+
+  function toOfficialSaveItem(row) {
+    const item = { student_id: row.student_id, 입력유형: 'official' };
+    SCORE_FIELDS.forEach((field) => {
+      const value = row[field];
+      item[field] = field.endsWith('_선택과목') ? (value || null) : (value ?? null);
+    });
+    return item;
+  }
+
+  function collectOfficialItems(rows) {
+    return rows
+      .filter(r => r._dirty && hasAnyInput(r))
+      .map(toOfficialSaveItem);
+  }
 
   // ---------- Render ----------
   function statusOf(row) {
@@ -147,6 +210,7 @@
       }
 
       row[field] = v === '' ? null : (el.classList.contains('num') ? Number(v) : v);
+      row._dirty = true;
 
       if (el.classList.contains('cell-sel')) el.classList.toggle('is-empty', !v);
       rowEl.classList.add('dirty');
@@ -207,37 +271,7 @@
         if (r?.success) scoresMap = r.data || {};
       }
 
-      state.students = students.map(s => {
-        const rows = scoresMap[s.student_id] || [];
-        const official = rows.find(x => x.입력유형 === 'official');
-        const raw = rows.find(x => x.입력유형 === 'raw');
-        const merge = official || raw || {};
-        return {
-          student_id: s.student_id,
-          student_name: s.student_name,
-          school_name: s.school_name || '',
-          gender: s.gender || '',
-          입력유형: official ? 'official' : (raw ? 'raw' : null),
-          한국사_등급: merge.한국사_등급 ?? null,
-          국어_선택과목: merge.국어_선택과목 || null,
-          국어_표준점수: merge.국어_표준점수 ?? null,
-          국어_백분위: merge.국어_백분위 ?? null,
-          국어_등급: merge.국어_등급 ?? null,
-          수학_선택과목: merge.수학_선택과목 || null,
-          수학_표준점수: merge.수학_표준점수 ?? null,
-          수학_백분위: merge.수학_백분위 ?? null,
-          수학_등급: merge.수학_등급 ?? null,
-          영어_등급: merge.영어_등급 ?? null,
-          탐구1_선택과목: merge.탐구1_선택과목 || null,
-          탐구1_표준점수: merge.탐구1_표준점수 ?? null,
-          탐구1_백분위: merge.탐구1_백분위 ?? null,
-          탐구1_등급: merge.탐구1_등급 ?? null,
-          탐구2_선택과목: merge.탐구2_선택과목 || null,
-          탐구2_표준점수: merge.탐구2_표준점수 ?? null,
-          탐구2_백분위: merge.탐구2_백분위 ?? null,
-          탐구2_등급: merge.탐구2_등급 ?? null,
-        };
-      });
+      state.students = students.map(s => buildStudentScoreRow(s, scoresMap[s.student_id]));
       render();
     } catch (err) {
       if (err.message === 'auth' || err.message === 'no-token') return;
@@ -250,33 +284,9 @@
   // ---------- Save (실 API) ----------
   async function save() {
     if (checkLock()) return;
-    const items = state.students
-      .map(r => ({ ...r }))
-      .filter(r => hasAnyInput(r))
-      .map(r => ({
-        student_id: r.student_id,
-        입력유형: 'official',
-        한국사_등급: r.한국사_등급 ?? null,
-        국어_선택과목: r.국어_선택과목 || null,
-        국어_표준점수: r.국어_표준점수 ?? null,
-        국어_백분위: r.국어_백분위 ?? null,
-        국어_등급: r.국어_등급 ?? null,
-        수학_선택과목: r.수학_선택과목 || null,
-        수학_표준점수: r.수학_표준점수 ?? null,
-        수학_백분위: r.수학_백분위 ?? null,
-        수학_등급: r.수학_등급 ?? null,
-        영어_등급: r.영어_등급 ?? null,
-        탐구1_선택과목: r.탐구1_선택과목 || null,
-        탐구1_표준점수: r.탐구1_표준점수 ?? null,
-        탐구1_백분위: r.탐구1_백분위 ?? null,
-        탐구1_등급: r.탐구1_등급 ?? null,
-        탐구2_선택과목: r.탐구2_선택과목 || null,
-        탐구2_표준점수: r.탐구2_표준점수 ?? null,
-        탐구2_백분위: r.탐구2_백분위 ?? null,
-        탐구2_등급: r.탐구2_등급 ?? null,
-      }));
+    const items = collectOfficialItems(state.students);
 
-    if (!items.length) { toast('저장할 데이터가 없습니다', 'error'); return; }
+    if (!items.length) { toast('변경된 내용이 없습니다', 'info'); return; }
 
     const emptyScores = items.filter(hasSubjectButNoScores);
     if (emptyScores.length) {
@@ -306,12 +316,7 @@
   }
 
   function hasAnyInput(r) {
-    const keys = ['한국사_등급', '국어_선택과목', '국어_표준점수', '국어_백분위', '국어_등급',
-      '수학_선택과목', '수학_표준점수', '수학_백분위', '수학_등급',
-      '영어_등급',
-      '탐구1_선택과목', '탐구1_표준점수', '탐구1_백분위', '탐구1_등급',
-      '탐구2_선택과목', '탐구2_표준점수', '탐구2_백분위', '탐구2_등급'];
-    return keys.some(k => r[k] !== null && r[k] !== undefined && r[k] !== '');
+    return SCORE_FIELDS.some(k => r[k] !== null && r[k] !== undefined && r[k] !== '');
   }
   function hasSubjectButNoScores(r) {
     const pairs = [['국어_선택과목', '국어_표준점수'], ['수학_선택과목', '수학_표준점수'],
@@ -357,4 +362,12 @@
     bindTableEvents();
     load();
   });
+
+  if (window.__SCORE_INPUT_TEST__) {
+    window.__scoreInputInternals = {
+      buildStudentScoreRow,
+      collectOfficialItems,
+      hasAnyInput,
+    };
+  }
 })();
