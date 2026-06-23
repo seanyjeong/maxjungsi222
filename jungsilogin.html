@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>맥스정시엔진 · 로그인</title>
+  <link rel="icon" href="data:,">
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -227,6 +228,8 @@
   const SVR = 'https://supermax.kr';
   const urlParams = new URLSearchParams(window.location.search);
   const redirectParam = urlParams.get('redirect');
+  const pacaLinkState = urlParams.get('paca_link_state');
+  const pacaLinkCallback = urlParams.get('paca_link_callback');
   const REDIRECT = redirectParam || 'welcome.html';
 
   const form = document.getElementById('loginForm');
@@ -236,15 +239,71 @@
   const msg = document.getElementById('loginMsg');
   const useridEl = document.getElementById('userid');
 
+  function hasPacaLinkRequest() {
+    return Boolean(pacaLinkState && pacaLinkCallback);
+  }
+
+  function isAllowedPacaCallback(callbackUrl) {
+    try {
+      const url = new URL(callbackUrl);
+      const allowedOrigins = [
+        'https://chejump.com',
+        'https://dev-paca.sean8320.dedyn.io',
+        'http://localhost:3000',
+        'http://localhost:3109',
+      ];
+      return allowedOrigins.includes(url.origin)
+        && url.pathname.endsWith('/paca/jungsi/link/callback');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function completePacaLink(token) {
+    if (!hasPacaLinkRequest()) return true;
+    if (!isAllowedPacaCallback(pacaLinkCallback)) {
+      setMsg('PACA 연동 주소가 올바르지 않습니다. PACA에서 다시 시도해주세요.', 'error');
+      return false;
+    }
+
+    try {
+      const res = await fetch(pacaLinkCallback, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: pacaLinkState, token }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setMsg(data.message || 'PACA 정시엔진 연동을 완료하지 못했습니다. PACA에서 다시 시도해주세요.', 'error');
+        return false;
+      }
+      setMsg('PACA 정시엔진 연동을 완료했습니다. 이동합니다…', 'success');
+      return true;
+    } catch (e) {
+      setMsg('PACA와 연결하지 못했습니다. PACA에서 다시 시도해주세요.', 'error');
+      return false;
+    }
+  }
+
+  async function finishLogin(token) {
+    const linked = await completePacaLink(token);
+    if (!linked) {
+      setLoading(false);
+      return;
+    }
+    if (!hasPacaLinkRequest()) setMsg('로그인 성공! 이동합니다…', 'success');
+    setTimeout(() => { window.location.href = REDIRECT; }, 600);
+  }
+
   // 이미 로그인되어 있으면 바로 redirect
   try {
     const existing = localStorage.getItem('jwt_token');
     if (existing) {
       // 토큰 형태만 대충 체크 (3 segments)
       if (existing.split('.').length === 3) {
-        msg.textContent = '이미 로그인되어 있습니다. 이동 중…';
+        msg.textContent = hasPacaLinkRequest() ? 'PACA 연동 확인 중…' : '이미 로그인되어 있습니다. 이동 중…';
         msg.className = 'login-msg info';
-        setTimeout(() => { window.location.href = REDIRECT; }, 600);
+        finishLogin(existing);
       }
     }
   } catch (e) { /* no-op */ }
@@ -283,8 +342,7 @@
           setLoading(false);
           return;
         }
-        setMsg('로그인 성공! 이동합니다…', 'success');
-        setTimeout(() => { window.location.href = REDIRECT; }, 600);
+        await finishLogin(data.token);
       } else {
         setMsg((data && data.message) || '아이디 또는 비밀번호를 확인하세요.', 'error');
         setLoading(false);
