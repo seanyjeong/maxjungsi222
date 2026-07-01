@@ -231,6 +231,7 @@
   const pacaLinkState = urlParams.get('paca_link_state');
   const pacaLinkCallback = urlParams.get('paca_link_callback');
   const REDIRECT = redirectParam || 'welcome.html';
+  const PACA_LINK_SOURCE = 'paca-jungsi-link';
 
   const form = document.getElementById('loginForm');
   const btn = document.getElementById('loginBtn');
@@ -247,6 +248,7 @@
     try {
       const url = new URL(callbackUrl);
       const allowedOrigins = [
+        'https://supermax.kr',
         'https://chejump.com',
         'https://dev-paca.sean8320.dedyn.io',
         'http://localhost:3000',
@@ -259,11 +261,23 @@
     }
   }
 
+  function notifyPacaLinkSuccess(result) {
+    if (!hasPacaLinkRequest() || !window.opener || window.opener.closed) return false;
+    window.opener.postMessage({
+      source: PACA_LINK_SOURCE,
+      status: 'success',
+      state: pacaLinkState,
+      message: '정시엔진이 정상적으로 연동되었습니다.',
+      branchName: result && result.branchName,
+    }, '*');
+    return true;
+  }
+
   async function completePacaLink(token) {
-    if (!hasPacaLinkRequest()) return true;
+    if (!hasPacaLinkRequest()) return { success: true };
     if (!isAllowedPacaCallback(pacaLinkCallback)) {
       setMsg('PACA 연동 주소가 올바르지 않습니다. PACA에서 다시 시도해주세요.', 'error');
-      return false;
+      return { success: false };
     }
 
     try {
@@ -275,20 +289,28 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         setMsg(data.message || 'PACA 정시엔진 연동을 완료하지 못했습니다. PACA에서 다시 시도해주세요.', 'error');
-        return false;
+        return { success: false };
       }
-      setMsg('PACA 정시엔진 연동을 완료했습니다. 이동합니다…', 'success');
-      return true;
+      setMsg('PACA에 정상적으로 연동되었습니다. 창을 닫습니다…', 'success');
+      return { success: true, branchName: data.branchName };
     } catch (e) {
       setMsg('PACA와 연결하지 못했습니다. PACA에서 다시 시도해주세요.', 'error');
-      return false;
+      return { success: false };
     }
   }
 
   async function finishLogin(token) {
-    const linked = await completePacaLink(token);
-    if (!linked) {
+    const linkResult = await completePacaLink(token);
+    if (!linkResult.success) {
       setLoading(false);
+      return;
+    }
+    if (hasPacaLinkRequest()) {
+      notifyPacaLinkSuccess(linkResult);
+      setTimeout(() => {
+        window.close();
+        if (!window.closed) window.location.href = REDIRECT;
+      }, 600);
       return;
     }
     if (!hasPacaLinkRequest()) setMsg('로그인 성공! 이동합니다…', 'success');
