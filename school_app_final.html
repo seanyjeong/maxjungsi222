@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="assets/css/toast.css">
   <link rel="stylesheet" href="assets/css/modal.css">
   <link rel="stylesheet" href="assets/css/combobox.css">
+  <link rel="stylesheet" href="applicant-privacy.css">
   <link rel="stylesheet" href="school_app_final.css">
 </head>
 <body data-page="school_app_final" data-title="맥스라이브" data-category="인사이트">
@@ -32,6 +33,10 @@
           <span class="current">맥스라이브</span>
         </div>
         <div class="topbar-actions">
+          <button type="button" class="btn btn-ghost privacy-toggle" id="btnPrivacy"
+                  aria-pressed="false" aria-controls="privacyPasswordModal">
+            <i class="ph-light ph-eye-slash"></i><span>개인정보 가리기</span>
+          </button>
           <span class="live-chip">
             <span class="live-dot"></span>
             <i class="ph-fill ph-broadcast"></i>
@@ -147,6 +152,32 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="privacyPasswordModal" role="dialog" aria-modal="true"
+       aria-labelledby="privacyPasswordTitle" aria-describedby="privacyPasswordHelp">
+    <form class="modal-card privacy-modal-card" id="privacyPasswordForm">
+      <div class="modal-head">
+        <h3 class="modal-title" id="privacyPasswordTitle">개인정보 가리기</h3>
+        <button type="button" class="privacy-modal-close" data-action="modal-close" aria-label="닫기">
+          <i class="ph-light ph-x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="privacyPasswordHelp">현재 로그인한 원장님의 비밀번호를 입력해 주세요.</p>
+        <label class="privacy-field" for="privacyPassword">
+          <span>비밀번호</span>
+          <input id="privacyPassword" type="password" autocomplete="current-password" required>
+        </label>
+        <div class="privacy-message" id="privacyPasswordMessage" role="status" aria-live="polite"></div>
+      </div>
+      <div class="privacy-modal-foot">
+        <button type="button" class="btn btn-ghost" data-action="modal-close">취소</button>
+        <button type="submit" class="btn btn-primary" id="privacyPasswordSubmit">
+          <i class="ph-light ph-lock-key"></i><span>확인</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/toast.js"></script>
@@ -154,6 +185,8 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/bootstrap.js"></script>
   <script src="assets/js/combobox.js"></script>
-  <script src="school_app_final.js"></script>
+  <script src="applicant-privacy.js"></script>
+  <script src="school_app_final-results.js"></script>
+  <script src="school_app_final.js?v=2.27.07"></script>
 </body>
 </html>

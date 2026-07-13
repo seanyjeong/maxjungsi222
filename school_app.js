@@ -43,6 +43,12 @@
     sortBy: 'total_score',
   };
 
+  const privacy = window.MaxApplicantPrivacy.createController({
+    onChange: () => {
+      if (STATE.applicants.length) displayApplicants();
+    },
+  });
+  privacy.init();
   STATE.myBranch = (window.getCounselorFromToken && window.getCounselorFromToken().branch) || '';
 
   // ── 초기 render ──
@@ -73,7 +79,7 @@
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
       console.error('[loadSchools]', e);
-      window.showToast && window.showToast('대학 목록 로드 실패: ' + e.message, 'error');
+      window.showToast && window.showToast('대학 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     }
   }
 
@@ -137,8 +143,8 @@
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon"><i class="ph-light ph-warning"></i></div>
-          <div class="empty-title">지원자 로드 실패</div>
-          <div class="empty-sub">${window.escapeHtml ? window.escapeHtml(e.message) : e.message}</div>
+          <div class="empty-title">지원자를 불러오지 못했습니다</div>
+          <div class="empty-sub">잠시 후 다시 시도해 주세요.</div>
         </div>
       `;
       statsStrip.hidden = true;
@@ -220,6 +226,7 @@
   function renderTable() {
     const sorted = sortApplicants();
     const myBranch = STATE.myBranch;
+    const privacyEnabled = privacy.isEnabled();
     const esc = window.escapeHtml || (s => s);
     const num = (v) => (v == null || v === '' ? '-' : Number(v).toFixed(2));
     const showNaeshin = sorted.some(a => Number(a.naeshin_score) > 0);
@@ -252,7 +259,8 @@
 
     const rows = sorted.map((a, idx) => {
       const rank = idx + 1;
-      const isMine = myBranch && a.branch === myBranch;
+      const visible = privacy.visibleApplicant(a);
+      const isMine = !privacyEnabled && myBranch && a.branch === myBranch;
 
       let practicalText = '-';
       if (a.practical_records && typeof a.practical_records === 'object' && Object.keys(a.practical_records).length) {
@@ -264,9 +272,9 @@
       return `
         <div class="applicant-card ${isMine ? 'is-mine' : ''}" style="grid-template-columns: ${cols};">
           <div class="col-rank">${rank}</div>
-          <div class="col-name">${esc(a.name || '-')}</div>
-          <div>${esc(a.branch || '-')}</div>
-          <div class="col-school">${esc(a.school_name || '-')}</div>
+          <div class="col-name">${esc(visible.name || '-')}</div>
+          <div>${esc(visible.branch || '-')}</div>
+          <div class="col-school">${esc(visible.school_name || '-')}</div>
           <div>${subjCell(a.korean_standard, a.korean_percentile, a.korean_grade)}</div>
           <div>${subjCell(a.math_standard, a.math_percentile, a.math_grade)}</div>
           <div><span class="grade-text grade-${a.english_grade || '9'}">${a.english_grade || '-'}</span></div>
@@ -287,6 +295,7 @@
         <div class="applicants-list">${rows}</div>
       </div>
     `;
+    legendEl.hidden = privacyEnabled;
   }
 
   function getDefaultExamForYear(year) {
