@@ -127,6 +127,47 @@
   white-space: nowrap;
 }
 .school-tag + .school-tag { margin-left: 3px; }
+.school-tag.competition-rate {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 학교 정보 화면 공통 전년도 경쟁률 */
+.previous-competition-card {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-height: 42px;
+  margin: 10px 0 14px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  font-variant-numeric: tabular-nums;
+}
+.previous-competition-label {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.previous-competition-value {
+  color: var(--accent-strong);
+  font-size: 16px;
+  font-weight: 700;
+}
+.previous-competition-meta,
+.previous-competition-scope,
+.previous-competition-empty,
+.previous-competition-loading,
+.previous-competition-error {
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+.previous-competition-error { color: var(--danger); }
 
 /* ---------- CHIP (badge 와 유사하지만 더 크고 둥근 형태) ---------- */
 .chip {

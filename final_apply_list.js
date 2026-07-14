@@ -189,7 +189,7 @@
         <tr data-id="${r.id}" class="${isDirty ? 'dirty' : ''}">
           <td>${safeStudent || '<span style="color:var(--text-3)">—</span>'}</td>
           <td class="uni-dept">
-            <div class="univ-name">${safeUniv}${(window.renderSchoolTags && window.renderSchoolTags(r.tags)) || ''}</div>
+            <div class="univ-name">${safeUniv}${(window.renderSchoolTags && window.renderSchoolTags(r.tags, STATE.year)) || ''}</div>
             <div class="dept-name">${safeDept}</div>
           </td>
           <td>${r.gun ? `<span class="gun-dot ${gunClass(r.gun)}">${r.gun}</span>` : '—'}</td>

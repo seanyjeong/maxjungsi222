@@ -160,7 +160,7 @@
     tbody.innerHTML = list.map(r => `
       <tr data-uid="${r.U_ID}">
         <td class="uni-dept">
-          <div class="univ-name">${window.escapeHtml(r.univ)}${(window.renderSchoolTags && window.renderSchoolTags(r.tags)) || ''}</div>
+          <div class="univ-name">${window.escapeHtml(r.univ)}${(window.renderSchoolTags && window.renderSchoolTags(r.tags, STATE.year)) || ''}</div>
           <div class="dept-name">${window.escapeHtml(r.dept)}</div>
         </td>
         <td><span class="gun-chip gun-${r.gun}">${window.escapeHtml(r.gun || '—')}</span></td>

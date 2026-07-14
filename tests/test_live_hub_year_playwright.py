@@ -115,6 +115,8 @@ def test_live_and_hub_privacy_reauth_masks_both_years(
     def handle(route) -> None:
         url = route.request.url
         if "/jungsi/schools/" in url:
+            catalog_year = int(url.split("?")[0].rsplit("/", 1)[-1])
+            rate = "5.58" if catalog_year == 2027 else "12.89"
             body = {
                 "success": True,
                 "list": [{
@@ -123,6 +125,15 @@ def test_live_and_hub_privacy_reauth_masks_both_years(
                     "university": "한국대",
                     "department": "체육학과",
                     "quota": 10,
+                    "tags": [{
+                        "type": "전년도경쟁률",
+                        "catalogYear": catalog_year,
+                        "year": catalog_year - 1,
+                        "rate": rate,
+                        "quota": 24,
+                        "applicants": 134,
+                        "scope": None,
+                    }],
                 }],
             }
         elif applicant_path in url:
@@ -161,6 +172,10 @@ def test_live_and_hub_privacy_reauth_masks_both_years(
     page.goto(f"{base_url}/{page_name}", wait_until="domcontentloaded")
     page.wait_for_function("() => document.querySelector('#year-select .label').textContent === '2027학년도'")
     select_applicant(page)
+    first_rate = page.locator("#previousCompetition").inner_text()
+    assert "2026학년도 경쟁률" in first_rate
+    assert "5.58:1" in first_rate
+    assert "모집 24명 · 지원 134명" in first_rate
 
     page.locator("#btnPrivacy").click()
     page.locator("#privacyPassword").fill("wrong-password")
@@ -185,6 +200,9 @@ def test_live_and_hub_privacy_reauth_masks_both_years(
     page.locator("#year-select .combo-item[data-value='2026']").click()
     page.wait_for_function("() => document.querySelector('#year-select .label').textContent === '2026학년도'")
     select_applicant(page, "김○수")
+    second_rate = page.locator("#previousCompetition").inner_text()
+    assert "2025학년도 경쟁률" in second_rate
+    assert "12.89:1" in second_rate
     assert "김○수" in page.locator("#applicantsContainer").inner_text()
     assert applicant_years == ["2027", "2026"]
     assert applicant_authorization_headers == [

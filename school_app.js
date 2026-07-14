@@ -28,6 +28,7 @@
   const legendEl = document.getElementById('applicantsLegend');
   const hintEl = document.getElementById('applicantsHint');
   const loadingState = document.getElementById('loadingState');
+  const competitionEl = document.getElementById('previousCompetition');
 
   const STATE = {
     year: '2027',
@@ -63,6 +64,15 @@
     statsStrip.hidden = true;
     legendEl.hidden = true;
     hintEl.textContent = '학과를 선택하면 지원자가 표시됩니다';
+    if (!STATE.U_ID) competitionEl.hidden = true;
+  }
+
+  function renderPreviousCompetition() {
+    const school = STATE.schools.find(item => String(item.U_ID) === String(STATE.U_ID));
+    competitionEl.hidden = !school;
+    competitionEl.innerHTML = school
+      ? window.renderPreviousCompetitionDetails(school.tags, STATE.year)
+      : '';
   }
 
   function setLoading() {
@@ -392,6 +402,7 @@
     placeholder: '학과 검색…',
     onChange: (v) => {
       STATE.U_ID = v;
+      renderPreviousCompetition();
       if (v) loadApplicants();
     },
   });

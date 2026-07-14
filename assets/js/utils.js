@@ -81,16 +81,95 @@
     return window.formatQuotaValue(value) + window.formatQuotaDiff(value, prev);
   };
 
+  function parseSchoolTags(tags) {
+    if (!tags) return [];
+    if (typeof tags === 'string') {
+      try { tags = JSON.parse(tags); } catch (_) { return []; }
+    }
+    return Array.isArray(tags) ? tags : [];
+  }
+
+  function inferredAdmissionYear(value) {
+    if (value != null && value !== '') return Number(value);
+    if (typeof document === 'undefined') return null;
+    var ids = ['year-select', 'yearSel', 'year-selector'];
+    for (var index = 0; index < ids.length; index += 1) {
+      var element = document.getElementById(ids[index]);
+      var year = element && Number(element.value);
+      if (Number.isInteger(year)) return year;
+      var label = element && element.querySelector
+        ? element.querySelector('.combo-display .label')
+        : null;
+      var match = label && String(label.textContent).match(/20\d{2}/);
+      if (match) return Number(match[0]);
+    }
+    return null;
+  }
+
+  window.getPreviousCompetitionTag = function (tags, admissionYear) {
+    var selectedYear = inferredAdmissionYear(admissionYear);
+    if (!Number.isInteger(selectedYear)) return null;
+    var list = parseSchoolTags(tags);
+    for (var index = 0; index < list.length; index += 1) {
+      var tag = list[index];
+      if (!tag || typeof tag !== 'object' || tag.type !== '전년도경쟁률') continue;
+      var catalogYear = Number(tag.catalogYear);
+      var year = Number(tag.year);
+      var rate = Number(tag.rate);
+      var quota = Number(tag.quota);
+      var applicants = Number(tag.applicants);
+      if (
+        !Number.isInteger(catalogYear) || year !== catalogYear - 1 ||
+        selectedYear !== catalogYear ||
+        !Number.isFinite(rate) || rate < 0 ||
+        !Number.isInteger(quota) || quota <= 0 ||
+        !Number.isInteger(applicants) || applicants < 0
+      ) continue;
+      return tag;
+    }
+    return null;
+  };
+
+  function competitionSummary(tags, admissionYear) {
+    var tag = window.getPreviousCompetitionTag(tags, admissionYear);
+    if (!tag) return null;
+    var count = new Intl.NumberFormat('ko-KR');
+    return {
+      label: Number(tag.year) + '학년도 경쟁률',
+      compactLabel: String(tag.year).slice(-2) + ' 경쟁률',
+      rate: Number(tag.rate).toFixed(2) + ':1',
+      meta: '모집 ' + count.format(Number(tag.quota)) + '명 · 지원 ' + count.format(Number(tag.applicants)) + '명',
+      scope: tag.scope || null,
+    };
+  }
+
+  window.renderPreviousCompetitionDetails = function (tags, admissionYear) {
+    var summary = competitionSummary(tags, admissionYear);
+    if (!summary) return '<span class="previous-competition-empty">전년도 경쟁률 자료 없음</span>';
+    var esc = window.escapeHtml;
+    return '<span class="previous-competition-label">' + esc(summary.label) + '</span>'
+      + '<strong class="previous-competition-value">' + esc(summary.rate) + '</strong>'
+      + '<small class="previous-competition-meta">' + esc(summary.meta) + '</small>'
+      + (summary.scope ? '<small class="previous-competition-scope">' + esc(summary.scope) + '</small>' : '');
+  };
+
+  function renderCompetitionSchoolTag(tags, admissionYear) {
+    var summary = competitionSummary(tags, admissionYear);
+    if (!summary) return '';
+    var esc = window.escapeHtml;
+    return '<span class="school-tag competition-rate" title="'
+      + esc(summary.label + ' · ' + summary.meta) + '">'
+      + esc(summary.compactLabel + ' ' + summary.rate) + '</span>';
+  }
+
   // 학교 이름 옆 태그 렌더 — schools API의 tags 필드(JSON 배열)를 HTML로
   // 사용: `대학명${window.renderSchoolTags(tags)}` 형태로 학교 이름 끝에 붙이기
   // 형식 두 가지 지원:
   //   - 문자열: ["군이동"] → "군이동"
   //   - 객체:   [{type:"군이동", from:"나", to:"가"}] → "군이동 나→가"
-  window.renderSchoolTags = function (tags) {
-    if (!tags) return '';
-    if (typeof tags === 'string') {
-      try { tags = JSON.parse(tags); } catch (_) { return ''; }
-    }
+  window.renderSchoolTags = function (tags, admissionYear) {
+    admissionYear = inferredAdmissionYear(admissionYear);
+    tags = parseSchoolTags(tags);
     if (!Array.isArray(tags) || !tags.length) return '';
     var esc = window.escapeHtml;
     return tags.map(function (t) {
@@ -98,6 +177,7 @@
         return '<span class="school-tag">' + esc(t) + '</span>';
       }
       if (t && typeof t === 'object' && t.type) {
+        if (t.type === '전년도경쟁률') return renderCompetitionSchoolTag([t], admissionYear);
         var label = esc(t.type);
         if (t.from && t.to) label += ' ' + esc(t.from) + '→' + esc(t.to);
         return '<span class="school-tag">' + label + '</span>';
