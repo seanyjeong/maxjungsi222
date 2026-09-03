@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "maxjungsi222",
+    "stack": []
+  },
+  "workflow": {
+    "preset": "et-dev-os"
+  },
+  "quality": {
+    "detected_checks": [],
+    "additional_checks": [
+      "python3 -m pytest -q tests/test_september_exam_node.py tests/test_september_exam_playwright.py"
+    ]
+  },
+  "memory": {
+    "recall": "on_demand",
+    "include_global": true,
+    "context_budget_chars": 600
+  }
+}

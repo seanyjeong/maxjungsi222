@@ -24,6 +24,7 @@
   const row = document.getElementById('row');
   const tbl = document.getElementById('tbl');
 
+  let high3Subjects = subjectsDefault.slice();
   let subjects = subjectsDefault.slice();
 
   function setStatus(text, kind) {
@@ -40,12 +41,26 @@
     try {
       const j = await window.api('/jungsi/topmax/subjects', { method: 'GET' });
       if (j && j.success && Array.isArray(j.subjects) && j.subjects.length) {
-        subjects = j.subjects;
+        high3Subjects = j.subjects;
       }
     } catch (err) {
       // 실패 시 기본 과목 목록 유지
       console.warn('[topmax] subjects fallback:', err && err.message);
     }
+  }
+
+  function applySubjectsForYear() {
+    if (year.value === '2028') {
+      subjects = window.JungsiExamProfiles.getAllSubjects(2028);
+    } else if (year.value === '2027') {
+      const high2Subjects = window.JungsiExamProfiles.getAllSubjects(2028);
+      subjects = [...high3Subjects, ...high2Subjects.filter((subject) => (
+        !high3Subjects.includes(subject)
+      ))];
+    } else {
+      subjects = high3Subjects.slice();
+    }
+    buildTable();
   }
 
   function buildTable() {
@@ -64,7 +79,7 @@
     try {
       const j = await window.api('/jungsi/topmax/' + encodeURIComponent(y) + '/' + encodeURIComponent(e), { method: 'GET' });
       if (!j || !j.success) {
-        setStatus((j && j.message) || '로드 실패', 'error');
+        setStatus('최고표점을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
         return;
       }
       // 입력 초기화
@@ -79,7 +94,7 @@
       if (window.showToast) window.showToast('최고표점 로드 완료', 'success');
     } catch (err) {
       console.error('[topmax] load error:', err);
-      setStatus('불러오기 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'), 'error');
+      setStatus('최고표점을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     }
   }
 
@@ -98,12 +113,15 @@
         method: 'POST',
         body: JSON.stringify({ year: year.value, exam: exam.value, scores: scores })
       });
-      const txt = (j && j.message) || ((j && j.success) ? '저장 완료' : '저장 실패');
-      setStatus(txt, (j && j.success) ? 'success' : 'error');
-      if (window.showToast) window.showToast(txt, (j && j.success) ? 'success' : 'error');
+      const success = Boolean(j && j.success);
+      const txt = success
+        ? '최고표점 저장 완료'
+        : '최고표점을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.';
+      setStatus(txt, success ? 'success' : 'error');
+      if (window.showToast) window.showToast(txt, success ? 'success' : 'error');
     } catch (err) {
       console.error('[topmax] save error:', err);
-      setStatus('저장 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'), 'error');
+      setStatus('최고표점을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     }
   }
 
@@ -123,7 +141,11 @@
 
   btnLoad.addEventListener('click', loadData);
   btnSave.addEventListener('click', saveData);
-  year.addEventListener('change', loadData);
+  year.addEventListener('change', () => {
+    if (year.value === '2028') exam.value = '9월';
+    applySubjectsForYear();
+    loadData();
+  });
   exam.addEventListener('change', loadData);
 
   // 초기화
@@ -135,7 +157,7 @@
       return;
     }
     await ensureSubjects();
-    buildTable();
+    applySubjectsForYear();
     await loadData();
   })();
 })();

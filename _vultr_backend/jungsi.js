@@ -267,11 +267,21 @@ const dbStudent = mysql.createPool({
 const jungsicalRouter = require('./jungsical.js')(db, authMiddleware);
 // ⭐️ [신규] silgical.js 파일(실기 계산기 부품)을 불러온다.
 const silgicalRouter = require('./silgical.js')(db, authMiddleware); //
+const { normalizeWishlistItems, serializeSilgiRecord } = require('./wishlist_bulk_save.js');
+const { createGradeDistributionByExamHandler } = require('./grade_distribution_by_exam.js');
+const { createStudentListByBranchHandler } = require('./student_list_by_branch.js');
+const { createStudentBulkAddHandler } = require('./student_bulk_add.js');
+// ⭐️ [신규] 정시 챗봇/분석용 read-only API 라우터
+const jungsiAnalysisRouter = require('./jungsi_analysis.js')(db, authMiddleware);
 
 // --- API 목록 ---
+// 분석용 라우터를 먼저 마운트해 /jungsi 라우터보다 명확히 우선시한다.
+app.use('/jungsi/analysis', jungsiAnalysisRouter);
 // ⭐️ [핵심 2] '/jungsi' 라는 주소로 들어오는 모든 요청은 jungsicalRouter(계산기 부품)에게 넘긴다.
 app.use('/jungsi', jungsicalRouter);
 app.use('/silgi', silgicalRouter);
+// 정시 프론트엔드 정적 파일 제공: https://supermax.kr/jungsi/calculator.html 등
+app.use('/jungsi', express.static(path.join(__dirname, '..', 'maxjungsi222')));
 const { buildPracticalScoreList } = require('./silgical.js');
 
 // =============================================
@@ -1311,73 +1321,13 @@ app.post('/jungsi/student/score/set-wide', authMiddleware, async (req, res) => {
     }
 });
 
-// 지점 학생 목록 + 기존 성적 불러오기 (학년도 필터 추가)
-app.get('/jungsi/students/list-by-branch', authMiddleware, async (req, res) => {
-    const { branch } = req.user; // 토큰에서 지점 이름
-    const { year, exam } = req.query; // URL 쿼리에서 학년도, 모형 가져오기
-    const examType = exam || '수능'; // 기본값 '수능' (하위호환)
-
-    if (!branch) {
-        return res.status(403).json({ success: false, message: '토큰에 지점 정보가 없습니다.' });
-    }
-    if (!year) {
-         return res.status(400).json({ success: false, message: '학년도(year) 파라미터가 필요합니다.' });
-    }
-
-    try {
-        // ⭐️ 수정: SELECT 목록에 b.phone_number, b.phone_owner 추가
-        const sql = `
-            SELECT
-                b.student_id, b.student_name, b.school_name, b.grade, b.gender,
-                b.phone_number, b.phone_owner, -- ⭐️ 전화번호, 연락처 구분 추가
-                s.입력유형,
-                s.국어_선택과목, s.국어_원점수, s.국어_표준점수, s.국어_백분위, s.국어_등급,
-                s.수학_선택과목, s.수학_원점수, s.수학_표준점수, s.수학_백분위, s.수학_등급,
-                s.영어_원점수, s.영어_등급,
-                s.한국사_원점수, s.한국사_등급,
-                s.탐구1_선택과목, s.탐구1_원점수, s.탐구1_표준점수, s.탐구1_백분위, s.탐구1_등급,
-                s.탐구2_선택과목, s.탐구2_원점수, s.탐구2_표준점수, s.탐구2_백분위, s.탐구2_등급
-            FROM 학생기본정보 b
-            LEFT JOIN 학생수능성적 s ON b.student_id = s.student_id AND b.학년도 = s.학년도 AND s.모형 = ? -- JOIN: 학년도+모형
-            WHERE b.branch_name = ?
-              AND b.학년도 = ?  -- WHERE 절에도 학년도 조건 추가
-            ORDER BY b.student_name ASC;
-        `;
-        const [students] = await db.query(sql, [examType, branch, year]); // 파라미터: 모형, 지점, 학년도
-
-        // 프론트엔드가 쓰기 편하게 가공
-        const formattedStudents = students.map(s => {
-            // scores 객체 생성 로직 (null 처리 포함)
-            const scoresData = s.입력유형 ? {
-                    입력유형: s.입력유형,
-                    // ... (기존 성적 필드들) ...
-                    국어_선택과목: s.국어_선택과목, 국어_원점수: s.국어_원점수, 국어_표준점수: s.국어_표준점수, 국어_백분위: s.국어_백분위, 국어_등급: s.국어_등급,
-                    수학_선택과목: s.수학_선택과목, 수학_원점수: s.수학_원점수, 수학_표준점수: s.수학_표준점수, 수학_백분위: s.수학_백분위, 수학_등급: s.수학_등급,
-                    영어_원점수: s.영어_원점수, 영어_등급: s.영어_등급,
-                    한국사_원점수: s.한국사_원점수, 한국사_등급: s.한국사_등급,
-                    탐구1_선택과목: s.탐구1_선택과목, 탐구1_원점수: s.탐구1_원점수, 탐구1_표준점수: s.탐구1_표준점수, 탐구1_백분위: s.탐구1_백분위, 탐구1_등급: s.탐구1_등급,
-                    탐구2_선택과목: s.탐구2_선택과목, 탐구2_원점수: s.탐구2_원점수, 탐구2_표준점수: s.탐구2_표준점수, 탐구2_백분위: s.탐구2_백분위, 탐구2_등급: s.탐구2_등급
-                } : null;
-
-            return {
-                student_id: s.student_id,
-                student_name: s.student_name,
-                school_name: s.school_name,
-                grade: s.grade,
-                gender: s.gender,
-                phone_number: s.phone_number, // ⭐️ 추가
-                phone_owner: s.phone_owner,   // ⭐️ 추가
-                scores: scoresData
-            };
-        });
-
-        res.json({ success: true, students: formattedStudents });
-
-    } catch (err) {
-        console.error('❌ 지점 학생 목록 조회 API 오류:', err);
-        res.status(500).json({ success: false, message: '서버 오류 발생' });
-    }
-});
+// 지점 학생 목록은 현재 학년 코호트와 성적 학년도를 분리해 조회한다.
+app.get('/jungsi/students/list-by-branch', authMiddleware, createStudentListByBranchHandler(db));
+app.post(
+    '/jungsi/students/bulk-add-deduplicated',
+    authMiddleware,
+    createStudentBulkAddHandler(db)
+);
 
 // ⭐️ [신규 API 2] 여러 학생 성적 일괄 저장/변환 (Bulk)
 // jungsi.js 파일의 이 API 부분을 아래 코드로 교체하세요.
@@ -1943,6 +1893,11 @@ app.get('/jungsi/public/schools/:year', async (req, res) => { // ⭐️ authMidd
     }
 });
 
+function normalizeCounselExam(value) {
+  const exam = String(value || '3월').trim();
+  return ['3월', '6월', '9월', '수능'].includes(exam) ? exam : '3월';
+}
+
 // =============================================
 // ⭐️ [신규] 특정 학생/학년도의 상담 목록 조회 API
 // =============================================
@@ -1950,10 +1905,11 @@ app.get('/jungsi/public/schools/:year', async (req, res) => { // ⭐️ authMidd
 app.get('/jungsi/counseling/wishlist/:student_id/:year', authMiddleware, async (req, res) => {
     // URL 경로에서 학생 ID와 학년도 추출
     const { student_id, year } = req.params;
+    const exam = normalizeCounselExam(req.query.exam || req.query.모형);
     // 인증된 사용자(강사/관리자)의 지점 정보 가져오기 (권한 확인용)
     const { branch } = req.user;
 
-    console.log(`[API GET /wishlist] 학생(${student_id}), 학년도(${year}) 상담 목록 조회 요청 (요청자 지점: ${branch})`);
+    console.log(`[API GET /wishlist] 학생(${student_id}), 학년도(${year}), 모형(${exam}) 상담 목록 조회 요청 (요청자 지점: ${branch})`);
 
     // 필수 파라미터 확인
     if (!student_id || !year) {
@@ -1977,15 +1933,16 @@ app.get('/jungsi/counseling/wishlist/:student_id/:year', authMiddleware, async (
         const sql = `
             SELECT
                 wl.상담목록_ID, wl.학생_ID, wl.학년도, wl.모집군, wl.대학학과_ID,
+                wl.모형,
                 wl.상담_수능점수, wl.상담_내신점수, wl.상담_실기기록, wl.상담_실기반영점수,
                 wl.상담_계산총점, wl.메모, wl.수정일시,
                 jb.대학명, jb.학과명 -- 정시기본 테이블에서 대학/학과명 JOIN
             FROM jungsi.정시_상담목록 wl
             JOIN jungsi.정시기본 jb ON wl.대학학과_ID = jb.U_ID AND wl.학년도 = jb.학년도
-            WHERE wl.학생_ID = ? AND wl.학년도 = ?
+            WHERE wl.학생_ID = ? AND wl.학년도 = ? AND wl.모형 = ?
             ORDER BY FIELD(wl.모집군, '가', '나', '다'), wl.수정일시 DESC -- 군별 정렬, 최신순 정렬
         `;
-        const [wishlistItems] = await db.query(sql, [student_id, year]);
+        const [wishlistItems] = await db.query(sql, [student_id, year, exam]);
 
         console.log(` -> 상담 목록 ${wishlistItems.length}건 조회 완료`);
 
@@ -2000,6 +1957,7 @@ app.get('/jungsi/counseling/wishlist/:student_id/:year', authMiddleware, async (
 // --- 상담 목록 일괄 저장 (덮어쓰기: Delete then Insert) ---
 app.post('/jungsi/counseling/wishlist/bulk-save', authMiddleware, async (req, res) => {
   const { 학생_ID, 학년도, wishlistItems } = req.body;
+  const exam = normalizeCounselExam(req.body.모형 || req.body.exam);
   if (!학생_ID || !학년도 || !Array.isArray(wishlistItems))
     return res.status(400).json({ success:false, message:'학생_ID/학년도/wishlistItems 필요' });
 
@@ -2007,29 +1965,36 @@ app.post('/jungsi/counseling/wishlist/bulk-save', authMiddleware, async (req, re
   try {
     await conn.beginTransaction(); // --- 1. 트랜잭션 시작 ---
 
-    // ⭐️⭐️⭐️ 2. [수정] 이 학생의 해당 년도 모든 목록을 먼저 삭제 ⭐️⭐️⭐️
-    const deleteSql = 'DELETE FROM jungsi.정시_상담목록 WHERE 학생_ID = ? AND 학년도 = ?';
-    await conn.query(deleteSql, [학생_ID, 학년도]);
-    console.log(`[bulk-save] Cleared old wishlist for student ${학생_ID}, year ${학년도}`);
+    const deleteSql = 'DELETE FROM jungsi.정시_상담목록 WHERE 학생_ID = ? AND 학년도 = ? AND 모형 = ?';
+    await conn.query(deleteSql, [학생_ID, 학년도, exam]);
+    console.log(`[bulk-save] Cleared old wishlist for student ${학생_ID}, year ${학년도}, exam ${exam}`);
 
 
     // 3. [수정] ON DUPLICATE KEY UPDATE 구문이 필요 없는 단순 INSERT 쿼리로 변경
     const insertSql = `
       INSERT INTO jungsi.정시_상담목록
-        (학생_ID, 학년도, 모집군, 대학학과_ID,
+        (학생_ID, 학년도, 모형, 모집군, 대학학과_ID,
          상담_수능점수, 상담_내신점수, 상담_실기기록, 상담_실기반영점수,
          상담_계산총점, 메모)
-      VALUES (?,?,?,?, ?,?,?,?, ?, ?)
+      VALUES (?,?,?,?,?, ?,?,?,?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        상담_수능점수 = VALUES(상담_수능점수),
+        상담_내신점수 = VALUES(상담_내신점수),
+        상담_실기기록 = VALUES(상담_실기기록),
+        상담_실기반영점수 = VALUES(상담_실기반영점수),
+        상담_계산총점 = VALUES(상담_계산총점),
+        메모 = VALUES(메모)
     `; 
 
+    const normalizedItems = normalizeWishlistItems(wishlistItems);
+
     // 4. 새 목록을 INSERT (wishlistItems가 0개면 이 루프는 그냥 건너뜀)
-    if (wishlistItems.length > 0) {
-        for (const it of wishlistItems) {
-          const silgiJSON = it.상담_실기기록 && Object.keys(it.상담_실기기록).length
-            ? JSON.stringify(it.상담_실기기록) : null;
+    if (normalizedItems.length > 0) {
+        for (const it of normalizedItems) {
+          const silgiJSON = serializeSilgiRecord(it.상담_실기기록);
 
           await conn.query(insertSql, [ // ⭐️ insertSql 사용
-            학생_ID, 학년도, it.모집군, it.대학학과_ID,
+            학생_ID, 학년도, exam, it.모집군, it.대학학과_ID,
             it.상담_수능점수 ?? null,
             it.상담_내신점수 ?? null,
             silgiJSON,
@@ -2041,12 +2006,13 @@ app.post('/jungsi/counseling/wishlist/bulk-save', authMiddleware, async (req, re
     }
 
     await conn.commit(); // --- 5. 커밋 ---
-    console.log(`[bulk-save] Saved ${wishlistItems.length} new items.`);
-    res.json({ success:true, saved:wishlistItems.length });
+    const ignored = wishlistItems.length - normalizedItems.length;
+    console.log(`[bulk-save] Saved ${normalizedItems.length} new items for exam ${exam}. ignored=${ignored}`);
+    res.json({ success:true, saved:normalizedItems.length, ignored, exam });
   } catch (e) {
     await conn.rollback(); // --- 6. 롤백 ---
     console.error('wishlist bulk-save error:', e);
-    res.status(500).json({ success:false, message:'DB 오류' });
+    res.status(500).json({ success:false, message:'상담 목록을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.' });
   } finally {
     conn.release();
   }
@@ -7521,113 +7487,18 @@ app.get('/jungsi/grade-distribution', async (req, res) => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────
-// 모형별 등급 분포 (year + exam 필수)
-// 기존 /jungsi/grade-distribution 은 학년도 모든 모형 합산이라 모형 분리가 필요한 경우 사용
-// ──────────────────────────────────────────────────────────────
-app.get('/jungsi/grade-distribution-by-exam', async (req, res) => {
-  try {
-    const { year, exam } = req.query;
-    if (!year || !exam) {
-      return res.status(400).json({ success: false, message: '학년도와 모형이 필요합니다.' });
-    }
-
-    const connection = await db.getConnection();
-    try {
-      const [students] = await connection.query(`
-        SELECT
-          s.국어_선택과목, s.국어_등급,
-          s.수학_선택과목, s.수학_등급,
-          s.영어_등급, s.한국사_등급,
-          s.탐구1_선택과목, s.탐구1_등급,
-          s.탐구2_선택과목, s.탐구2_등급
-        FROM 학생기본정보 b
-        INNER JOIN 학생수능성적 s
-          ON b.student_id = s.student_id AND b.학년도 = s.학년도
-        WHERE b.학년도 = ? AND s.모형 = ?
-          AND (s.국어_등급 IS NOT NULL
-               OR s.수학_등급 IS NOT NULL
-               OR s.영어_등급 IS NOT NULL
-               OR s.한국사_등급 IS NOT NULL
-               OR s.탐구1_등급 IS NOT NULL
-               OR s.탐구2_등급 IS NOT NULL)
-      `, [year, exam]);
-
-      const distribution = {
-        국어: {}, 수학: {}, 영어: {}, 한국사: {}, 사회탐구: {}, 과학탐구: {}
-      };
-      const initGradeCount = () => ({
-        '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0
-      });
-      const socialSubjects = ['생활과윤리','윤리와사상','한국지리','세계지리',
-                              '동아시아사','세계사','정치와법','경제','사회문화'];
-      const scienceSubjects = ['물리1','화학1','생명과학1','지구과학1',
-                               '물리2','화학2','생명과학2','지구과학2'];
-
-      students.forEach(student => {
-        const korSubj = student.국어_선택과목 || '화법과작문';
-        if (!distribution.국어[korSubj]) distribution.국어[korSubj] = initGradeCount();
-        if (student.국어_등급) distribution.국어[korSubj][String(student.국어_등급)]++;
-
-        const mathSubj = student.수학_선택과목 || '확률과통계';
-        if (!distribution.수학[mathSubj]) distribution.수학[mathSubj] = initGradeCount();
-        if (student.수학_등급) distribution.수학[mathSubj][String(student.수학_등급)]++;
-
-        if (!distribution.영어.전체) distribution.영어.전체 = initGradeCount();
-        if (student.영어_등급) distribution.영어.전체[String(student.영어_등급)]++;
-
-        if (!distribution.한국사.전체) distribution.한국사.전체 = initGradeCount();
-        if (student.한국사_등급) distribution.한국사.전체[String(student.한국사_등급)]++;
-
-        if (student.탐구1_선택과목) {
-          const inq1 = student.탐구1_선택과목;
-          let category;
-          if (socialSubjects.includes(inq1)) category = distribution.사회탐구;
-          else if (scienceSubjects.includes(inq1)) category = distribution.과학탐구;
-          if (category) {
-            if (!category[inq1]) category[inq1] = initGradeCount();
-            if (student.탐구1_등급) category[inq1][String(student.탐구1_등급)]++;
-          }
-        }
-
-        if (student.탐구2_선택과목) {
-          const inq2 = student.탐구2_선택과목;
-          let category;
-          if (socialSubjects.includes(inq2)) category = distribution.사회탐구;
-          else if (scienceSubjects.includes(inq2)) category = distribution.과학탐구;
-          if (category) {
-            if (!category[inq2]) category[inq2] = initGradeCount();
-            if (student.탐구2_등급) category[inq2][String(student.탐구2_등급)]++;
-          }
-        }
-      });
-
-      res.json({
-        success: true,
-        year: parseInt(year),
-        exam,
-        totalStudents: students.length,
-        distribution
-      });
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error('grade-distribution-by-exam 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '모형별 등급 분포 조회 중 오류',
-      error: error.message
-    });
-  }
-});
+// 모형별 등급 분포는 과목 체계별 모듈로 분리한다.
+app.get(
+    '/jungsi/grade-distribution-by-exam',
+    authMiddleware,
+    createGradeDistributionByExamHandler(db)
+);
 
 
-app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
+app.get('/jungsi/university-applicants/:U_ID/:year', authMiddleware, async (req, res) => {
   try {
     const { U_ID, year } = req.params;
-    const userBranch = req.decoded?.branch;
-    const isAdmin = req.decoded?.userid === 'admin';
+    const exam = normalizeCounselExam(req.query.exam || req.query.모형);
 
     if (!U_ID || !year) {
       return res.status(400).json({
@@ -7656,13 +7527,7 @@ app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
       const university = universityRows[0];
 
       // 2. 해당 대학에 지원한 학생 목록 조회 (정시_상담목록 테이블 사용)
-      let branchCondition = '';
-      let queryParams = [year, U_ID];
-
-      if (!isAdmin && userBranch) {
-        branchCondition = 'AND b.branch_name = ?';
-        queryParams.push(userBranch);
-      }
+      const queryParams = [exam, year, U_ID, exam];
 
       const [applicantsRows] = await connection.query(`
         SELECT DISTINCT
@@ -7684,6 +7549,7 @@ app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
           s.탐구2_표준점수 as inquiry2_standard,
           s.탐구2_백분위 as inquiry2_percentile,
           s.탐구2_등급 as inquiry2_grade,
+          c.모형 as exam,
           c.모집군 as gun,
           c.상담_수능점수 as suneung_score,
           c.상담_내신점수 as naeshin_score,
@@ -7692,10 +7558,10 @@ app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
           c.상담_계산총점 as total_score
         FROM 정시_상담목록 c
         INNER JOIN 학생기본정보 b ON c.학생_ID = b.student_id AND c.학년도 = b.학년도
-        LEFT JOIN 학생수능성적 s ON b.student_id = s.student_id AND b.학년도 = s.학년도
+        LEFT JOIN 학생수능성적 s ON b.student_id = s.student_id AND b.학년도 = s.학년도 AND s.모형 = ?
         WHERE c.학년도 = ?
           AND c.대학학과_ID = ?
-          ${branchCondition}
+          AND c.모형 = ?
         ORDER BY c.상담_계산총점 DESC, b.student_name
       `, queryParams);
 
@@ -7734,6 +7600,7 @@ app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
           inquiry2_standard: student.inquiry2_standard,
           inquiry2_percentile: student.inquiry2_percentile,
           inquiry2_grade: student.inquiry2_grade,
+          exam: student.exam,
           suneung_score: parseFloat(student.suneung_score) || 0,
           naeshin_score: parseFloat(student.naeshin_score) || 0,
           practical_score: parseFloat(student.practical_score) || 0,
@@ -7759,10 +7626,12 @@ app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
             university_name: university.university_name,
             major: university.major,
             gun: university.gun,
-            quota: university.quota || 0  // 모집인원
+            quota: university.quota || 0,  // 모집인원
+            exam
           },
           applicants,
-          stats
+          stats,
+          exam
         });
 
     } finally {
@@ -7774,8 +7643,7 @@ app.get('/jungsi/university-applicants/:U_ID/:year', async (req, res) => {
     console.error('에러 스택:', error.stack);
     res.status(500).json({
       success: false,
-      message: '학교별 지원자 조회 중 오류가 발생했습니다.',
-      error: error.message
+      message: '학교별 지원자 조회 중 오류가 발생했습니다.'
     });
   }
 });
@@ -8890,6 +8758,7 @@ app.get('/jungsi/counseling/by-university/:U_ID/:year', authMiddleware, async (r
         const branch = req.user && req.user.branch;
         if (!branch) return res.status(400).json({ success: false, message: 'branch 정보 없음' });
         const { U_ID, year } = req.params;
+        const exam = normalizeCounselExam(req.query.exam || req.query.모형);
         if (!U_ID) return res.status(400).json({ success: false, message: 'U_ID 필요' });
         if (!year || !/^\d{4}$/.test(year)) {
             return res.status(400).json({ success: false, message: 'year 4자리 필요' });
@@ -8903,6 +8772,7 @@ app.get('/jungsi/counseling/by-university/:U_ID/:year', authMiddleware, async (r
               s.school_name      AS school,
               s.gender, s.grade,
               c.\`학년도\`        AS year,
+              c.\`모형\`          AS exam,
               c.\`모집군\`        AS gun,
               c.\`대학학과_ID\`   AS U_ID,
               c.\`상담_수능점수\`        AS suneung_score,
@@ -8920,6 +8790,7 @@ app.get('/jungsi/counseling/by-university/:U_ID/:year', authMiddleware, async (r
             LEFT JOIN \`정시기본\` AS b ON b.U_ID = c.\`대학학과_ID\` AND b.\`학년도\` = c.\`학년도\`
             WHERE c.\`대학학과_ID\` = ?
               AND c.\`학년도\` = ?
+              AND c.\`모형\` = ?
               AND s.branch_name = ?
             ORDER BY c.\`상담_계산총점\` DESC
         `;
@@ -8936,7 +8807,7 @@ app.get('/jungsi/counseling/by-university/:U_ID/:year', authMiddleware, async (r
         `;
 
         const [[applicants], [cutRows], [scoreTable]] = await Promise.all([
-            db.query(applicantsSql, [U_ID, year, branch]),
+            db.query(applicantsSql, [U_ID, year, exam, branch]),
             db.query(cutsSql, [U_ID, year, branch]),
             db.query(scoreTableSql, [U_ID, year]),
         ]);
@@ -8947,7 +8818,7 @@ app.get('/jungsi/counseling/by-university/:U_ID/:year', authMiddleware, async (r
             else if (row.branch_name === branch) cuts.mine = row;
         }
 
-        res.json({ success: true, applicants, count: applicants.length, cuts, scoreTable });
+        res.json({ success: true, applicants, count: applicants.length, cuts, scoreTable, exam });
     } catch (err) {
         console.error('[/jungsi/counseling/by-university v4]', err);
         res.status(500).json({ success: false, message: 'DB 오류: ' + err.message });
@@ -9045,6 +8916,7 @@ app.get('/jungsi/counseling/saved-universes/:year', authMiddleware, async (req, 
         const branch = req.user && req.user.branch;
         if (!branch) return res.status(400).json({ success: false, message: 'branch 정보 없음' });
         const { year } = req.params;
+        const exam = normalizeCounselExam(req.query.exam || req.query.모형);
         if (!year || !/^\d{4}$/.test(year)) {
             return res.status(400).json({ success: false, message: 'year 4자리 필요' });
         }
@@ -9055,17 +8927,19 @@ app.get('/jungsi/counseling/saved-universes/:year', authMiddleware, async (req, 
                b.\`대학명\` AS university,
                b.\`학과명\` AS department,
                b.\`군\` AS gun,
+               c.\`모형\` AS exam,
                COUNT(c.\`상담목록_ID\`) OVER (PARTITION BY b.U_ID) AS saved_count
              FROM \`정시_상담목록\` AS c
              JOIN \`학생기본정보\` AS s ON c.\`학생_ID\` = s.student_id
              JOIN \`정시기본\` AS b ON b.U_ID = c.\`대학학과_ID\` AND b.\`학년도\` = c.\`학년도\`
              WHERE c.\`학년도\` = ?
+               AND c.\`모형\` = ?
                AND s.branch_name = ?
              ORDER BY b.\`대학명\`, b.\`학과명\``,
-            [year, branch]
+            [year, exam, branch]
         );
 
-        res.json({ success: true, list: rows, count: rows.length });
+        res.json({ success: true, list: rows, count: rows.length, exam });
     } catch (err) {
         console.error('[saved-universes]', err);
         res.status(500).json({ success: false, message: 'DB 오류: ' + err.message });

@@ -20,3 +20,7 @@ _*.json
 
 # 로그
 *.log
+
+# Python 테스트 캐시
+__pycache__/
+*.py[cod]

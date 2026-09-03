@@ -1,30 +1,19 @@
-/* ============================================================
-   gachaejeom.new.js — 정시 가채점
-   의존: api.js, toast.js, utils.js, combobox.js, examSchedule.js
-   ============================================================ */
 (function () {
   'use strict';
 
-  const INQUIRY = {
-    '사회탐구': ['생활과윤리','윤리와사상','한국지리','세계지리','동아시아사','세계사','정치와법','경제','사회문화'],
-    '과학탐구': ['물리1','화학1','생명과학1','지구과학1','물리2','화학2','생명과학2','지구과학2'],
-  };
-  const KOR_OPTS = [
-    { value: '화법과작문', label: '화법과작문' },
-    { value: '언어와매체', label: '언어와매체' },
-  ];
-  const MATH_OPTS = [
-    { value: '확률과통계', label: '확률과통계' },
-    { value: '미적분',     label: '미적분' },
-    { value: '기하',       label: '기하' },
-  ];
-  const INQ_OPTS = (() => {
+  function toOptions(subjects) {
+    return subjects.map((subject) => ({ value: subject, label: subject }));
+  }
+
+  function inquiryOptions(profile) {
     const opts = [{ value: '', label: '- 선택 -' }];
-    for (const group in INQUIRY) {
-      INQUIRY[group].forEach(s => opts.push({ value: s, label: s, group }));
+    for (const group of profile.inquiryGroups) {
+      group.subjects.forEach((subject) => {
+        opts.push({ value: subject, label: subject, group: group.label });
+      });
     }
     return opts;
-  })();
+  }
 
   const $ = (s, root = document) => root.querySelector(s);
   const esc = window.escapeHtml || ((s) => String(s ?? ''));
@@ -40,13 +29,13 @@
   const statDirty  = $('#statDirty');
   const statPct    = $('#statPct');
   const dirtyCard  = $('#dirtyCard');
+  const cohortRouter = window.JungsiGachaCohort;
 
   // ---- Combos (topbar)
   const yearCombo = window.createCombobox('#yearCombo', {
     options: [
-      { value: '2027', label: '2027학년도' },
+      { value: '2027', label: '2027학년도 (2·3학년)' },
       { value: '2026', label: '2026학년도' },
-      { value: '2028', label: '2028학년도' },
     ],
     value: '2027',
     searchable: false,
@@ -103,8 +92,12 @@
   // ---- Row rendering
   const renderRow = (student) => {
     const scores = student.scores || {};
+    const scoreYear = student.scoreYear || yearCombo.value;
+    const profile = window.JungsiExamProfiles.getExamProfileForStudent(student, scoreYear);
+    const defaults = profile.defaults;
     const tr = document.createElement('tr');
     tr.dataset.studentId = student.student_id;
+    tr.dataset.scoreYear = scoreYear;
     if (hasRawValues(scores)) tr.dataset.filled = '1';
 
     // 공식 성적 입력된 학생은 가채점 잠금 (입력 막음)
@@ -154,22 +147,23 @@
     // instantiate comboboxes
     const combos = {};
     combos.국어_선택과목 = window.createCombobox(tr.querySelector('[data-field="국어_선택과목"]'), {
-      options: KOR_OPTS, value: scores.국어_선택과목 || '화법과작문', searchable: false,
+      options: toOptions(profile.korean), value: scores.국어_선택과목 || defaults.korean, searchable: false,
       onChange: () => markDirty(tr),
     });
     combos.수학_선택과목 = window.createCombobox(tr.querySelector('[data-field="수학_선택과목"]'), {
-      options: MATH_OPTS, value: scores.수학_선택과목 || '확률과통계', searchable: false,
+      options: toOptions(profile.math), value: scores.수학_선택과목 || defaults.math, searchable: false,
       onChange: () => markDirty(tr),
     });
     combos.탐구1_선택과목 = window.createCombobox(tr.querySelector('[data-field="탐구1_선택과목"]'), {
-      options: INQ_OPTS, value: scores.탐구1_선택과목 || '', placeholder: '- 선택 -',
+      options: inquiryOptions(profile), value: scores.탐구1_선택과목 || defaults.inquiry1, placeholder: '- 선택 -',
       onChange: () => markDirty(tr),
     });
     combos.탐구2_선택과목 = window.createCombobox(tr.querySelector('[data-field="탐구2_선택과목"]'), {
-      options: INQ_OPTS, value: scores.탐구2_선택과목 || '', placeholder: '- 선택 -',
+      options: inquiryOptions(profile), value: scores.탐구2_선택과목 || defaults.inquiry2, placeholder: '- 선택 -',
       onChange: () => markDirty(tr),
     });
     tr._combos = combos;
+    tr._defaults = defaults;
 
     applyRowData(tr, scores);
 
@@ -190,6 +184,7 @@
   };
 
   const applyRowData = (tr, scores) => {
+    const defaults = tr._defaults;
     const set = (name, val) => {
       const el = tr.querySelector(`[name="${name}"]`);
       if (el) {
@@ -210,13 +205,13 @@
     set('한국사_원점수', scores.한국사_원점수);
     setDisp('한국사_등급', scores.한국사_등급);
 
-    tr._combos.국어_선택과목.setValue(scores.국어_선택과목 || '화법과작문');
+    tr._combos.국어_선택과목.setValue(scores.국어_선택과목 || defaults.korean);
     set('국어_원점수', scores.국어_원점수);
     setDisp('국어_표준점수', scores.국어_표준점수);
     setDisp('국어_백분위', scores.국어_백분위);
     setDisp('국어_등급', scores.국어_등급);
 
-    tr._combos.수학_선택과목.setValue(scores.수학_선택과목 || '확률과통계');
+    tr._combos.수학_선택과목.setValue(scores.수학_선택과목 || defaults.math);
     set('수학_원점수', scores.수학_원점수);
     setDisp('수학_표준점수', scores.수학_표준점수);
     setDisp('수학_백분위', scores.수학_백분위);
@@ -225,13 +220,13 @@
     set('영어_원점수', scores.영어_원점수);
     setDisp('영어_등급', scores.영어_등급);
 
-    tr._combos.탐구1_선택과목.setValue(scores.탐구1_선택과목 || '');
+    tr._combos.탐구1_선택과목.setValue(scores.탐구1_선택과목 || defaults.inquiry1);
     set('탐구1_원점수', scores.탐구1_원점수);
     setDisp('탐구1_표준점수', scores.탐구1_표준점수);
     setDisp('탐구1_백분위', scores.탐구1_백분위);
     setDisp('탐구1_등급', scores.탐구1_등급);
 
-    tr._combos.탐구2_선택과목.setValue(scores.탐구2_선택과목 || '');
+    tr._combos.탐구2_선택과목.setValue(scores.탐구2_선택과목 || defaults.inquiry2);
     set('탐구2_원점수', scores.탐구2_원점수);
     setDisp('탐구2_표준점수', scores.탐구2_표준점수);
     setDisp('탐구2_백분위', scores.탐구2_백분위);
@@ -244,7 +239,7 @@
   const renderTable = (students) => {
     tbody.innerHTML = '';
     if (!students || students.length === 0) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="27">해당 학년도 학생이 없습니다.</td></tr>`;
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="27">해당 시험 학생이 없습니다.</td></tr>';
       updateStats();
       return;
     }
@@ -258,19 +253,21 @@
   const loadStudents = async () => {
     const year = yearCombo.value;
     const exam = examCombo.value;
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="27">${year}학년도 ${exam} 로딩 중…</td></tr>`;
+    const viewYears = cohortRouter.getViewYears(year, exam);
+    const loadingLabel = viewYears.length > 1 ? '고3·고2' : `${year}학년도`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="27">${loadingLabel} ${exam} 로딩 중…</td></tr>`;
     saveBtn.disabled = true;
     try {
-      const data = await window.api(`/jungsi/students/list-by-branch?year=${encodeURIComponent(year)}&exam=${encodeURIComponent(exam)}`);
-      if (data && data.success && Array.isArray(data.students)) {
-        renderTable(data.students);
-      } else {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="27">로딩 실패: ${esc(data?.message || '오류')}</td></tr>`;
-        updateStats();
-      }
+      const cohorts = await Promise.all(viewYears.map(async (scoreYear) => {
+        const data = await window.api(`/jungsi/students/list-by-branch?year=${encodeURIComponent(scoreYear)}&exam=${encodeURIComponent(exam)}&cohort=registered`);
+        if (!data || !data.success || !Array.isArray(data.students)) throw new Error('학생 목록 조회 실패');
+        return { year: scoreYear, students: data.students };
+      }));
+      renderTable(cohortRouter.mergeStudentCohorts(cohorts, year, exam));
     } catch (err) {
       console.error('[gachaejeom] load error:', err);
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="27">오류: ${esc(err.message)}</td></tr>`;
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="27">학생 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</td></tr>';
+      window.showToast?.('학생 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
       updateStats();
     }
   };
@@ -298,54 +295,70 @@
         scores.탐구2_선택과목 = null;
         scores.탐구2_원점수 = null;
       }
-      items.push({ student_id: parseInt(tr.dataset.studentId, 10), scores });
+      items.push({
+        student_id: parseInt(tr.dataset.studentId, 10),
+        scoreYear: tr.dataset.scoreYear || yearCombo.value,
+        scores,
+      });
     });
     return items;
   };
 
-  saveBtn.addEventListener('click', async () => {
+  const saveDirtyItems = async (showSuccess = true) => {
     const items = collectDirtyItems();
     if (items.length === 0) {
-      window.showToast?.('변경된 내용이 없습니다.', 'info');
-      return;
+      if (showSuccess) window.showToast?.('변경된 내용이 없습니다.', 'info');
+      return true;
     }
     saveBtn.disabled = true;
-    const year = yearCombo.value;
     const exam = examCombo.value;
 
     try {
-      const data = await window.api('/jungsi/students/scores/bulk-set-wide', {
-        method: 'POST',
-        body: JSON.stringify({
-          학년도: year, 모형: exam, 입력유형: 'raw', studentScores: items,
-        }),
-      });
-      if (!data || !data.success) throw new Error(data?.message || '저장 실패');
+      const batches = cohortRouter.groupItemsByScoreYear(items);
+      const responses = await Promise.all(batches.map(async (batch) => {
+        const data = await window.api('/jungsi/students/scores/bulk-set-wide', {
+          method: 'POST',
+          body: JSON.stringify({
+            학년도: batch.year,
+            모형: exam,
+            입력유형: 'raw',
+            studentScores: batch.items,
+          }),
+        });
+        if (!data || !data.success) throw new Error('가채점 저장 실패');
+        return data;
+      }));
 
-      (data.updatedData || []).forEach(up => {
+      responses.flatMap((data) => data.updatedData || []).forEach(up => {
         const tr = tbody.querySelector(`tr[data-student-id="${up.student_id}"]`);
         if (tr) applyRowData(tr, up);
       });
       tbody.querySelectorAll('tr.dirty').forEach(r => r.classList.remove('dirty'));
       updateStats();
-      window.showToast?.(`${items.length}명 저장 및 변환 완료`, 'success');
+      if (showSuccess) window.showToast?.(`${items.length}명 학년별 저장 및 변환 완료`, 'success');
+      return true;
     } catch (err) {
       console.error('[gachaejeom] save error:', err);
-      window.showToast?.(`저장 오류: ${err.message}`, 'error');
+      window.showToast?.('가채점 성적을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
       updateStats();
+      return false;
     }
+  };
+
+  saveBtn.addEventListener('click', async () => {
+    await saveDirtyItems();
   });
 
   // ---- Recompute (latest cutoff)
   recalcBtn.addEventListener('click', async () => {
-    const year = yearCombo.value;
+    const viewYear = yearCombo.value;
     const exam = examCombo.value;
 
     // 1) save pending first
     if (tbody.querySelectorAll('tr.dirty').length > 0) {
       window.showToast?.('변경분을 먼저 저장합니다…', 'info');
-      saveBtn.click();
-      await new Promise(r => setTimeout(r, 300));
+      const saved = await saveDirtyItems(false);
+      if (!saved) return;
     }
 
     const origHtml = recalcBtn.innerHTML;
@@ -353,16 +366,21 @@
     recalcBtn.innerHTML = '<i class="ph-light ph-circle-notch ph-spin"></i><span>재계산 중…</span>';
 
     try {
-      const data = await window.api('/jungsi/students/scores/recompute', {
-        method: 'POST',
-        body: JSON.stringify({ year, exam_type: exam, scope: 'branch' }),
-      });
-      if (!data || !data.success) throw new Error(data?.message || '재계산 실패');
-      window.showToast?.(`${data.updated ?? 0}명 최신 기준 반영 완료`, 'success');
+      const years = cohortRouter.getViewYears(viewYear, exam);
+      const results = await Promise.all(years.map(async (year) => {
+        const data = await window.api('/jungsi/students/scores/recompute', {
+          method: 'POST',
+          body: JSON.stringify({ year, exam_type: exam, scope: 'branch' }),
+        });
+        if (!data || !data.success) throw new Error('가채점 재계산 실패');
+        return data;
+      }));
+      const updated = results.reduce((sum, data) => sum + Number(data.updated || 0), 0);
+      window.showToast?.(`${updated}명 학년별 최신 기준 반영 완료`, 'success');
       await loadStudents();
     } catch (err) {
       console.error('[gachaejeom] recompute error:', err);
-      window.showToast?.(`재계산 오류: ${err.message}`, 'error');
+      window.showToast?.('성적을 다시 계산하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     } finally {
       recalcBtn.disabled = false;
       recalcBtn.innerHTML = origHtml;

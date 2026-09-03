@@ -9,14 +9,6 @@
 (function () {
   const LOGIN_PAGE = 'jungsilogin.html';
 
-  // 과목 목록 (optgroup 구조)
-  const SUBJECT_GROUPS = [
-    { label: '국어 선택', options: ['화법과작문', '언어와매체'] },
-    { label: '수학 선택', options: ['확률과통계', '미적분', '기하'] },
-    { label: '사회탐구', options: ['생활과윤리', '윤리와사상', '한국지리', '세계지리', '동아시아사', '세계사', '정치와법', '경제', '사회문화'] },
-    { label: '과학탐구', options: ['물리1', '화학1', '생명과학1', '지구과학1', '물리2', '화학2', '생명과학2', '지구과학2'] },
-  ];
-
   // DOM
   const branchNameEl = document.getElementById('branchName');
   const yearSelect = document.getElementById('year-select');
@@ -53,18 +45,32 @@
   }
 
   // ─────────────────────────────────────────────────
-  // 과목 select 동적 생성 (optgroup)
+  // 학년도에 맞는 과목 select 동적 생성
   // ─────────────────────────────────────────────────
-  SUBJECT_GROUPS.forEach((group) => {
-    const og = document.createElement('optgroup');
-    og.label = group.label;
-    group.options.forEach((subject) => {
-      const opt = document.createElement('option');
-      opt.value = subject;
-      opt.textContent = subject;
-      og.appendChild(opt);
+  function populateSubjects() {
+    const selected = subjectSelect.value;
+    subjectSelect.innerHTML = '<option value="">-- 과목 선택 --</option>';
+    window.JungsiExamProfiles.getSubjectGroups(yearSelect.value).forEach((group) => {
+      const og = document.createElement('optgroup');
+      og.label = group.label;
+      group.options.forEach((subject) => {
+        const opt = document.createElement('option');
+        opt.value = subject;
+        opt.textContent = subject;
+        og.appendChild(opt);
+      });
+      subjectSelect.appendChild(og);
     });
-    subjectSelect.appendChild(og);
+    const stillAvailable = Array.from(subjectSelect.options).some((option) => option.value === selected);
+    subjectSelect.value = stillAvailable ? selected : '';
+  }
+
+  populateSubjects();
+  yearSelect.addEventListener('change', () => {
+    if (yearSelect.value === '2028') examTypeSelect.value = '9월';
+    populateSubjects();
+    clearInputFields();
+    setMessage('', '');
   });
 
   // ─────────────────────────────────────────────────
@@ -209,12 +215,12 @@
       } else if (data && data.success) {
         setMessage('저장된 등급컷이 없습니다. 새로 입력해주세요.', '');
       } else {
-        setMessage((data && data.message) || '불러오기 실패', 'error');
+        setMessage('등급컷을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
       }
     } catch (err) {
       if (err && err.message === 'auth') return;
       console.error('[gradecut_editor] load error:', err);
-      setMessage('서버 통신 오류: ' + (err && err.message ? err.message : ''), 'error');
+      setMessage('등급컷을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     }
   });
 
@@ -294,12 +300,12 @@
         setMessage('[' + year + ' ' + examType + ' ' + subject + '] 등급컷이 저장되었습니다.', 'success');
         if (typeof window.showToast === 'function') window.showToast('저장 완료', 'success');
       } else {
-        setMessage((data && data.message) || '저장 실패', 'error');
+        setMessage('등급컷을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
       }
     } catch (err) {
       if (err && err.message === 'auth') return;
       console.error('[gradecut_editor] save error:', err);
-      setMessage('서버 통신 오류: ' + (err && err.message ? err.message : ''), 'error');
+      setMessage('등급컷을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     }
   });
 })();

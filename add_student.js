@@ -1,15 +1,38 @@
-/* ============================================================ */
-/* add_student.new.js — 학생 추가 + 명단 관리                     */
-/* API: list-by-branch / bulk-add / update/:id / delete/:id       */
-/* ============================================================ */
 'use strict';
 
 (function () {
+  const REGISTERED_COHORT = 'registered';
+  const PASTE_OPTION_VALUES = {
+    phone_owner: {
+      학생: '학생', 본인: '학생',
+      학부모: '학부모', 부모: '학부모', 보호자: '학부모', 부: '학부모', 모: '학부모',
+    },
+    grade: {
+      2: '2', '2학년': '2', 고2: '2',
+      3: '3', '3학년': '3', 고3: '3',
+      N: 'N', n: 'N', N수: 'N', n수: 'N', N수생: 'N', n수생: 'N', 재수: 'N', 반수: 'N',
+    },
+    gender: { 남: '남', 남자: '남', 여: '여', 여자: '여' },
+  };
+  const PASTE_OPTION_LABELS = {
+    phone_owner: '전화번호 구분', grade: '학년', gender: '성별',
+  };
   const yearSel = window.createCombobox(document.getElementById('yearSel'), {
-    options: [{ value: '2027', label: '2027학년도' }, { value: '2026', label: '2026학년도' }],
+    options: [
+      { value: '2027', label: '2027학년도 (2·3학년)' },
+      { value: '2026', label: '2026학년도' },
+    ],
     value: '2027',
     searchable: false,
-    onChange: (v) => { STATE.year = v; loadList(); },
+    onChange: (v) => {
+      STATE.year = v;
+      addTbody.querySelectorAll('tr').forEach((tr) => {
+        const name = tr.querySelector('[name="student_name"]')?.value.trim();
+        const grade = tr.querySelector('[name="grade"]');
+        if (!name && grade) grade.value = '3';
+      });
+      loadList();
+    },
   });
   const sumYear = document.getElementById('sumYear');
   const sumBranch = document.getElementById('sumBranch');
@@ -59,15 +82,13 @@
     return `<span class="grade-badge">${window.escapeHtml(g || '')}</span>`;
   }
 
-  // ────────────────────────────────────────────────
   // 학생 목록 로드
-  // ────────────────────────────────────────────────
   async function loadList() {
     const year = STATE.year;
     sumYear.textContent = year;
     listTbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="ph-light ph-circle-notch spin"></i><h3>${year}학년도 학생 불러오는 중…</h3></div></td></tr>`;
     try {
-      const r = await window.api(`/jungsi/students/list-by-branch?year=${year}`);
+      const r = await window.api(`/jungsi/students/list-by-branch?year=${year}&cohort=${REGISTERED_COHORT}`);
       if (!r || !r.success) throw new Error((r && r.message) || '목록 로딩 실패');
       STATE.students = r.students || [];
       updateSummary();
@@ -75,8 +96,8 @@
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
       console.error('[loadList]', e);
-      window.showToast && window.showToast('목록 로드 실패: ' + e.message, 'error');
-      listTbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="ph-light ph-warning"></i><h3>로딩 실패</h3><p>${window.escapeHtml(e.message)}</p></div></td></tr>`;
+      window.showToast && window.showToast('학생 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
+      listTbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="ph-light ph-warning"></i><h3>목록을 불러오지 못했습니다</h3><p>잠시 후 다시 시도해주세요.</p></div></td></tr>';
     }
   }
 
@@ -88,9 +109,7 @@
     sumG2.textContent = ss.filter(s => s.grade === '2').length;
   }
 
-  // ────────────────────────────────────────────────
   // 등록 목록 렌더 (필터·검색)
-  // ────────────────────────────────────────────────
   function getFiltered() {
     const term = STATE.searchTerm.trim().toLowerCase();
     return STATE.students.filter(s => {
@@ -199,7 +218,7 @@
       renderList();
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
-      window.showToast && window.showToast('수정 실패: ' + e.message, 'error');
+      window.showToast && window.showToast('학생 정보를 수정하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     }
   }
 
@@ -217,7 +236,7 @@
       renderList();
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
-      window.showToast && window.showToast('삭제 실패: ' + e.message, 'error');
+      window.showToast && window.showToast('학생 정보를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     }
   }
 
@@ -230,10 +249,9 @@
     else if (e.target.closest('.cancel-btn')) renderList();
   });
 
-  // ────────────────────────────────────────────────
   // 학생 추가 — 입력 행
-  // ────────────────────────────────────────────────
   function addInputRow(preset = {}) {
+    const defaultGrade = preset.grade || '3';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" name="student_name" placeholder="홍길동" value="${window.escapeHtml(preset.student_name || '')}" autocomplete="off" required></td>
@@ -244,9 +262,9 @@
         <option value="학부모" ${preset.phone_owner === '학부모' ? 'selected' : ''}>학부모</option>
       </select></td>
       <td><select name="grade">
-        <option value="3" ${preset.grade === '3' || !preset.grade ? 'selected' : ''}>3</option>
-        <option value="N" ${preset.grade === 'N' ? 'selected' : ''}>N</option>
-        <option value="2" ${preset.grade === '2' ? 'selected' : ''}>2</option>
+        <option value="3" ${defaultGrade === '3' ? 'selected' : ''}>3</option>
+        <option value="N" ${defaultGrade === 'N' ? 'selected' : ''}>N</option>
+        <option value="2" ${defaultGrade === '2' ? 'selected' : ''}>2</option>
       </select></td>
       <td><select name="gender">
         <option value="남" ${preset.gender === '여' ? '' : 'selected'}>남</option>
@@ -273,23 +291,44 @@
   function handleBulkPaste(rawText, firstTr) {
     const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     if (!lines.length) return;
-    const rows = lines.map(line => {
+    const rows = [];
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index];
       let cols = line.split('\t');
       if (cols.length === 1) cols = line.split(',');
       cols = cols.map(v => v.trim());
-      return {
+      if (!cols[0]) continue;
+      const optionValues = {
+        phone_owner: normalizePastedOption(cols[3], 'phone_owner', '학생'),
+        grade: normalizePastedOption(cols[4], 'grade', '3'),
+        gender: normalizePastedOption(cols[5], 'gender', '남'),
+      };
+      const invalidField = Object.keys(optionValues).find(field => !optionValues[field]);
+      if (invalidField) {
+        const label = PASTE_OPTION_LABELS[invalidField];
+        window.showToast && window.showToast(
+          `붙여넣은 ${index + 1}번째 줄의 ${label}을 확인해주세요.`,
+          'error',
+        );
+        return;
+      }
+      rows.push({
         student_name: cols[0] || '',
         school_name: cols[1] || '',
         phone_number: cols[2] || '',
-        phone_owner: cols[3] || '학생',
-        grade: cols[4] || '3',
-        gender: cols[5] || '남',
-      };
-    }).filter(r => r.student_name);
+        ...optionValues,
+      });
+    }
     if (!rows.length) return;
     fillRow(firstTr, rows[0]);
     for (let i = 1; i < rows.length; i++) addInputRow(rows[i]);
     window.showToast && window.showToast(`${rows.length}명 입력 완료. "명단 추가"를 눌러주세요`, 'info');
+  }
+
+  function normalizePastedOption(value, field, fallback) {
+    const compact = String(value || '').trim().replace(/\s+/g, '');
+    if (!compact) return fallback;
+    return PASTE_OPTION_VALUES[field][compact] || null;
   }
 
   function fillRow(tr, p) {
@@ -338,43 +377,36 @@
       window.showToast && window.showToast('추가할 유효한 학생이 없습니다', 'error');
       return;
     }
-    // 중복 이름 confirm
-    const dups = studentsToAdd
-      .map(s => s.student_name)
-      .filter(n => STATE.students.some(e => e.student_name === n));
-    if (dups.length) {
-      const uniq = [...new Set(dups)];
-      if (!confirm(`이미 등록된 이름이 있습니다:\n[ ${uniq.join(', ')} ]\n그래도 추가할까요? (동명이인 가능)`)) return;
-    }
-
     bulkAddBtn.disabled = true;
     const origLabel = bulkAddBtn.innerHTML;
     bulkAddBtn.innerHTML = '<i class="ph-light ph-circle-notch spin"></i> 추가 중…';
     try {
-      const r = await window.api('/jungsi/students/bulk-add', {
+      const r = await window.api('/jungsi/students/bulk-add-deduplicated', {
         method: 'POST',
         body: JSON.stringify({ 학년도: STATE.year, students: studentsToAdd }),
       });
       if (!r || !r.success) throw new Error((r && r.message) || '추가 실패');
       const inserted = r.insertedCount || 0;
+      const duplicates = r.duplicateCount || 0;
       const errs = r.errors?.length || 0;
-      const msg = errs > 0 ? `${inserted}명 추가 (${errs}명 오류)` : `${inserted}명 추가 완료`;
+      const summary = [`${inserted}명 추가`];
+      if (duplicates > 0) summary.push(`중복 ${duplicates}명 제외`);
+      if (errs > 0) summary.push(`${errs}명 오류`);
+      const msg = duplicates > 0 || errs > 0 ? summary.join(' · ') : `${inserted}명 추가 완료`;
       window.showToast && window.showToast(msg, errs > 0 ? 'error' : 'success');
       addTbody.innerHTML = '';
       addInputRow();
       loadList();
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
-      window.showToast && window.showToast('추가 실패: ' + e.message, 'error');
+      window.showToast && window.showToast('학생을 추가하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
     } finally {
       bulkAddBtn.disabled = false;
       bulkAddBtn.innerHTML = origLabel;
     }
   }
 
-  // ────────────────────────────────────────────────
   // 이벤트 + 초기화
-  // ────────────────────────────────────────────────
   // year/gradeFilter combobox 는 onChange 로 처리
   searchInput.addEventListener('input', window.debounce(() => {
     STATE.searchTerm = searchInput.value;

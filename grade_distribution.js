@@ -6,7 +6,10 @@
 
 (function () {
   const yearSel = window.createCombobox(document.getElementById('yearSel'), {
-    options: [{ value: '2027', label: '2027학년도' }, { value: '2026', label: '2026학년도' }],
+    options: [
+      { value: '2027', label: '2027학년도 (2·3학년)' },
+      { value: '2026', label: '2026학년도' },
+    ],
     value: '2027',
     searchable: false,
     onChange: (v) => {
@@ -81,16 +84,15 @@
     sumCurrentSub.textContent = '데이터 로딩 중';
 
     try {
-      const url = `${window.API_BASE}/jungsi/grade-distribution-by-exam?year=${year}&exam=${encodeURIComponent(exam)}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      const url = `/jungsi/grade-distribution-by-exam?year=${year}&exam=${encodeURIComponent(exam)}`;
+      const data = await window.api(url);
       if (!data || !data.success) throw new Error((data && data.message) || '데이터 로딩 실패');
       STATE.data = data;
       sumTotal.textContent = (data.totalStudents || 0).toLocaleString();
       renderCat(STATE.cat);
     } catch (e) {
       console.error('[load]', e);
-      window.showToast && window.showToast('성적 분포 로드 실패: ' + e.message, 'error');
+      window.showToast && window.showToast('성적 분포를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
       STATE.data = null;
       sumTotal.textContent = '—';
       renderCat(STATE.cat);
