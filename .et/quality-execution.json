@@ -1,0 +1,13 @@
+{
+  "base": "quality-execution",
+  "custom": {
+    "edges": [],
+    "nodes": {},
+    "overrides": {}
+  },
+  "detected": {
+    "fingerprint": "71abad903e27a74242adefb0d0333b6aa978265490a8d7478f0e156afa4de177",
+    "project_kind": "docs_tooling"
+  },
+  "schema_version": 1
+}
