@@ -7,11 +7,16 @@ const {
   interpolateScore,
 } = require('../utils/scoreEstimator.js');
 const { readServerDbConfig } = require('./apply-september-data.js');
-const { normalizeSubject: normalizeHigh2Subject } = require('./migrate-high2-september-scores.js');
 
 const TARGET_YEAR = '2027';
 const TARGET_EXAM = '9월';
 const BACKUP_PATTERN = /^bak_sep26_all_scores_\d{8}_\d{6}$/;
+const HIGH2_SUBJECTS = Object.freeze({
+  korean: '국어',
+  math: '수학',
+  inquiry1: '통합사회',
+  inquiry2: '통합과학',
+});
 
 function backupTableName(suffix) {
   if (!/^\d{8}_\d{6}$/.test(suffix || '')) {
@@ -30,12 +35,12 @@ function buildCutsMap(rows) {
 }
 
 function normalizeSubject(value, grade, high2Rule) {
-  if (String(grade) === '2') return normalizeHigh2Subject(value, high2Rule);
+  if (String(grade) === '2') return HIGH2_SUBJECTS[high2Rule];
   return String(value || '').trim() || null;
 }
 
 function estimateScore(cutsMap, subject, rawScore) {
-  if (rawScore == null) return null;
+  if (rawScore == null || !subject || subject === '미응시') return null;
   const cuts = subject && cutsMap.get(subject);
   if (!cuts || !cuts.length) throw new Error(`missing grade cuts: ${subject || 'empty subject'}`);
   return interpolateScore(rawScore, cuts);
@@ -131,11 +136,19 @@ async function loadTargetRows(connection, tableName = '학생수능성적', stud
 
 function summarizeRows(rows) {
   const gradeCounts = {};
+  let unmappedRawFields = 0;
   for (const row of rows) {
     const grade = String(row.grade || 'unknown');
     gradeCounts[grade] = (gradeCounts[grade] || 0) + 1;
+    if (grade !== '2') {
+      for (const prefix of ['국어', '수학', '탐구1', '탐구2']) {
+        const hasRawScore = row[`${prefix}_원점수`] != null;
+        const hasSubject = String(row[`${prefix}_선택과목`] || '').trim() !== '';
+        if (hasRawScore && !hasSubject) unmappedRawFields += 1;
+      }
+    }
   }
-  return { targetRows: rows.length, gradeCounts };
+  return { targetRows: rows.length, gradeCounts, unmappedRawFields };
 }
 
 async function createBackup(connection, tableName) {

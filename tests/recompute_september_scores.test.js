@@ -9,6 +9,7 @@ const {
   backupTableName,
   buildCutsMap,
   buildScoreUpdate,
+  summarizeRows,
 } = require('../scripts/recompute-september-scores.js');
 
 function currentCuts() {
@@ -42,15 +43,15 @@ test('고3과 N수는 9월 최신 선택과목 컷으로 재계산한다', () =>
   assert.equal(update.historyGrade, 2);
 });
 
-test('고2는 레거시 과목명을 2027 통합 과목으로 정규화한다', () => {
+test('고2는 이전 고3 과목명도 2027 통합 과목으로 정규화한다', () => {
   const update = buildScoreUpdate({
     student_id: 32,
     grade: '2',
-    국어_선택과목: '통합국어', 국어_원점수: 90,
-    수학_선택과목: '통합수학', 수학_원점수: 84,
+    국어_선택과목: '화법과작문', 국어_원점수: 90,
+    수학_선택과목: '확률과통계', 수학_원점수: 84,
     영어_원점수: 90, 한국사_원점수: 40,
-    탐구1_선택과목: null, 탐구1_원점수: 43,
-    탐구2_선택과목: null, 탐구2_원점수: 44,
+    탐구1_선택과목: '동아시아사', 탐구1_원점수: 43,
+    탐구2_선택과목: '사회문화', 탐구2_원점수: 44,
   }, buildCutsMap(currentCuts()));
 
   assert.equal(update.koreanSubject, '국어');
@@ -66,6 +67,25 @@ test('원점수가 있는데 컷이 없으면 성적을 변경하지 않는다',
     grade: '3',
     국어_선택과목: '없는과목', 국어_원점수: 50,
   }, buildCutsMap(currentCuts())), /missing grade cuts/);
+});
+
+test('미응시와 과목 미지정 원점수는 추측 변환하지 않는다', () => {
+  const update = buildScoreUpdate({
+    student_id: 34,
+    grade: '3',
+    국어_선택과목: '미응시', 국어_원점수: 0,
+    탐구1_선택과목: null, 탐구1_원점수: 43,
+  }, buildCutsMap(currentCuts()));
+
+  assert.equal(update.koreanSubject, '미응시');
+  assert.equal(update.korean, null);
+  assert.equal(update.inquiry1Subject, null);
+  assert.equal(update.inquiry1, null);
+  assert.equal(summarizeRows([{
+    grade: '3',
+    탐구1_선택과목: null,
+    탐구1_원점수: 43,
+  }]).unmappedRawFields, 1);
 });
 
 test('전체 재계산 백업명은 충돌 없는 시각만 허용한다', () => {
