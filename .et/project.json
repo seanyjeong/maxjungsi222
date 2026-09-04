@@ -10,7 +10,9 @@
   "quality": {
     "detected_checks": [],
     "additional_checks": [
-      "python3 -m pytest -q tests/test_september_exam_node.py tests/test_september_exam_playwright.py"
+      "python3 -m pytest -q tests/test_september_exam_node.py tests/test_september_exam_playwright.py",
+      "node --test tests/counsel_previous_results.test.js",
+      "python3 -m pytest -q tests/test_counsel_previous_results_playwright.py"
     ]
   },
   "memory": {
