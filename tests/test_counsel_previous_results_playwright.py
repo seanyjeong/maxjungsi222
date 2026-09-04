@@ -197,6 +197,7 @@ def test_previous_results_modal_masks_technical_failures(browser, base_url: str)
     inject_school_card(page, "120", "오류대학교")
     page.get_by_role("button", name="전년도 결과").click()
 
+    page.get_by_text("전년도 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.").wait_for()
     modal_text = page.locator("#previousResultsModalBody").inner_text()
     assert "전년도 결과를 불러오지 못했습니다" in modal_text
     assert all(term not in modal_text for term in ["HTTP", "500", "CORS", "stack", "Error"])
