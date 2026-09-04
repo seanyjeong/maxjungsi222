@@ -5,7 +5,9 @@ python3 -m pytest -q \
   tests/test_september_exam_node.py \
   tests/test_september_exam_playwright.py
 node scripts/september-grade-cuts.js
-node --test tests/migrate_high2_september_scores.test.js
+node --test \
+  tests/migrate_high2_september_scores.test.js \
+  tests/recompute_september_scores.test.js
 
 files=(
   .et/project.json
@@ -19,10 +21,12 @@ files=(
   gradecut_editor.js
   scripts/apply-september-data.js
   scripts/migrate-high2-september-scores.js
+  scripts/recompute-september-scores.js
   scripts/september-grade-cuts.js
   tests/september_exam_support.test.js
   tests/gacha_cohort.test.js
   tests/migrate_high2_september_scores.test.js
+  tests/recompute_september_scores.test.js
   tests/test_september_exam_node.py
   tests/test_september_exam_playwright.py
   topmax_editor.js
@@ -57,8 +61,10 @@ git diff --check -- \
   gradecut_editor.html gradecut_editor.js \
   scripts/apply-september-data.js scripts/etoos-september-grade-cuts.json \
   scripts/migrate-high2-september-scores.js scripts/september-grade-cuts.js \
+  scripts/recompute-september-scores.js \
   tests/september_exam_support.test.js tests/gacha_cohort.test.js \
   tests/migrate_high2_september_scores.test.js \
+  tests/recompute_september_scores.test.js \
   tests/test_september_exam_node.py tests/test_september_exam_playwright.py \
   topmax_editor.html topmax_editor.js utils/examProfiles.js \
   utils/gachaCohort.js utils/examSchedule.js

@@ -17,6 +17,7 @@ REQUIRED_FILES = (
     "scripts/apply-september-data.js",
     "scripts/etoos-september-grade-cuts.json",
     "scripts/migrate-high2-september-scores.js",
+    "scripts/recompute-september-scores.js",
     "scripts/september-grade-cuts.js",
     "utils/examProfiles.js",
     "utils/gachaCohort.js",
