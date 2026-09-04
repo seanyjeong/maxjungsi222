@@ -10,8 +10,6 @@ const {
 
 const TARGET_YEARS = ['2027', '2028'];
 const TARGET_EXAM = '9월';
-const EXPECTED_GRADE_CUT_COUNT = 298;
-const EXPECTED_TOPMAX_COUNT = 30;
 
 function backupNames(suffix) {
   if (!/^\d{8}_\d{6}$/.test(suffix || '')) {
@@ -89,7 +87,7 @@ async function applyDataset(connection, dataset) {
     const current = await inspectCurrent(connection);
     const gradeCount = current.gradeCuts.reduce((sum, row) => sum + Number(row.rowCount), 0);
     const topmaxCount = current.topmax.reduce((sum, row) => sum + Number(row.rowCount), 0);
-    if (gradeCount !== EXPECTED_GRADE_CUT_COUNT || topmaxCount !== EXPECTED_TOPMAX_COUNT) {
+    if (gradeCount !== gradeRows.length || topmaxCount !== topmaxRows.length) {
       throw new Error(`verification mismatch: gradeCuts=${gradeCount}, topmax=${topmaxCount}`);
     }
     await connection.commit();

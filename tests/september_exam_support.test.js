@@ -60,7 +60,7 @@ test('고3 22과목과 고2 4과목 데이터가 완결된다', () => {
 
   const gradeRows = buildGradeCutRows(dataset);
   const topmaxRows = buildTopmaxRows(dataset);
-  assert.equal(gradeRows.length, 298);
+  assert.equal(gradeRows.length, 297);
   assert.equal(topmaxRows.length, 30);
   const uniqueKeys = new Set(gradeRows.map((row) => (
     `${row.year}|${row.exam}|${row.subject}|${row.raw}`
@@ -94,14 +94,20 @@ test('고3 22과목과 고2 4과목 데이터가 완결된다', () => {
   }
 });
 
-test('최고표점 핵심값과 출처 메타데이터를 보존한다', () => {
+test('2026-09-04 이투스 최신 컷과 출처 메타데이터를 보존한다', () => {
   const rows = buildTopmaxRows(dataset);
   const find = (year, subject) => rows.find(
     (row) => row.year === year && row.subject === subject,
   );
+  const findSubject = (year, subject) => dataset.exams[year].subjects.find(
+    (item) => item.name === subject,
+  );
 
-  assert.equal(find('2027', '언어와매체').highest, 143);
-  assert.equal(find('2027', '화학2').highest, 76);
+  assert.match(dataset.meta.capturedAt, /^2026-09-04T/);
+  assert.equal(find('2027', '언어와매체').highest, 142);
+  assert.equal(find('2027', '미적분').highest, 143);
+  assert.equal(find('2027', '화학2').highest, 72);
+  assert.deepEqual(findSubject('2027', '화법과작문').cuts[0], ['88 ~ 89', 129, 96]);
   assert.equal(find('2027', '국어').highest, 144);
   assert.equal(find('2027', '수학').highest, 151);
   assert.equal(find('2028', '국어').highest, 144);
@@ -145,7 +151,7 @@ test('운영 변환기에서 고3·고2 컷과 절대평가 등급을 함께 계
     }));
 
   assert.deepEqual(interpolateScore(90, table('2027', '화법과작문')), {
-    std: 131,
+    std: 130,
     pct: 96,
     grade: 1,
   });

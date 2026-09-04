@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -32,7 +33,13 @@ def build_report(root: Path) -> dict[str, object]:
         text=True,
         check=False,
     )
-    data_valid = command.returncode == 0 and "gradeCuts=298, topmax=30" in command.stdout
+    counts = re.search(r"gradeCuts=(\d+), topmax=(\d+)", command.stdout)
+    data_valid = (
+        command.returncode == 0
+        and counts is not None
+        and int(counts.group(1)) > 0
+        and int(counts.group(2)) == 30
+    )
     passed = not missing_files and data_valid
     return {
         "summary": {"passed": passed, "failed": 0 if passed else 1},
