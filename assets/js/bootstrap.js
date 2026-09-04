@@ -141,6 +141,59 @@ try {
     document.body.appendChild(c);
   }
 
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var existing = document.querySelector('script[data-et-page-asset="' + src + '"]');
+      if (existing) {
+        if (existing.dataset.loaded === '1') resolve();
+        else existing.addEventListener('load', resolve, { once: true });
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = src;
+      script.dataset.etPageAsset = src;
+      script.addEventListener('load', function () {
+        script.dataset.loaded = '1';
+        resolve();
+      }, { once: true });
+      script.addEventListener('error', reject, { once: true });
+      document.head.appendChild(script);
+    });
+  }
+
+  function loadStylesheet(href) {
+    return new Promise(function (resolve, reject) {
+      var existing = document.querySelector('link[data-et-page-asset="' + href + '"]');
+      if (existing) {
+        resolve();
+        return;
+      }
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.dataset.etPageAsset = href;
+      link.addEventListener('load', resolve, { once: true });
+      link.addEventListener('error', reject, { once: true });
+      document.head.appendChild(link);
+    });
+  }
+
+  async function loadPageAssets() {
+    var page = document.body.dataset.page;
+    if (!page) return;
+    try {
+      await loadScript('assets/js/page-modules.js');
+      var config = window.ET_PAGE_MODULES && window.ET_PAGE_MODULES[page];
+      if (!config) return;
+      await Promise.all((config.styles || []).map(loadStylesheet));
+      for (var i = 0; i < (config.scripts || []).length; i += 1) {
+        await loadScript(config.scripts[i]);
+      }
+    } catch (error) {
+      console.warn('[loadPageAssets]', page, error);
+    }
+  }
+
   function bindGlobalEsc() {
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
@@ -181,5 +234,7 @@ try {
         if (catSpan && !catSpan.textContent.trim()) catSpan.textContent = category;
       }
     }
+    // 6. 페이지별 기능은 공통 bootstrap과 분리된 모듈로 로드
+    await loadPageAssets();
   });
 })();
