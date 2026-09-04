@@ -8,7 +8,6 @@
   feature.init(root.document, root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-
   var MODAL_ID = 'modalPreviousResults';
   var TRIGGER_ACTION = 'previous-results';
   var PASS_PATTERN = /^(합격|합|OK|PASS|Y|(?:최초|최종|추가|충원)합(?:격)?)$/i;
@@ -16,7 +15,6 @@
   var LOAD_ERROR_MESSAGE = '전년도 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
   var cache = new Map();
   var activeTrigger = null;
-
   function previousAcademicYear(value) {
     var year = Number(value);
     return Number.isInteger(year) && year > 1 ? year - 1 : null;
@@ -104,6 +102,7 @@
       year: String(year),
       includeApplicants: '1',
       includeApplicantNames: '1',
+      includeAllBranches: '1',
     });
     return '/jungsi/analysis/max-live-results?' + query.toString();
   }
@@ -138,19 +137,21 @@
   }
 
   function createAcademicPanel(documentRef, scores) {
-    var panel = createElement(documentRef, 'section', 'previous-results-panel');
+    var panel = createElement(documentRef, 'section', 'previous-results-panel previous-results-academic');
     panel.appendChild(createElement(documentRef, 'h4', '', '수능 성적'));
-    var list = createElement(documentRef, 'dl', 'previous-results-definition-list');
+    var list = createElement(documentRef, 'dl', 'previous-results-subjects');
     [
       ['국어', scores && scores.korean],
       ['수학', scores && scores.math],
       ['영어', scores && scores.english],
-      ['한국사', scores && scores.history],
       ['탐구 1', scores && scores.inquiry1],
       ['탐구 2', scores && scores.inquiry2],
+      ['한국사', scores && scores.history],
     ].forEach(function (row) {
-      list.appendChild(createElement(documentRef, 'dt', '', row[0]));
-      list.appendChild(createElement(documentRef, 'dd', '', subjectText(row[1])));
+      var item = createElement(documentRef, 'div', 'previous-results-subject');
+      item.appendChild(createElement(documentRef, 'dt', 'label', row[0]));
+      item.appendChild(createElement(documentRef, 'dd', 'value', subjectText(row[1])));
+      list.appendChild(item);
     });
     panel.appendChild(list);
     return panel;
@@ -167,7 +168,7 @@
   }
 
   function createPracticalPanel(documentRef, applicant) {
-    var panel = createElement(documentRef, 'section', 'previous-results-panel');
+    var panel = createElement(documentRef, 'section', 'previous-results-panel previous-results-practical');
     panel.appendChild(createElement(documentRef, 'h4', '', '실기 기록'));
     var events = normalizePracticalEvents(applicant);
     if (!events.length) {
@@ -237,7 +238,7 @@
     }
     var intro = createElement(documentRef, 'div', 'previous-results-intro');
     intro.appendChild(createElement(documentRef, 'strong', '', '합격자 ' + applicants.length + '명'));
-    intro.appendChild(createElement(documentRef, 'span', '', '맥스라이브에 확정 입력된 최초합·최종합·추가합 결과 기준'));
+    intro.appendChild(createElement(documentRef, 'span', '', '맥스 전체 교육원 합격자 · 최초합·최종합·추가합 확정 결과 기준'));
     body.appendChild(intro);
     var list = createElement(documentRef, 'div', 'previous-results-list');
     applicants.forEach(function (applicant, index) {

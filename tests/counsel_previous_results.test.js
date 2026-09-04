@@ -59,7 +59,7 @@ test('normalizePracticalEvents merges detailed scores with raw-only event record
   ]);
 });
 
-test('buildResultsPath requests named applicants without widening the branch scope', () => {
+test('buildResultsPath requests named applicants across all Max branches', () => {
   const path = results.buildResultsPath('119/unsafe', 2026);
 
   assert.match(path, /^\/jungsi\/analysis\/max-live-results\?/);
@@ -67,7 +67,7 @@ test('buildResultsPath requests named applicants without widening the branch sco
   assert.match(path, /year=2026/);
   assert.match(path, /includeApplicants=1/);
   assert.match(path, /includeApplicantNames=1/);
-  assert.doesNotMatch(path, /includeAllBranches/);
+  assert.match(path, /includeAllBranches=1/);
 });
 
 test('technical failures are replaced with a Korean plain-language message', () => {

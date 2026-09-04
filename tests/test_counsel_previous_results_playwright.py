@@ -142,6 +142,7 @@ def test_previous_results_modal_shows_only_accepted_students(browser, base_url: 
     assert modal.get_by_role("dialog").get_attribute("aria-labelledby") == "previousResultsModalTitle"
     assert "2026학년도 합격자" in page.locator("#previousResultsModalTitle").inner_text()
     assert modal.get_by_text("합격자 2명").is_visible()
+    assert modal.get_by_text("맥스 전체 교육원 합격자").is_visible()
     assert modal.get_by_text("최종합학생").is_visible()
     assert modal.get_by_text("최초합학생").is_visible()
     assert modal.get_by_text("일단계학생").count() == 0
@@ -150,6 +151,19 @@ def test_previous_results_modal_shows_only_accepted_students(browser, base_url: 
     assert "수능 환산" in modal.inner_text()
     assert "제자리멀리뛰기" in modal.inner_text()
     assert "기록 280 · 환산 95점 · 1감" in modal.inner_text()
+    expanded = modal.locator(".previous-results-row[open]")
+    subject_cells = expanded.locator(".previous-results-subject")
+    assert subject_cells.locator(".label").all_text_contents() == [
+        "국어", "수학", "영어", "탐구 1", "탐구 2", "한국사",
+    ]
+    subject_positions = subject_cells.evaluate_all(
+        "elements => elements.map(element => Math.round(element.getBoundingClientRect().top))"
+    )
+    assert len(set(subject_positions)) == 1
+    academic_box = expanded.locator(".previous-results-academic").bounding_box()
+    practical_box = expanded.locator(".previous-results-practical").bounding_box()
+    assert academic_box and practical_box
+    assert practical_box["y"] >= academic_box["y"] + academic_box["height"]
 
     assert requests == [{
         "query": {
@@ -157,6 +171,7 @@ def test_previous_results_modal_shows_only_accepted_students(browser, base_url: 
             "year": ["2026"],
             "includeApplicants": ["1"],
             "includeApplicantNames": ["1"],
+            "includeAllBranches": ["1"],
         },
         "authorization": f"Bearer {jwt_token()}",
     }]
