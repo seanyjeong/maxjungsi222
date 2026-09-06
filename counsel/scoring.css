@@ -1,0 +1,9 @@
+.uni-card[data-practical-status]:not([data-practical-status="ready"]) .score-silgi {
+  display: block;
+  max-width: 70%;
+  white-space: normal;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,413 @@
+  .gun-count {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px; color: var(--text-2);
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--surface-2);
+  }
+  .gun-count.full { background: var(--accent-soft); color: var(--accent); }
+  .gun-count.over { background: var(--danger-soft); color: var(--danger); }
+
+  .gun-empty {
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    padding: 32px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .gun-empty i { font-size: 22px; display: block; margin: 0 auto 8px; color: var(--text-3); }
+
+  /* ============ UNIVERSITY CARD (Full Spec) ============ */
+  .uni-card-shell {
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+    transition: transform 280ms var(--ease-out), box-shadow 280ms var(--ease-out), border-color 200ms var(--ease);
+    position: relative;
+  }
+  .uni-card-shell:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: var(--surface-3); }
+
+  .uni-card {
+    background: transparent;
+    border-radius: var(--r-lg);
+    padding: 14px 14px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .uni-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px; margin-bottom: 12px;
+  }
+  .uni-title-wrap { min-width: 0; flex: 1; }
+  .uni-name {
+    font-size: 15px; font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text); line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .uni-dept { font-size: 12px; color: var(--text-2); margin-top: 3px; letter-spacing: -0.01em; }
+  .uni-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 5px;
+    background: var(--surface-2); color: var(--text-2);
+    font-weight: 600; letter-spacing: 0.01em;
+  }
+  .badge.accent { background: var(--accent-soft); color: var(--accent); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.danger { background: var(--danger-soft); color: var(--danger); }
+  .badge.info { background: var(--info-soft); color: var(--info); }
+  .uni-delete {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: transparent; border: none;
+    color: var(--text-3);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: all 180ms var(--ease);
+    flex-shrink: 0;
+  }
+  .uni-delete i { font-size: 15px; }
+  .uni-delete:hover { background: var(--danger-soft); color: var(--danger); }
+
+  /* Top 3 metrics strip */
+  .uni-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .uni-metric {
+    background: var(--surface-2);
+    padding: 7px 9px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .uni-metric .label {
+    font-size: 9px; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 600; font-family: 'Geist', sans-serif;
+  }
+  .uni-metric .value {
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .uni-metric.top10 .value { color: var(--info); }
+  .uni-metric.max .value { color: var(--accent); }
+
+  /* Breakdown table */
+  .uni-breakdown {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 2px 0;
+    margin-bottom: 10px;
+  }
+  .uni-breakdown-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .uni-breakdown-row:last-child { border-bottom: none; }
+  .uni-breakdown-row .label {
+    font-size: 11px; color: var(--text-2); font-weight: 500;
+  }
+  .uni-breakdown-row .value {
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .uni-breakdown-row .value .deduct {
+    font-size: 10px; color: var(--warn);
+    margin-left: 4px; font-weight: 500;
+  }
+  .uni-breakdown-row.total {
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .uni-breakdown-row.total .label { color: var(--text); font-weight: 600; font-size: 11.5px; }
+  .uni-breakdown-row.total .value { font-size: 17px; color: var(--accent); }
+
+  /* Diff chip */
+  .uni-diff-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 4px 8px;
+    margin-top: -4px;
+  }
+  .uni-diff-row .label {
+    font-size: 10px; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 600; font-family: 'Geist', sans-serif;
+  }
+  .uni-diff {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; padding: 3px 7px; border-radius: 5px;
+    font-weight: 600;
+  }
+  .uni-diff.above { background: var(--accent-soft); color: var(--accent); }
+  .uni-diff.below { background: var(--danger-soft); color: var(--danger); }
+  .uni-diff.near { background: var(--warn-soft); color: var(--warn); }
+
+  /* Input section */
+  .uni-inputs {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  .input-row {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--border-soft);
+  }
+  .input-row:last-child { border-bottom: none; }
+  .input-row .label {
+    font-size: 11px; color: var(--text-2);
+    font-weight: 500;
+  }
+  .input-row input {
+    height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 12px; font-family: inherit; color: var(--text);
+    outline: none;
+    transition: all 160ms var(--ease);
+  }
+  .input-row input:hover { border-color: var(--text-3); }
+  .input-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
+  .input-row .score-out {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    color: var(--text);
+    min-width: 80px;
+    text-align: right;
+  }
+  .input-row .score-out .deduct {
+    font-size: 10px; color: var(--warn);
+    margin-left: 3px; font-weight: 500;
+  }
+  .input-row .score-out.empty { color: var(--text-3); font-weight: 400; }
+
+  .uni-memo {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 12px; color: var(--text);
+    letter-spacing: -0.005em; line-height: 1.45;
+    outline: none;
+    transition: border-color 180ms var(--ease);
+  }
+  .uni-memo:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
+
+  .uni-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border-soft);
+    gap: 8px;
+  }
+  .mini-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 500;
+    color: var(--text-2);
+    background: transparent; border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    letter-spacing: -0.01em;
+    transition: all 180ms var(--ease);
+  }
+  .mini-btn i { font-size: 13px; }
+  .mini-btn:hover { background: var(--surface-2); color: var(--text); }
+
+  /* DRAWER + 후보 카드 — assets/css/drawer.css 로 이전. drawer 사용 페이지에 link 추가. */
+
+  /* ============ MODAL ============ */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(9,9,11,0.4);
+    display: grid; place-items: center;
+    padding: 40px 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 300ms var(--ease);
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .dark .modal-overlay { background: rgba(0,0,0,0.65); }
+
+  .modal-shell {
+    border-radius: var(--r-2xl);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    max-width: 720px; width: 100%;
+    max-height: 85vh;
+    transform: translateY(16px) scale(0.98);
+    transition: transform 400ms var(--ease-out);
+    display: flex;
+    box-shadow: var(--shadow-modal);
+  }
+  .modal-overlay.open .modal-shell { transform: translateY(0) scale(1); }
+  .modal-shell.wide { max-width: 920px; }
+
+  .modal {
+    background: transparent;
+    border-radius: var(--r-2xl);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+  }
+  .modal-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .modal-eyebrow {
+    font-size: 10px;
+    padding: 3px 8px; border-radius: 5px;
+    background: var(--accent-soft); color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.12em;
+    font-weight: 700; font-family: 'Geist', sans-serif;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; letter-spacing: -0.03em; }
+  .modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+
+  .event-select-wrap {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .event-select-wrap label {
+    font-size: 11px; color: var(--text-3);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    font-family: 'Geist', sans-serif;
+  }
+  .event-select-wrap select {
+    height: 34px; padding: 0 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-size: 13px; color: var(--text);
+    font-family: inherit;
+    outline: none;
+  }
+
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .score-table caption {
+    font-size: 11px; color: var(--text-3);
+    text-align: left; padding-bottom: 8px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'Geist', sans-serif;
+  }
+  .score-table th, .score-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-soft);
+    text-align: left;
+  }
+  .score-table thead th {
+    font-size: 10px; color: var(--text-3);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    font-family: 'Geist', sans-serif;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .score-table td.num { font-family: 'Geist Mono', monospace; font-weight: 600; color: var(--text); }
+  .score-table tr:last-child td { border-bottom: none; }
+  .score-table tbody tr:hover { background: var(--surface-2); }
+
+  /* cross-gun modal grid */
+  .cross-gun-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .cross-gun-card {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+  .cross-gun-card .label {
+    font-size: 10px; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    font-weight: 600; font-family: 'Geist', sans-serif;
+    margin-bottom: 10px;
+  }
+  .cross-gun-card ol {
+    margin: 0; padding-left: 18px;
+    font-size: 13px; line-height: 1.8; color: var(--text);
+  }
+  .cross-gun-card ol span {
+    font-family: 'Geist Mono', monospace;
+    color: var(--text-3); font-size: 11px;
+  }
+
+  /* ============ TOAST ============ */
+  .toast-container {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    z-index: 200;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    min-width: 240px; max-width: 420px;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-modal);
+    transform: translateY(16px);
+    opacity: 0;
+    transition: transform 360ms var(--ease-spring), opacity 240ms linear;
+    pointer-events: auto;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-inner {
+    background: transparent;
+    border-radius: var(--r-lg);
+    padding: 11px 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .toast-inner i {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .toast.success .toast-inner i { color: var(--accent); }
+  .toast.error .toast-inner i { color: var(--danger); }
+  .toast.info .toast-inner i { color: var(--info); }
+
+  /* ============ EMPTY STATE ============ */
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-3);
+  }
+  .empty-state i { font-size: 32px; margin-bottom: 10px; color: var(--text-3); }
+  .empty-state p { font-size: 13px; margin: 0; }
+
+  /* ============ LOADING SPINNER ============ */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 900ms linear infinite; }
+
+  /* ============ KBD ============ */

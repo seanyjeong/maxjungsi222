@@ -110,7 +110,8 @@ test('all Jungsi school-information surfaces use the common or detailed renderer
     assert.match(html, /assets\/js\/competition-rate-observer\.js/);
     assert.match(html, /data-competition-rate/);
   }
-  for (const file of ['counsel.html', 'final_apply_list.js', 'cut_editor.js', 'university_overview.js']) {
+  assert.match(fs.readFileSync(path.join(ROOT, 'counsel.html'), 'utf8'), /counsel\/cards-1\.js/);
+  for (const file of ['counsel/cards-1.js', 'final_apply_list.js', 'cut_editor.js', 'university_overview.js']) {
     const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
     assert.match(source, /renderSchoolTags/);
   }

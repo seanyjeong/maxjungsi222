@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'counsel.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'counsel', 'student-1.js'), 'utf8');
 
 function extractFunction(name) {
   const start = html.indexOf(`function ${name}`);
