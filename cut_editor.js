@@ -37,6 +37,7 @@
 
   // U_ID -> { 지점_수능컷, 지점_총점컷, 맥스_수능컷, 맥스_총점컷, '25년총점컷', '26년총점컷' }
   const dirty = new Map();
+  let saving = false;
 
   function detectAdmin() {
     try {
@@ -95,8 +96,8 @@
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
       console.error('[load]', e);
-      tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="ph-light ph-warning"></i><h3>로딩 실패</h3><p>${window.escapeHtml(e.message)}</p></div></td></tr>`;
-      window.showToast && window.showToast('컷 로드 실패: ' + e.message, 'error');
+      tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><h3>컷 점수를 불러오지 못했습니다</h3><p>잠시 후 다시 시도해 주세요.</p></div></td></tr>';
+      window.showToast && window.showToast('컷 점수를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     }
   }
 
@@ -158,7 +159,7 @@
     }
     const isAdmin = STATE.isAdmin;
     tbody.innerHTML = list.map(r => `
-      <tr data-uid="${r.U_ID}">
+      <tr data-uid="${r.U_ID}" class="${dirty.has(Number(r.U_ID)) ? 'dirty' : ''}">
         <td class="uni-dept">
           <div class="univ-name">${window.escapeHtml(r.univ)}${(window.renderSchoolTags && window.renderSchoolTags(r.tags, STATE.year)) || ''}</div>
           <div class="dept-name">${window.escapeHtml(r.dept)}</div>
@@ -181,6 +182,8 @@
     const cur = dirty.get(uid) || { U_ID: uid };
     cur[field] = value;
     dirty.set(uid, cur);
+    const row = STATE.rows.find(item => Number(item.U_ID) === uid);
+    if (row) row[field] = value;
     const tr = tbody.querySelector(`tr[data-uid="${uid}"]`);
     if (tr) tr.classList.add('dirty');
     updateDirtyBadge();
@@ -189,7 +192,7 @@
   function updateDirtyBadge() {
     const n = dirty.size;
     if (n > 0) {
-      saveBtn.disabled = false;
+      saveBtn.disabled = saving;
       dirtyCountEl.textContent = n;
       dirtyCountEl.style.display = '';
     } else {
@@ -228,35 +231,48 @@
   }, 200));
 
   saveBtn.addEventListener('click', async () => {
-    if (dirty.size === 0) return;
-    const updates = [...dirty.values()];
-    saveBtn.disabled = true;
-    const orig = saveBtn.innerHTML;
-    saveBtn.innerHTML = '<i class="ph-light ph-circle-notch spin"></i> 저장 중…';
+    if (dirty.size === 0 || saving) return;
+    const invalid = Array.from(tbody.querySelectorAll('.cut-input')).find(input => !input.checkValidity());
+    if (invalid) {
+      invalid.focus();
+      window.showToast('컷 점수는 숫자로, 소수점 둘째 자리까지 입력해 주세요.', 'error');
+      return;
+    }
+    const changes = [...dirty.values()].map(change => ({ ...change }));
+    const year = STATE.year;
+    saving = true;
+    updateDirtyBadge();
+    saveBtn.setAttribute('aria-busy', 'true');
+    const icon = saveBtn.querySelector('i');
+    const originalIcon = icon.className;
+    icon.className = 'ph-light ph-circle-notch spin';
     try {
-      const r = await window.api('/jungsi/cutoffs/set', {
-        method: 'POST',
-        body: JSON.stringify({ year: STATE.year, updates }),
-      });
-      if (!r || !r.success) throw new Error((r && r.message) || '저장 실패');
-      updates.forEach(u => {
-        const item = STATE.rows.find(r => r.U_ID === u.U_ID);
-        if (item) Object.entries(u).forEach(([k, v]) => {
-          if (k === 'U_ID') return;
-          item[k] = v === '' ? null : Number(v);
+      const { updates } = await window.CutoffSave.saveChanges(window.api, year, changes, STATE.isAdmin);
+      changes.forEach(change => {
+        const pending = dirty.get(change.U_ID);
+        if (!pending) return;
+        Object.entries(change).forEach(([field, value]) => {
+          if (field !== 'U_ID' && pending[field] === value) delete pending[field];
         });
+        if (Object.keys(pending).length === 1) dirty.delete(change.U_ID);
       });
-      tbody.querySelectorAll('tr.dirty').forEach(tr => tr.classList.remove('dirty'));
-      dirty.clear();
-      updateDirtyBadge();
+      updates.forEach(update => {
+        const item = STATE.rows.find(row => Number(row.U_ID) === update.U_ID);
+        if (item) Object.assign(item, update, dirty.get(update.U_ID));
+      });
+      render();
       updateSummary();
       window.showToast && window.showToast(`${updates.length}건 저장 완료`, 'success');
-      saveBtn.innerHTML = orig;
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
-      window.showToast && window.showToast('저장 실패: ' + e.message, 'error');
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = orig;
+      const message = e.message === window.CutoffSave.VERIFY_ERROR
+        ? window.CutoffSave.VERIFY_ERROR : window.CutoffSave.SAVE_ERROR;
+      window.showToast && window.showToast(message, 'error');
+    } finally {
+      saving = false;
+      icon.className = originalIcon;
+      saveBtn.removeAttribute('aria-busy');
+      updateDirtyBadge();
     }
   });
 
@@ -286,6 +302,11 @@
     options: [{ value: '2027', label: '2027학년도' }, { value: '2026', label: '2026학년도' }],
     value: '2027', searchable: false,
     onChange: (v) => {
+      if (saving) {
+        yearCombo.setValue(STATE.year);
+        window.showToast('저장이 끝난 뒤 학년도를 변경해 주세요.', 'info');
+        return;
+      }
       if (dirty.size > 0 && !confirm(`저장하지 않은 변경 ${dirty.size}건이 있습니다. 학년도 변경 시 사라집니다. 계속할까요?`)) {
         yearCombo.setValue(STATE.year);
         return;

@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="assets/css/modal.css">
   <link rel="stylesheet" href="assets/css/combobox.css">
   <!-- 페이지 전용 -->
-  <link rel="stylesheet" href="silgi-editor.css">
+  <link rel="stylesheet" href="silgi-editor.css?v=20260906">
 </head>
 <body data-page="silgi_editor" data-title="실기 에디터" data-category="관리자">
 
@@ -66,6 +66,11 @@
           <div class="table-meta" id="tableMeta"></div>
         </div>
 
+        <div class="practical-edit-bar">
+          <div><p class="note">종목명은 해당 종목의 남녀 배점표에 함께 적용됩니다. 기록·배점 수정 후 저장해 주세요.</p>
+            <span id="practicalEditStatus" role="status">변경사항 없음</span></div>
+          <button type="button" class="btn btn-primary" id="savePracticalEdits" disabled>수정사항 저장</button>
+        </div>
         <!-- 종목별 섹션 컨테이너 (JS 렌더) -->
         <div id="scoreSections" class="score-sections">
           <div class="empty-state-big">
@@ -147,6 +152,8 @@
   <script src="assets/js/bootstrap.js"></script>
   <script src="assets/js/combobox.js"></script>
   <!-- 페이지 전용 -->
-  <script src="silgi-editor.js"></script>
+  <script src="assets/js/pages/practical-save.js?v=20260906"></script>
+  <script src="assets/js/pages/practical-editor-table.js?v=20260906"></script>
+  <script src="silgi-editor.js?v=20260906"></script>
 </body>
 </html>

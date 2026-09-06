@@ -36,6 +36,7 @@
   };
 
   const _esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s == null ? '' : s));
+  const tableEditor = window.createPracticalTableEditor({ element: sectionsEl, meta: tableMeta, api: window.api, toast });
 
   // ── combobox 생성 ──
   const yearCombo = window.createCombobox(document.getElementById('yearSel'), {
@@ -47,6 +48,7 @@
     value: '2027',
     searchable: false,
     onChange: (v) => {
+      if (!tableEditor.canLeave()) { yearCombo.setValue(STATE.year); return; }
       STATE.year = v;
       STATE.uid = null;
       STATE.selectedSchool = null;
@@ -61,8 +63,10 @@
     placeholder: '학교/학과를 선택하세요…',
     searchPlaceholder: '대학·학과 검색…',
     onChange: (v, opt) => {
+      if (!tableEditor.canLeave()) { schoolCombo.setValue(STATE.uid || ''); return; }
       STATE.uid = v || null;
       STATE.selectedSchool = opt || null;
+      resetTable('배점표 불러오기를 눌러 주세요.');
     },
   });
 
@@ -98,6 +102,7 @@
   }
 
   function resetTable(hintLabel) {
+    tableEditor.reset();
     tableTitle.innerHTML = '배점표 <span class="dim">(U_ID: —)</span>';
     tableMeta.textContent = '';
     sectionsEl.innerHTML = _bigEmpty(hintLabel || '—', 'ph-circle-notch spin');
@@ -109,10 +114,12 @@
 
   // ── 학교 목록 로드 ──
   async function loadSchools() {
+    const year = STATE.year;
     schoolCombo.disable && schoolCombo.disable();
     schoolCombo.setOptions([]);
     try {
-      const r = await window.api(`/jungsi/schools/${encodeURIComponent(STATE.year)}`);
+      const r = await window.api(`/jungsi/schools/${encodeURIComponent(year)}`);
+      if (year !== STATE.year) return;
       if (!r || !r.success) throw new Error((r && r.message) || '학교 목록 로딩 실패');
 
       const rows =
@@ -138,13 +145,14 @@
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
       console.error('[loadSchools]', e);
-      emptyTable('학교 목록 로드 실패: ' + e.message, 'ph-warning');
-      toast('학교 목록 로드 실패: ' + e.message, 'error');
+      emptyTable('학교 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', 'ph-warning');
+      toast('학교 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     }
   }
 
   // ── 배점표 로드 ──
   async function loadScores() {
+    if (!tableEditor.canLeave()) return;
     if (!STATE.uid || !STATE.year) {
       toast('학년도와 학교를 모두 선택하세요', 'warn');
       return;
@@ -155,82 +163,24 @@
     resetTable(`${year}학년도 배점표 불러오는 중…`);
     try {
       const r = await window.api(`/jungsi/practical-scores/${encodeURIComponent(uid)}/${encodeURIComponent(year)}`);
+      if (uid !== STATE.uid || year !== STATE.year) return;
       if (!r || !r.success) throw new Error((r && r.message) || '배점표 불러오기 실패');
 
       const labelText = school && school.label ? school.label : `U_ID ${uid}`;
       tableTitle.innerHTML = `배점표 <span class="dim">· ${_esc(labelText)} (U_ID: ${_esc(uid)})</span>`;
-      renderTable(r.scores || []);
+      tableEditor.mount(r.scores || [], { uid, year });
     } catch (e) {
       if (e.message === 'auth' || e.message === 'no-token') return;
       console.error('[loadScores]', e);
-      emptyTable('배점표 로드 실패: ' + e.message, 'ph-warning');
-      toast('배점표 로드 실패: ' + e.message, 'error');
+      emptyTable('배점표를 불러오지 못했습니다. 다시 불러오기를 눌러 주세요.', 'ph-warning');
+      toast('배점표를 불러오지 못했습니다. 다시 불러오기를 눌러 주세요.', 'error');
     }
-  }
-
-  function renderTable(scores) {
-    const all = Array.isArray(scores) ? scores : [];
-    if (all.length === 0) {
-      tableMeta.textContent = '0 건';
-      emptyTable('데이터가 없습니다. 아래에서 추가하세요.', 'ph-note-pencil');
-      return;
-    }
-
-    const groups = new Map();
-    for (const row of all) {
-      const name = row.종목명 || '(미지정)';
-      if (!groups.has(name)) groups.set(name, { 남: [], 여: [] });
-      const key = (row.성별 === '여' || row.성별 === 'F') ? '여' : '남';
-      groups.get(name)[key].push(row);
-    }
-
-    const totalM = all.filter(r => r.성별 !== '여' && r.성별 !== 'F').length;
-    const totalF = all.length - totalM;
-    tableMeta.textContent = `${groups.size} 종목 · ${all.length} 건 (남 ${totalM} · 여 ${totalF})`;
-
-    const rowHtml = (row) => `
-          <tr data-id="${_esc(row.id)}">
-            <td class="col-id">${_esc(row.id)}</td>
-            <td class="col-rec">${_esc(row.기록)}</td>
-            <td class="col-score">${_esc(row.배점)}</td>
-            <td class="col-del">
-              <button type="button" class="btn-row-del" data-action="delete" data-id="${_esc(row.id)}" aria-label="삭제">
-                <i class="ph-light ph-trash"></i>
-              </button>
-            </td>
-          </tr>`;
-
-    const miniTable = (rows, label) => `
-        <div class="mini-card">
-          <div class="mini-head"><span>${label}</span><em>${rows.length}</em></div>
-          <div class="mini-wrap">
-            <table class="silgi-table">
-              <colgroup><col style="width:60px"><col><col><col style="width:48px"></colgroup>
-              <thead><tr><th>ID</th><th>기록</th><th>배점</th><th></th></tr></thead>
-              <tbody>${rows.length ? rows.map(rowHtml).join('') : `<tr><td colspan="4" class="empty-mini">—</td></tr>`}</tbody>
-            </table>
-          </div>
-        </div>`;
-
-    const sectionHtml = (name, g) => `
-      <section class="score-section">
-        <header class="section-head">
-          <div class="section-title"><i class="ph-light ph-barbell"></i> ${_esc(name)}</div>
-          <div class="section-meta">남 ${g.남.length} · 여 ${g.여.length}</div>
-        </header>
-        <div class="section-grid">
-          ${miniTable(g.남, '남')}
-          ${miniTable(g.여, '여')}
-        </div>
-      </section>`;
-
-    sectionsEl.innerHTML = Array.from(groups.entries())
-      .map(([name, g]) => sectionHtml(name, g)).join('');
   }
 
   // ── 한 줄 추가 ──
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!tableEditor.canLeave()) return;
     if (!STATE.uid || !STATE.year) {
       toast('먼저 학교를 조회해주세요', 'warn');
       return;
@@ -258,12 +208,13 @@
       loadScores();
     } catch (err) {
       if (err.message === 'auth' || err.message === 'no-token') return;
-      toast('저장 실패: ' + err.message, 'error');
+      toast('저장하지 못했습니다. 입력값을 확인한 뒤 다시 저장해 주세요.', 'error');
     }
   });
 
   // ── 대량 추가 ──
   bulkSaveBtn.addEventListener('click', async () => {
+    if (!tableEditor.canLeave()) return;
     if (!STATE.uid || !STATE.year) {
       toast('먼저 학교를 조회해주세요', 'warn');
       return;
@@ -304,7 +255,7 @@
       loadScores();
     } catch (err) {
       if (err.message === 'auth' || err.message === 'no-token') return;
-      toast('대량 저장 실패: ' + err.message, 'error');
+      toast('대량 저장하지 못했습니다. 입력값을 확인한 뒤 다시 저장해 주세요.', 'error');
     }
   });
 
@@ -314,6 +265,7 @@
     if (!btn) return;
     const id = btn.dataset.id;
     if (!id) return;
+    if (!tableEditor.canLeave()) return;
     if (!confirm(`정말로 ID ${id} 항목을 삭제하시겠습니까?`)) return;
     btn.disabled = true;
     try {
@@ -326,7 +278,7 @@
     } catch (err) {
       btn.disabled = false;
       if (err.message === 'auth' || err.message === 'no-token') return;
-      toast('삭제 실패: ' + err.message, 'error');
+      toast('삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     }
   }
   sectionsEl.addEventListener('click', onRowClick);

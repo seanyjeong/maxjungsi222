@@ -10,6 +10,18 @@ node --test \
   tests/recompute_september_scores.test.js
 
 files=(
+  cut_editor.html
+  cut_editor.js
+  silgi-editor.html
+  silgi-editor.js
+  silgi-editor.css
+  assets/js/pages/cutoff-save.js
+  assets/js/pages/practical-save.js
+  assets/js/pages/practical-editor-table.js
+  tests/cutoff_save.test.js
+  tests/practical_save.test.js
+  tests/test_cut_editor_playwright.py
+  tests/test_practical_editor_playwright.py
   .et/project.json
   .et/quality-execution.json
   _vultr_backend/grade_distribution_by_exam.js
@@ -34,6 +46,10 @@ files=(
   utils/gachaCohort.js
   utils/examSchedule.js
 )
+
+for editor_file in cut_editor.js silgi-editor.js assets/js/pages/cutoff-save.js assets/js/pages/practical-save.js assets/js/pages/practical-editor-table.js; do
+  node --check "$editor_file"
+done
 
 oversized="$(wc -l "${files[@]}" | awk '$2 != "total" && $1 > 500 {print $0}')"
 if [[ -n "$oversized" ]]; then

@@ -291,6 +291,35 @@ table.silgi-table {
 }
 .btn-row-del i { font-size: 13px; }
 
+.practical-edit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.practical-edit-bar .note { margin: 0 0 6px; }
+#practicalEditStatus { font-size: 13px; color: var(--text-2); }
+.practical-edit-input, .practical-event-input {
+  min-width: 0;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.practical-edit-input { text-align: center; }
+.practical-event-input { width: min(360px, 100%); }
+.section-title { min-width: 0; flex: 1; }
+.practical-edit-input:focus-visible, .practical-event-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.practical-edit-input:disabled, .practical-event-input:disabled { opacity: .65; }
+
 /* ── 빈 상태 ── */
 .empty-state { padding: 60px 24px; text-align: center; color: var(--text-3); }
 .empty-state i { font-size: 40px; color: var(--text-3); margin-bottom: 12px; display: block; }
@@ -414,4 +443,13 @@ table.silgi-table {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .app-shell { grid-template-columns: 0 minmax(0, 1fr) !important; }
+  .main { min-width: 0; }
+  .page-content { padding: 0 12px 24px; }
+  #schoolSearch { min-width: 0 !important; flex-basis: 100% !important; }
+  .bulk-paste-area textarea { min-width: 0; width: 100%; }
+  .section-head { flex-wrap: wrap; }
 }
