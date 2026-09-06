@@ -12,7 +12,7 @@
     "additional_checks": [
       "python3 -m pytest -q tests/test_september_exam_node.py tests/test_september_exam_playwright.py",
       "python3 -m pytest -q tests/test_counsel_previous_results_node.py tests/test_counsel_previous_results_playwright.py",
-      "node --test tests/*.test.js",
+      "python3 -m pytest -q tests/test_editor_save_node.py",
       "python3 -m pytest -q tests/test_cut_editor_playwright.py tests/test_practical_editor_playwright.py tests/test_live_hub_year_playwright.py"
     ]
   },

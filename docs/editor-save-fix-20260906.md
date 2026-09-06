@@ -30,7 +30,8 @@
 - 대상 파일: 두 편집 HTML/JS/CSS와 새 저장·실기표 모듈. HTML 참조 버전을 갱신한다.
 - 순서: 후보 커밋 확정 → high-risk 검증 → `git push origin HEAD:main`
   → Pages 빌드 커밋 확인 → 공개 파일 일치·화면 로드 확인.
-- 복구: 이 변경 커밋을 `git revert <release-commit>` 후 `git push origin HEAD:main`.
+- 복구: 검증 설정 커밋과 기능 커밋을 역순으로 `git revert <validation-commit> <feature-commit>`
+  후 `git push origin HEAD:main`.
   기준 커밋은 `4599b96e176aa84d23cdece778a18765e2cf1717`이다.
 - DB·환경변수·서버 변경 및 재시작 없음. 시험용 운영 데이터 수정 없음.
   DB 마이그레이션/DB 복구는 해당 없음.
