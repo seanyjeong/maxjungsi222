@@ -250,11 +250,15 @@
     addBtn.disabled = true;
     const originalHtml = addBtn.innerHTML;
     addBtn.innerHTML = `<i class="ph-light ph-circle-notch spin"></i> 담는 중...`;
+    const context = captureScoreContext();
 
     try {
       const formula = await fetchFormulaDetails(uid);
+      if (!context.isCurrent()) return;
       if (!formula) throw new Error('요강 조회 실패');
-      const suneungScore = await calculateSuneung(uid) || 0;
+      const suneungScore = await calculateSuneung(uid, context);
+      if (!context.isCurrent()) return;
+      if (suneungScore == null) throw new Error('score-unavailable');
       const card = createCardEl(formula, suneungScore, null);
       appendCardToColumn(gun, card);
       fetchAndDisplayDeptStats(card, uid);
@@ -265,7 +269,7 @@
       console.error('[담기]', err);
       addBtn.disabled = false;
       addBtn.innerHTML = originalHtml;
-      showToast(`담기 실패: ${err.message || '오류'}`, 'error');
+      if (context.isCurrent()) showToast('상담 점수를 계산하지 못했습니다. 잠시 후 다시 담아 주세요.', 'error');
     }
   });
 

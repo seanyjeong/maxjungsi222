@@ -1,22 +1,35 @@
 
 
   /* ====== 학생 목록 로드 ====== */
+  let studentLoadVersion = 0;
+  let pendingStudentId = null;
   async function loadStudents() {
-    const previousStudentId = STATE.selectedStudent?.student_id || null;
+    const version = ++studentLoadVersion;
+    const previousStudentId = STATE.selectedStudent?.student_id || pendingStudentId;
+    pendingStudentId = previousStudentId;
     const year = document.getElementById('yearSel').value;
     const exam = document.getElementById('examSel').value;
+    const isCurrent = () => version === studentLoadVersion &&
+      document.getElementById('yearSel').value === year && document.getElementById('examSel').value === exam;
+    STATE.selectedStudent = null;
+    STATE.allStudents = [];
+    clearTimeout(_saveTimer);
+    clearCounselBoard();
+    clearScoreUI();
     const label = document.getElementById('comboLabel');
     label.textContent = '- 로딩 중... -';
     label.classList.add('placeholder');
     renderComboList([], '');
     try {
       const d = await api(`/jungsi/students/list-by-branch?year=${year}&exam=${encodeURIComponent(exam)}`);
+      if (!isCurrent()) return;
       if (!d.success || !Array.isArray(d.students)) {
         label.textContent = '- 학생 없음 -';
         return;
       }
       STATE.allStudents = d.students.sort((a, b) => (a.student_name || '').localeCompare(b.student_name || '', 'ko'));
       STATE.selectedStudent = null;
+      pendingStudentId = null;
       label.textContent = `- 학생 선택 (${STATE.allStudents.length}명) -`;
       renderComboList(STATE.allStudents, '');
       console.log('[loadStudents]', STATE.allStudents.length + '명 로드');
@@ -28,6 +41,7 @@
         triggerDrawerRerender();
       }
     } catch (e) {
+      if (!isCurrent()) return;
       if (e.message !== 'auth') console.error(e);
       label.textContent = '- 로딩 오류 -';
     }

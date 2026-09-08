@@ -82,9 +82,16 @@
     try { return JSON.parse(v); } catch { return fb; }
   }
 
-  async function calculateSuneung(U_ID) {
+  function captureScoreContext() {
     const student = STATE.selectedStudent;
     const year = document.getElementById('yearSel').value;
+    const exam = document.getElementById('examSel').value;
+    return { student, year, exam, isCurrent: () => STATE.selectedStudent === student &&
+      document.getElementById('yearSel').value === year && document.getElementById('examSel').value === exam };
+  }
+
+  async function calculateSuneung(U_ID, context = captureScoreContext()) {
+    const { student, year, exam } = context;
     if (!student || !student.scores) return null;
     try {
       const d = await api('/jungsi/calculate', {
@@ -92,11 +99,12 @@
         body: JSON.stringify({
           U_ID,
           year,
+          basis_exam: exam,
           studentScores: convertScoresToSuneungFormat(student.scores),
         }),
       });
-      if (!d.success) return null;
-      return Number(d.result?.totalScore || 0);
+      if (!context.isCurrent()) return null;
+      return window.PracticalInput.resultScore(d);
     } catch (e) {
       if (e.message !== 'auth') console.warn('[calculateSuneung]', U_ID, e);
       return null;
@@ -105,6 +113,7 @@
 
   /* 드로어 모든 후보의 환산점수를 병렬 계산해서 화면에 반영 */
   async function calculateAllCandidates(deptList) {
+    const context = captureScoreContext();
     // 각 row에 병렬로 요청 (서버 부담 고려 8개 chunk)
     const chunk = 8;
     const byUid = {};
@@ -114,9 +123,10 @@
       const slice = deptList.slice(i, i + chunk);
       const results = await Promise.all(slice.map(async d => ({
         uid: d.U_ID,
-        score: await calculateSuneung(d.U_ID),
+        score: await calculateSuneung(d.U_ID, context),
         cut: d.branch_suneung_cut,
       })));
+      if (!context.isCurrent()) return;
       results.forEach(r => {
         const scoreEl = document.querySelector(`[data-score-out="${r.uid}"]`);
         const diffEl = document.querySelector(`[data-diff-out="${r.uid}"]`);

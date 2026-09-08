@@ -49,6 +49,7 @@
     const uid = shell?.dataset.uid;
     if (!uid) return;
     const year = document.getElementById('yearSel').value;
+    const exam = document.getElementById('examSel')?.value;
     const formula = STATE.formulaCache[`${uid}-${year}`];
     const student = STATE.selectedStudent;
     if (!formula || !student) return;
@@ -71,6 +72,7 @@
     // 2) 실기 — /silgi/calculate API
     let silgiScore = 0;
     let deductLevel = 0;
+    let absenceNotice = '';
     const silgiInputs = card.querySelectorAll('[data-event]');
     const entered = [];
     silgiInputs.forEach(i => {
@@ -80,7 +82,8 @@
     if (!input.ready) { setCardPracticalState(card, input.reason); return; }
     setCardPracticalState(card, 'calculating');
     const isCurrent = () => card.isConnected && card.dataset.practicalVersion === version &&
-      STATE.selectedStudent === student && document.getElementById('yearSel').value === year;
+      STATE.selectedStudent === student && document.getElementById('yearSel').value === year &&
+      document.getElementById('examSel')?.value === exam;
 
     // 빈 input의 score-out은 - 로
     silgiInputs.forEach(i => {
@@ -101,6 +104,7 @@
         });
         if (!isCurrent()) return;
         silgiScore = window.PracticalInput.resultScore(d);
+        absenceNotice = window.PracticalInput.absenceMessage(d.result);
         {
           const br = d.result.breakdown || {};
           if (Array.isArray(br.events)) {
@@ -112,7 +116,7 @@
                 out.innerHTML = '-';
                 out.classList.add('empty');
               } else {
-                out.innerHTML = `${Number(ev.score).toFixed(2)}<span class="deduct">(${ev.deduction_level || 0}감)</span>`;
+                out.innerHTML = `${Number(ev.score).toFixed(2)}<span class="deduct">(${ev.absent ? '미응시' : (ev.deduction_level || 0) + '감'})</span>`;
                 out.classList.remove('empty');
               }
             });
@@ -127,7 +131,7 @@
     card.dataset.practicalStatus = 'ready';
 
     const silgiEl = card.querySelector('.score-silgi');
-    if (silgiEl) silgiEl.innerHTML = `${silgiScore.toFixed(2)}<span class="deduct">(${deductLevel}감)</span>`;
+    if (silgiEl) silgiEl.innerHTML = `${silgiScore.toFixed(2)}<span class="deduct" role="status">(${absenceNotice || deductLevel + '감'})</span>`;
 
     // 3) 총점 = 수능 + 내신 + 실기
     const suText = card.querySelector('.score-suneung')?.textContent || '0';

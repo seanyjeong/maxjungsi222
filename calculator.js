@@ -9,8 +9,8 @@
     searchable: false,
     onChange: async (v) => {
       applyDefaultExamFor(v);
-      await loadUniversities();
-      await loadStudents();
+      await Promise.all([loadUniversities(), loadStudents()]);
+      if (yearSelect.value !== v) return;
       formulaStrip.hidden = true;
       setEmpty('상단에서 군 / 대학 / 학과를 선택하세요',
                '선택한 학과의 요강에 따라 우리 지점 전체 학생의 수능 환산 점수가 자동 계산됩니다.');
@@ -27,6 +27,7 @@
     searchable: false,
     onChange: async (v) => {
       await loadStudents();
+      if (examSelect.value !== v) return;
       formulaStrip.hidden = true;
       setEmpty('상단에서 군 / 대학 / 학과를 선택하세요',
                '선택한 학과의 요강에 따라 우리 지점 전체 학생의 수능 환산 점수가 자동 계산됩니다.');
@@ -169,17 +170,14 @@
     return { subjects };
   }
 
-  async function calculateSuneung(student, U_ID, year) {
-    try {
+  async function calculateSuneung(student, U_ID, year, exam) {
       const studentScores = convertScoresToSuneungFormat(student.scores);
       const data = await window.api('/jungsi/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ U_ID, year, studentScores })
+        body: JSON.stringify({ U_ID, year, basis_exam: exam, studentScores })
       });
-      if (!data || !data.success) return 0;
-      return Number(data.result?.totalScore || 0);
-    } catch (e) { return 0; }
+      return window.PracticalInput.resultScore(data);
   }
 
   // ---------- load ----------
@@ -205,11 +203,17 @@
   async function loadStudents() {
     const year = yearSelect.value;
     const exam = examSelect.value;
+    currentStudents = [];
+    resultsTbody.innerHTML = '';
+    formulaStrip.hidden = true;
     try {
-      currentStudents = await fetchStudents(year, exam);
+      const students = await fetchStudents(year, exam);
+      if (yearSelect.value !== year || examSelect.value !== exam) return;
+      currentStudents = students;
       metaStudentCount.textContent = currentStudents.length;
       pickerMeta.hidden = currentStudents.length === 0;
     } catch (e) {
+      if (yearSelect.value !== year || examSelect.value !== exam) return;
       currentStudents = [];
       console.error(e);
       window.showToast && window.showToast('학생 목록 로딩 실패', 'error');
@@ -259,11 +263,17 @@
 
   async function onDepartmentPicked(U_ID) {
     const year = yearSelect.value;
+    const exam = examSelect.value;
+    const students = currentStudents;
+    const isCurrent = () => yearSelect.value === year && examSelect.value === exam &&
+      currentStudents === students && String(departmentSelect.value) === String(U_ID);
     updateStepStates();
     setLoading();
 
     try {
-      currentFormula = await fetchFormula(U_ID, year);
+      const formula = await fetchFormula(U_ID, year);
+      if (!isCurrent()) return;
+      currentFormula = formula;
 
       // show formula strip
       formulaGun.textContent = gunSelect.value || '—';
@@ -288,8 +298,10 @@
       // 맥스컷/지점컷 렌더 (해당 U_ID)
       try {
         const cuts = await fetchCutsForUid(U_ID, year);
+        if (!isCurrent()) return;
         renderFormulaCuts(cuts);
       } catch (e) { /* noop */ }
+      if (!isCurrent()) return;
 
       // 국어/수학/영어/탐구 반영비율 pill (formula 에 값 있는 것만)
       const subjectRatiosEl = document.getElementById('subjectRatios');
@@ -330,8 +342,9 @@
 
       // calculate all 수능 scores in parallel
       const suneungScores = await Promise.all(
-        studentsToDisplay.map(s => calculateSuneung(s, U_ID, year))
+        studentsToDisplay.map(s => calculateSuneung(s, U_ID, year, exam))
       );
+      if (!isCurrent()) return;
 
       resultsTbody.innerHTML = '';
       studentsToDisplay.forEach((student, i) => {
@@ -347,9 +360,10 @@
       updateResultCountHint(studentsToDisplay.length);
 
     } catch (err) {
+      if (!isCurrent()) return;
       console.error(err);
-      setEmpty('오류가 발생했습니다', err.message || '');
-      window.showToast && window.showToast('계산 실패: ' + (err.message || ''), 'error');
+      setEmpty('점수를 계산하지 못했습니다', '잠시 후 학과를 다시 선택해 주세요.');
+      window.showToast && window.showToast('점수를 계산하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     }
   }
 

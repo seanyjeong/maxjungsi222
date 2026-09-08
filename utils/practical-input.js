@@ -43,5 +43,10 @@
         !Number.isFinite(Number(raw))) throw new Error('invalid-score');
     return Number(raw);
   }
-  return { prepare, resultScore, messages };
+  function absenceMessage(result) {
+    const status = result?.breakdown?.absence_status;
+    return status === 'all' ? '전 종목 미응시 · 불합격 대상' :
+      status === 'partial' ? '미응시 종목 0점 반영' : '';
+  }
+  return { prepare, resultScore, absenceMessage, messages };
 });

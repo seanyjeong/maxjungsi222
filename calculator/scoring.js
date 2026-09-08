@@ -76,7 +76,7 @@ async function recalculateSilgiAndTotal(tr) {
         } else {
           const lvl = ev.deduction_level || 0;
           const dedClass = lvl > 0 ? 'deduction' : 'deduction zero';
-          cell.innerHTML = `${ev.score} <span class="${dedClass}">(${lvl}감)</span>`;
+          cell.innerHTML = `${ev.score} <span class="${dedClass}">(${ev.absent ? '미응시' : lvl + '감'})</span>`;
         }
       });
     }
@@ -85,7 +85,8 @@ async function recalculateSilgiAndTotal(tr) {
     const totalSilgiCell = tr.querySelector('.total-silgi');
     const totalDed = silgiResult?.breakdown?.total_deduction_level || 0;
     const dedClass = totalDed > 0 ? 'deduction' : 'deduction zero';
-    totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} <span class="${dedClass}">(${totalDed}감)</span>`;
+    const notice = window.PracticalInput.absenceMessage(silgiResult);
+    totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} <span class="${dedClass}" role="status">(${notice || totalDed + '감'})</span>`;
 
     recalculateTotal(tr, silgiScore);
     sortResultsTable();

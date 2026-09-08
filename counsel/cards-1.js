@@ -158,22 +158,29 @@
 
   /* 저장된 상담 복원 */
   async function loadWishlist() {
-    const student = STATE.selectedStudent;
+    const context = captureScoreContext();
+    const { student, year, exam } = context;
     if (!student) return;
-    const year = document.getElementById('yearSel').value;
     clearCounselBoard();
 
     try {
-      const exam = document.getElementById('examSel').value;
       const d = await api(`/jungsi/counseling/wishlist/${student.student_id}/${year}?exam=${encodeURIComponent(exam)}`);
+      if (!context.isCurrent()) return;
       if (!d.success) { console.log('[loadWishlist] 저장된 상담 없음'); return; }
       const items = d.wishlist || [];
+      const restored = [];
       console.log('[loadWishlist]', items.length + '개 복원');
 
       for (const item of items) {
         const formula = await fetchFormulaDetails(item.대학학과_ID);
+        if (!context.isCurrent()) return;
         if (!formula) continue;
-        const suneungScore = await calculateSuneung(item.대학학과_ID) || 0;
+        const suneungScore = await calculateSuneung(item.대학학과_ID, context);
+        if (!context.isCurrent()) return;
+        if (suneungScore == null) throw new Error('score-unavailable');
+        restored.push({formula, suneungScore, item});
+      }
+      for (const {formula, suneungScore, item} of restored) {
         const card = createCardEl(formula, suneungScore, item);
         appendCardToColumn(item.모집군, card);
         fetchAndDisplayDeptStats(card, item.대학학과_ID);
@@ -181,6 +188,7 @@
       if (typeof syncDrawerWithBoard === 'function') syncDrawerWithBoard();
     } catch (e) {
       if (e.message !== 'auth') console.error('[loadWishlist]', e);
+      if (context.isCurrent()) showToast('상담 점수를 불러오지 못했습니다. 잠시 후 다시 선택해 주세요.', 'error');
     }
   }
 
