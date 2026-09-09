@@ -21,7 +21,7 @@
     label.classList.add('placeholder');
     renderComboList([], '');
     try {
-      const d = await api(`/jungsi/students/list-by-branch?year=${year}&exam=${encodeURIComponent(exam)}`);
+      const d = await api(`/jungsi/students/list-by-branch?year=${year}&exam=${encodeURIComponent(exam)}&cohort=registered`);
       if (!isCurrent()) return;
       if (!d.success || !Array.isArray(d.students)) {
         label.textContent = '- 학생 없음 -';

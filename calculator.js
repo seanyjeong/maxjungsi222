@@ -149,7 +149,7 @@
     return (data && data.success && data.list) ? data.list : [];
   }
   async function fetchStudents(year, exam) {
-    const data = await window.api(`/jungsi/students/list-by-branch?year=${year}&exam=${exam}`);
+    const data = await window.api(`/jungsi/students/list-by-branch?year=${year}&exam=${encodeURIComponent(exam)}&cohort=registered`);
     return (data && data.success && data.students) ? data.students : [];
   }
   async function fetchFormula(U_ID, year) {
