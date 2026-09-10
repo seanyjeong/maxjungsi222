@@ -38,7 +38,7 @@ function renderRowHtml(student, suneungScore, formula) {
     const practicalEvents = [...new Set((formula.실기배점 || []).map(r => r.종목명))];
     let silgiCells = '';
     practicalEvents.forEach(ev => {
-      silgiCells += `<td><input type="text" class="practical-input" data-event="${esc(ev)}" placeholder="기록"></td>`;
+      silgiCells += `<td><input type="text" class="practical-input" data-event="${esc(ev)}" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}"></td>`;
       silgiCells += `<td class="score-cell score-silgi" data-event-score="${esc(ev)}">—</td>`;
     });
 

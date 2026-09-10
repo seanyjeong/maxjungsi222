@@ -76,7 +76,7 @@ async function recalculateSilgiAndTotal(tr) {
         } else {
           const lvl = ev.deduction_level || 0;
           const dedClass = lvl > 0 ? 'deduction' : 'deduction zero';
-          cell.innerHTML = `${ev.score} <span class="${dedClass}">(${ev.absent ? '미응시' : lvl + '감'})</span>`;
+          cell.innerHTML = `${ev.score} <span class="${dedClass}">(${ev.direct_score ? '입력 점수' : ev.absent ? '미응시' : lvl + '감'})</span>`;
         }
       });
     }
@@ -85,7 +85,8 @@ async function recalculateSilgiAndTotal(tr) {
     const totalSilgiCell = tr.querySelector('.total-silgi');
     const totalDed = silgiResult?.breakdown?.total_deduction_level || 0;
     const dedClass = totalDed > 0 ? 'deduction' : 'deduction zero';
-    const notice = window.PracticalInput.absenceMessage(silgiResult);
+    const notice = window.PracticalInput.absenceMessage(silgiResult) ||
+      (silgiResult?.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '');
     totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} <span class="${dedClass}" role="status">(${notice || totalDed + '감'})</span>`;
 
     recalculateTotal(tr, silgiScore);

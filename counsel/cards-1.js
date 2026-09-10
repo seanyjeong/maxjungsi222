@@ -40,7 +40,7 @@
           inputRowsHtml += `
             <div class="input-row">
               <span class="label">${ev}</span>
-              <input type="text" placeholder="기록" data-event="${ev}">
+              <input type="text" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}" data-event="${ev}">
               <span class="score-out empty">-</span>
             </div>`;
         });
