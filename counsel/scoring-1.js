@@ -40,6 +40,7 @@
     setSaving();
     const t = setTimeout(() => recalcCard(card), 1200);
     recalcTimers.set(card, t);
+    triggerAutoSave();
   }
 
   /* 카드 총점 재계산 — 내신은 raw 저장, 실기는 /silgi/calculate */
@@ -79,7 +80,7 @@
       if (i.value && i.value.trim() !== '') entered.push({ event: i.dataset.event, value: i.value.trim() });
     });
     const input = window.PracticalInput.prepare({ ...formula, 학년도: year }, student.gender, entered);
-    if (!input.ready) { setCardPracticalState(card, input.reason); return; }
+    if (!input.ready) { setCardPracticalState(card, input.reason); triggerAutoSave(); return; }
     setCardPracticalState(card, 'calculating');
     const isCurrent = () => card.isConnected && card.dataset.practicalVersion === version &&
       STATE.selectedStudent === student && document.getElementById('yearSel').value === year &&
@@ -124,7 +125,7 @@
           deductLevel = br.total_deduction_level || 0;
         }
       } catch (_error) {
-        if (isCurrent()) setCardPracticalState(card, 'failed');
+        if (isCurrent()) { setCardPracticalState(card, 'failed'); triggerAutoSave(); }
         return;
       }
     }
