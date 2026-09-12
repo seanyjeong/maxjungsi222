@@ -73,5 +73,102 @@ function openStudentScoresModal(student) {
     modal.classList.add('show');
   }
 
-return { openStudentScoresModal };
+async function openConsultationDraftModal(tr) {
+    const currentFormula = getFormula(), currentStudents = getStudents();
+    if (!currentFormula || !tr) return;
+    const sid = tr.dataset.studentId;
+    const student = currentStudents.find(s => String(s.student_id) === String(sid));
+    if (!student) return;
+
+    const modal = document.getElementById('consultationDraftModal');
+    const titleEl = document.getElementById('consultModalTitle');
+    const metaEl = document.getElementById('consultModalMeta');
+    const tabsEl = document.getElementById('consultModeTabs');
+    const textEl = document.getElementById('consultDraftText');
+    const safetyEl = document.getElementById('consultSafetyNote');
+    if (!modal || !tabsEl || !textEl) return;
+
+    titleEl.textContent = `${student.student_name || '학생'} · ${currentFormula.대학명 || ''} ${currentFormula.학과명 || ''}`.trim();
+    metaEl.innerHTML = [
+      `<span class="sc-chip"><i class="ph-light ph-calendar-dot"></i>${esc(yearSelect.value)}학년도</span>`,
+      `<span class="sc-chip"><i class="ph-light ph-target"></i>${esc(gunSelect.value || '')}군</span>`,
+      `<span class="sc-chip"><i class="ph-light ph-exam"></i>${esc(examSelect.value || '수능')}</span>`,
+    ].join('');
+    modal.classList.add('show');
+
+    const renderTabs = (active) => {
+      const modes = [
+        { id: 'internal', label: '내부용' },
+        { id: 'external_parent', label: '외부용' },
+        { id: 'student_short', label: '학생용' },
+        { id: 'sms', label: '카톡 5줄' },
+      ];
+      tabsEl.innerHTML = modes.map(m => `<button type="button" class="consult-mode-btn ${m.id === active ? 'is-active' : ''}" data-consult-mode="${m.id}">${m.label}</button>`).join('');
+    };
+
+    const buildPracticalInput = () => {
+      const practicals = [];
+      tr.querySelectorAll('.practical-input').forEach(input => {
+        practicals.push({ event: input.dataset.event, value: input.value });
+      });
+      return { gender: student.gender, practicals };
+    };
+
+    const requestDraft = async (mode) => {
+      renderTabs(mode);
+      textEl.textContent = '상담멘트 생성 중…';
+      if (safetyEl) safetyEl.textContent = '';
+      if (window.SubjectivePractical?.getPolicy(currentFormula)) {
+        textEl.textContent = window.CalculatorSubjectivePractical.draft(tr, currentFormula);
+        if (safetyEl) safetyEl.textContent = '주관평가를 제외한 객관점수 안내입니다. 최종총점과 합격 가능성은 산출하지 않습니다.';
+        return;
+      }
+      try {
+        const data = await window.api('/jungsi/analysis/consultation-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode,
+            U_ID: currentFormula.U_ID,
+            year: yearSelect.value,
+            basis_exam: examSelect.value,
+            student: {
+              name: student.student_name,
+              gender: student.gender,
+              schoolName: student.school_name,
+            },
+            studentScores: convertScoresToSuneungFormat(student.scores),
+            S_data: buildPracticalInput(),
+            includeMaxLive: mode === 'internal',
+          })
+        });
+        if (!data || !data.success) throw new Error((data && data.message) || '생성 실패');
+        textEl.textContent = data.text || '';
+        if (safetyEl) safetyEl.textContent = data.safety?.note || '';
+      } catch (err) {
+        console.error(err);
+        textEl.textContent = `상담멘트 생성 실패: ${err.message || err}`;
+        window.showToast && window.showToast('상담멘트 생성 실패', 'error');
+      }
+    };
+
+    tabsEl.onclick = (ev) => {
+      const btn = ev.target.closest('[data-consult-mode]');
+      if (!btn) return;
+      requestDraft(btn.dataset.consultMode);
+    };
+    const copyBtn = document.getElementById('consultCopyBtn');
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(textEl.textContent || '');
+          window.showToast && window.showToast('상담멘트를 복사했습니다', 'success');
+        } catch (_err) {
+          window.showToast && window.showToast('복사 실패', 'error');
+        }
+      };
+    }
+    await requestDraft('external_parent');
+  }
+return { openStudentScoresModal, openConsultationDraftModal };
 };

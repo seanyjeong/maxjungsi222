@@ -273,7 +273,7 @@
     try {
       const formula = await fetchFormula(U_ID, year);
       if (!isCurrent()) return;
-      currentFormula = formula;
+      currentFormula = { ...formula, 학년도: year };
 
       // show formula strip
       formulaGun.textContent = gunSelect.value || '—';
@@ -292,7 +292,7 @@
       statNaeshinWrap.hidden = !(naeshinRatio > 0);
       statSilgiWrap.hidden   = !(silgiRatio > 0);
       statEtcWrap.hidden     = !(etcRatio > 0);
-      statTotal.textContent   = Number(currentFormula.총점) || 1000;
+      statTotal.textContent = window.SubjectivePractical?.getPolicy(currentFormula) ? '미산출' : Number(currentFormula.총점) || 1000;
       currentMaxTotal = Number(currentFormula.총점) || 1000;
 
       // 맥스컷/지점컷 렌더 (해당 U_ID)
@@ -337,6 +337,7 @@
       }
 
       renderHeader(currentFormula);
+      window.CalculatorSubjectivePractical?.formulaNotice(currentFormula);
       legendNaeshin.hidden = !(Number(currentFormula.내신 || 0) > 0);
       resultsLegend.hidden = false;
 
@@ -371,7 +372,7 @@
   const { renderHeader, renderRowHtml } = window.createCalculatorGrid({ esc, resultsThead, sortRows: () => sortResultsTable(), sortState: { get value() { return sortDir; }, set value(value) { sortDir = value; } }, getMaximum: () => currentMaxTotal });
 
   function updateResultCountHint(n) {
-    resultCountHint.textContent = `${n}명 · 총점 내림차순`;
+    resultCountHint.textContent = `${n}명 · ${window.SubjectivePractical?.getPolicy(currentFormula) ? '객관점수 부분산출 · 순위 없음' : '총점 내림차순'}`;
   }
 
   // ---------- live recalculation ----------
@@ -414,7 +415,7 @@
   function renderFormulaCuts(cuts) {
     const wrap = document.getElementById('formulaCuts');
     if (!wrap) return;
-    if (!cuts) { wrap.hidden = true; return; }
+    if (!cuts || window.SubjectivePractical?.getPolicy(currentFormula)) { wrap.hidden = true; return; }
 
     const hasMax  = cuts['맥스_수능컷'] != null || cuts['맥스_총점컷'] != null;
     const hasMine = cuts['지점_수능컷'] != null || cuts['지점_총점컷'] != null;
@@ -445,7 +446,7 @@
   }
 
   // ---------- 학생 성적표 모달 ----------
-  const { openStudentScoresModal } = window.createCalculatorDialogs({ esc, examSelect, yearSelect, gunSelect, convertScoresToSuneungFormat, getFormula: () => currentFormula, getStudents: () => currentStudents });
+  const { openStudentScoresModal, openConsultationDraftModal } = window.createCalculatorDialogs({ esc, examSelect, yearSelect, gunSelect, convertScoresToSuneungFormat, getFormula: () => currentFormula, getStudents: () => currentStudents });
 
   document.addEventListener('click', (e) => {
     const close = e.target.closest('[data-close-modal]');
@@ -453,6 +454,12 @@
       const id = close.getAttribute('data-close-modal');
       const m = id ? document.getElementById(id) : close.closest('.modal-backdrop');
       if (m) m.classList.remove('show');
+      return;
+    }
+    const consultBtn = e.target.closest('[data-consult-open]');
+    if (consultBtn) {
+      const tr = consultBtn.closest('tr');
+      openConsultationDraftModal(tr);
       return;
     }
     // 학생 이름 셀 클릭

@@ -1,0 +1,30 @@
+.subjective-practical {
+  margin: 12px 14px;
+  color: var(--text-2, #44403c);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.subjective-practical label { display: block; margin-bottom: 4px; font-weight: 600; }
+.subjective-practical select {
+  width: 100%; min-height: 44px; padding: 8px 10px;
+  border: 1px solid var(--border, #d6d3d1); border-radius: var(--r-xs, 6px);
+  background: var(--surface, #fff); color: var(--text, #292524); font: inherit;
+}
+.subjective-practical select:focus-visible {
+  outline: 2px solid var(--accent, #0f766e); outline-offset: 2px;
+}
+.subjective-practical p { margin: 8px 0 0; overflow-wrap: anywhere; }
+[data-subjective-partial="true"] .uni-metrics,
+[data-subjective-partial="true"] .uni-diff-row { display: none; }
+[data-subjective-partial="true"] .input-row input { min-height: 44px; }
+[data-subjective-partial="true"] .input-row input::placeholder { color: var(--text-2, #44403c); }
+.objective-status { margin: 8px 14px 12px; font-size: 12px; line-height: 1.6; color: var(--text-2, #44403c); }
+.objective-subtotal-row .value { color: var(--accent, #0f766e); font-variant-numeric: tabular-nums; }
+[data-subjective-partial="true"] .uni-breakdown-row .label { white-space: normal; }
+.uni-card[data-subjective-partial="true"][data-practical-status] .score-objective {
+  font-size: inherit; white-space: nowrap; max-width: none; flex-shrink: 0;
+}
+@media (max-width: 480px) {
+  .subjective-practical { margin-inline: 10px; }
+  [data-subjective-partial="true"] .uni-breakdown-row { gap: 8px; }
+}

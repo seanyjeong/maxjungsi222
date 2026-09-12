@@ -1,0 +1,17 @@
+.calculator-subjective-note {
+  margin: 12px 0 20px; padding: 14px 16px;
+  background: var(--surface, #fff); border: 1px solid var(--border, #d6d3d1);
+  border-radius: var(--r-xs, 6px); color: var(--text-2, #44403c); font-size: 13px; line-height: 1.6;
+}
+.calculator-subjective-note p { margin: 6px 0 0; }
+#formulaStrip[hidden] + .calculator-subjective-note { display: none; }
+.results-table .subjective-selection {
+  min-height: 44px; min-width: 115px; padding: 8px;
+  border: 1px solid var(--border, #d6d3d1); border-radius: var(--r-xs, 6px);
+  background: var(--surface, #fff); color: var(--text, #292524); font: inherit;
+}
+.subjective-selection:focus-visible { outline: 2px solid var(--accent, #0f766e); outline-offset: 2px; }
+.results-table .objective-status { max-width: 200px; white-space: normal; font-size: 12px; line-height: 1.6; }
+.results-table .score-objective-subtotal { color: var(--accent, #0f766e); font-variant-numeric: tabular-nums; }
+.results-table tr:has(.subjective-selection) .practical-input { min-height: 44px; }
+.results-table tr:has(.subjective-selection) .practical-input::placeholder { color: var(--text-2, #44403c); }

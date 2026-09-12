@@ -1,0 +1,60 @@
+/* ── 상담멘트 생성 ── */
+.consult-col { min-width: 96px; text-align: center; }
+.consult-cell { text-align: center; }
+.consult-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms var(--ease), border-color 120ms var(--ease), background 120ms var(--ease);
+}
+.consult-open-btn:hover { transform: translateY(-1px); border-color: var(--accent); background: rgba(15,118,110,0.14); }
+.consult-open-btn i { font-size: 14px; }
+.consult-modal { max-width: 760px; width: 94vw; padding: 0; overflow: hidden; }
+.consult-modal-body { display: flex; flex-direction: column; gap: 12px; }
+.consult-mode-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.consult-mode-btn {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.consult-mode-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.consult-safety-note {
+  min-height: 22px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.consult-draft-text {
+  white-space: pre-wrap;
+  word-break: keep-all;
+  line-height: 1.65;
+  min-height: 260px;
+  max-height: 52vh;
+  overflow: auto;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 13px;
+}
+.consult-actions { display: flex; justify-content: flex-end; }

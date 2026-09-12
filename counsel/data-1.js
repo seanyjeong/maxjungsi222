@@ -54,6 +54,7 @@
     const year = document.getElementById('yearSel').value;
     const box = cardEl.querySelector('.uni-metrics');
     if (!box) return;
+    if (cardEl.querySelector('[data-subjective-partial="true"]')) { box.hidden = true; return; }
     const dept = STATE.allFilterData.find(d => String(d.U_ID) === String(U_ID));
     const branchTotal = (dept?.branch_total_cut != null && dept.branch_total_cut !== '') ? Number(dept.branch_total_cut).toFixed(2) : '-';
     const maxTotal = (dept?.max_total_cut != null && dept.max_total_cut !== '') ? Number(dept.max_total_cut).toFixed(2) : '-';

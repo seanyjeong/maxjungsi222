@@ -9,6 +9,7 @@ function setPracticalState(tr, status) {
     const fill = tr.querySelector('.total-bar .fill');
     if (fill) fill.style.width = '0%';
     tr.querySelectorAll('[data-event-score]').forEach(cell => { cell.textContent = '—'; });
+    window.CalculatorSubjectivePractical?.state(tr, status);
   }
 function bindInputListeners() {
     document.querySelectorAll('.practical-input, .naeshin-input').forEach(input => {
@@ -42,8 +43,12 @@ async function recalculateSilgiAndTotal(tr) {
       practicals.push({ event: input.dataset.event, value: input.value });
     });
 
-    const input = window.PracticalInput.prepare(currentFormula, student.gender, practicals);
-    if (!input.ready) { setPracticalState(tr, input.reason); sortResultsTable(); return; }
+    const input = (window.SubjectivePractical || window.PracticalInput).prepare(currentFormula, student.gender, practicals);
+    if (!input.ready) {
+      setPracticalState(tr, input.reason);
+      window.CalculatorSubjectivePractical?.state(tr, input.reason, input.message);
+      sortResultsTable(); return;
+    }
     const S_data = { gender: student.gender, practicals: input.records };
     const F_data = currentFormula;
     setPracticalState(tr, 'calculating');
@@ -58,6 +63,10 @@ async function recalculateSilgiAndTotal(tr) {
         body: JSON.stringify({ F_data, S_data })
       });
       if (!isCurrent()) return;
+      if (window.SubjectivePractical?.getPolicy(currentFormula)) {
+        window.CalculatorSubjectivePractical.render(tr, currentFormula, data);
+        sortResultsTable(); return;
+      }
       silgiScore = window.PracticalInput.resultScore(data);
       silgiResult = data.result;
     } catch (_error) {
@@ -95,6 +104,7 @@ async function recalculateSilgiAndTotal(tr) {
 
 function recalculateTotal(tr, silgiScore = null) {
     const currentFormula = getFormula(), currentMaxTotal = getMaximum();
+    if (window.SubjectivePractical?.getPolicy(currentFormula)) return;
     if (tr.dataset.practicalStatus && tr.dataset.practicalStatus !== 'ready') return;
     const suneungScore = Number(tr.querySelector('.score-suneung')?.textContent || 0);
 

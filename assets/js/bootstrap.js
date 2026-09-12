@@ -126,7 +126,9 @@ try {
   function ensureWatermark() {
     // 이미 페이지에 .watermark-bg 가 있으면(구 counsel 등) 건드리지 않음
     if (document.querySelector('.watermark-bg')) return;
-    document.documentElement.style.setProperty('--watermark-url', "url('assets/img/max-logo.png')");
+    // CSS 변수의 상대 URL은 이를 사용하는 스타일시트 경로에서 해석된다.
+    var logoUrl = new URL('assets/img/max-logo.png', document.baseURI).href;
+    document.documentElement.style.setProperty('--watermark-url', "url('" + logoUrl + "')");
     var wm = document.createElement('div');
     wm.className = 'watermark-bg';
     wm.setAttribute('aria-hidden', 'true');

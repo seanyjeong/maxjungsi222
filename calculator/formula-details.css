@@ -1,0 +1,111 @@
+/* ========================================================
+   calculator.new.css
+   Hero cascade picker + formula strip + grouped results.
+   ======================================================== */
+
+/* ── formula-strip 컷 정보 ── */
+.formula-cuts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 10px 0 4px;
+  background: var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.cut-row-mini {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 14px;
+  background: var(--surface);
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.cut-row-mini.cut-max-mini {
+  background: linear-gradient(90deg, var(--accent-soft) 0%, var(--surface) 80%);
+}
+.dark .cut-row-mini.cut-max-mini {
+  background: linear-gradient(90deg, rgba(15,118,110,0.18) 0%, var(--surface) 80%);
+}
+.cut-tag-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 80px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.cut-tag-mini i { color: var(--accent); font-size: 13px; }
+.cut-max-mini .cut-tag-mini i { color: var(--accent-strong); }
+.cut-item-mini {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+}
+.cut-item-mini em {
+  font-style: normal;
+  font-family: 'Geist Mono', monospace;
+}
+.cut-item-mini em:first-child {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.cut-item-mini em.v {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 국수영탐 반영비율 pill (formula-uni 옆) ── */
+.subject-ratios {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 10px;
+  flex-wrap: wrap;
+}
+.subj-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px 2px 4px;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text);
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.subj-chip em {
+  font-style: normal;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  font-family: inherit;
+}
+.subj-chip .v {
+  font-weight: 600;
+  font-size: 11.5px;
+}
+.subj-kor em { background: #0ea5e9; }
+.subj-mat em { background: #8b5cf6; }
+.subj-eng em { background: var(--accent); }
+.subj-sci em { background: #f59e0b; }
+.subj-chip:hover { border-color: var(--text-3); }

@@ -9,11 +9,13 @@
     const reflectsNaeshin = Number(formula.내신 || 0) > 0;
     const reflectsSilgi = Number(formula.실기 || 0) > 0;
     const reflectsExtra = Number(formula.기타 || 0) > 0;
+    const scopedFormula = { ...formula, 학년도: document.getElementById('yearSel').value };
 
     let silgiEvents = [];
     if (reflectsSilgi && STATE.selectedStudent?.gender && Array.isArray(formula.실기배점)) {
       const g = STATE.selectedStudent.gender;
-      silgiEvents = [...new Set(formula.실기배점.filter(r => r.성별 === g).map(r => r.종목명))].sort();
+      silgiEvents = (window.SubjectivePractical?.eventNames(scopedFormula, g) ||
+        [...new Set(formula.실기배점.filter(r => r.성별 === g).map(r => r.종목명))]).sort();
     }
 
     const pctBadges = [];
@@ -36,11 +38,11 @@
     }
     if (reflectsSilgi) {
       if (silgiEvents.length) {
-        silgiEvents.forEach(ev => {
+        silgiEvents.forEach((ev, index) => {
           inputRowsHtml += `
             <div class="input-row">
-              <span class="label">${ev}</span>
-              <input type="text" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}" data-event="${ev}">
+              <label class="label" for="practical-${formula.U_ID}-${index}">${ev}</label>
+              <input id="practical-${formula.U_ID}-${index}" type="text" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}" data-event="${ev}">
               <span class="score-out empty">-</span>
             </div>`;
         });
@@ -85,18 +87,19 @@
       </article>
     `;
 
+    window.CounselSubjectivePractical?.mount(shell, formula, safeParse(savedItem?.상담_실기기록, {}), scopedFormula.학년도);
     if (savedItem) {
       const naInput = shell.querySelector('[data-field="naeshin"]');
       if (naInput && savedItem.상담_내신점수 != null) naInput.value = savedItem.상담_내신점수;
       const savedSilgi = safeParse(savedItem.상담_실기기록, {});
       if (savedSilgi && typeof savedSilgi === 'object') {
-        Object.entries(savedSilgi).forEach(([ev, v]) => {
-          const inp = shell.querySelector(`[data-event="${ev}"]`);
-          if (inp) inp.value = v;
+        shell.querySelectorAll('[data-event]').forEach(inp => {
+          if (Object.hasOwn(savedSilgi, inp.dataset.event)) inp.value = savedSilgi[inp.dataset.event];
         });
       }
       const memoEl = shell.querySelector('.uni-memo');
       if (memoEl && savedItem.메모) memoEl.value = savedItem.메모;
+      window.CounselSubjectivePractical?.state(shell.querySelector('.uni-card'), 'incomplete');
       // 저장값 있으면 즉시 재계산 (실기 점수 · 총점 · diff 반영)
       setTimeout(() => recalcCard(shell.querySelector('.uni-card')), 50);
     }
