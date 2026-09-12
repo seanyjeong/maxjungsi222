@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>대학 정보 · 모집요강 · 맥스정시</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,8 +17,9 @@
   <link rel="stylesheet" href="assets/css/toast.css">
   <link rel="stylesheet" href="assets/css/modal.css">
   <link rel="stylesheet" href="assets/css/combobox.css">
+  <link rel="stylesheet" href="university-overview/details.css?v=university20260912">
   <!-- 페이지 전용 -->
-  <link rel="stylesheet" href="university_overview.css">
+  <link rel="stylesheet" href="university_overview.css?v=university20260912">
 </head>
 <body data-page="university_overview" data-title="대학 정보" data-category="인사이트">
 
@@ -38,6 +40,7 @@
       </header>
 
       <section class="page-content">
+        <p class="catalog-note">선택한 학년도의 운영 자료입니다. 학과를 열면 최근 반영 내용과 추후 확인 사항을 볼 수 있습니다.</p>
 
         <!-- 요약 카운터 -->
         <div class="summary-row">
@@ -160,7 +163,7 @@
   </div>
 
   <!-- 상세 모달 -->
-  <div class="modal-backdrop" id="detailModal">
+  <div class="modal-backdrop" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="mdTitle">
     <div class="modal-card">
       <div class="modal-head">
         <div>
@@ -171,6 +174,8 @@
         <button class="close-btn" id="mdClose" aria-label="닫기"><i class="ph-light ph-x" style="font-size:20px"></i></button>
       </div>
       <div class="modal-body">
+        <section class="detail-section" id="mdReview" hidden aria-live="polite"></section>
+        <section class="detail-section" id="mdScoreInfo" aria-live="polite"></section>
 
         <div class="previous-competition-card" data-competition-rate hidden
              aria-live="polite"></div>
@@ -188,15 +193,18 @@
               <button class="gender-btn" data-gender="여">여</button>
             </div>
           </div>
+          <div id="mdPracticalNotice" class="practical-notice" aria-live="polite"></div>
           <table class="silgi-table">
             <thead><tr><th>종목</th><th>만점 기록</th><th>만점 점수</th><th>1감당 감점</th></tr></thead>
             <tbody id="mdSilgiTbody"></tbody>
           </table>
+          <div id="mdPracticalLevels"></div>
         </div>
 
         <div class="detail-section">
           <div class="detail-section-title">과거 컷 히스토리</div>
           <div class="cut-history" id="mdCuts"></div>
+          <p class="detail-note">과거·상담 컷은 당시 기준입니다. 반영비율이나 총점이 달라진 학과는 현재 환산점수와 직접 비교할 수 없습니다.</p>
         </div>
 
       </div>
@@ -210,10 +218,17 @@
   <script src="assets/js/modal.js"></script>
   <script src="assets/js/utils.js?v=competition20260714"></script>
   <script src="assets/js/competition-rate-observer.js?v=20260714"></script>
-  <script src="assets/js/bootstrap.js"></script>
+  <script src="assets/js/bootstrap.js?v=subjective20260912"></script>
   <script src="assets/js/combobox.js"></script>
   <script src="assets/js/silgi-hardcode.js"></script>
   <!-- 페이지 전용 -->
-  <script src="university_overview.js"></script>
+  <script src="utils/practical-requirements.js"></script>
+  <script src="utils/practical-input.js"></script>
+  <script src="utils/subjective-practical.js?v=subjective20260912"></script>
+  <script src="university-overview/review-notes.js?v=university20260912"></script>
+  <script src="university-overview/information.js?v=university20260912"></script>
+  <script src="university-overview/practical.js?v=university20260912"></script>
+  <script src="university-overview/details.js?v=university20260912"></script>
+  <script src="university_overview.js?v=university20260912"></script>
 </body>
 </html>
