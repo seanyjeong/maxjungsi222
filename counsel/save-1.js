@@ -63,17 +63,22 @@
       const naInput = card.querySelector('[data-field="naeshin"]');
       const naVal = (naInput && naInput.value.trim() !== '') ? Number(naInput.value) : null;
 
-      const silgiObj = {};
+      let silgiObj = {};
       card.querySelectorAll('[data-event]').forEach(inp => {
         if (inp.value && inp.value.trim() !== '') silgiObj[inp.dataset.event] = inp.value.trim();
       });
       const status = card.querySelector('.uni-card')?.dataset.practicalStatus;
       const formula = STATE.formulaCache[`${uid}-${year}`];
-      const practicalInput = formula && window.PracticalInput.prepare({ ...formula, 학년도: year },
+      const scopedFormula = { ...formula, 학년도: year };
+      const partial = window.SubjectivePractical?.getPolicy(scopedFormula);
+      const practicalInput = formula && (window.SubjectivePractical || window.PracticalInput).prepare(scopedFormula,
         STATE.selectedStudent.gender, Object.entries(silgiObj).map(([event, value]) => ({ event, value })));
-      const pending = (status && status !== 'ready') ||
+      const pending = partial ? status !== 'objective-ready' : (status && status !== 'ready') ||
         (Number(formula?.실기 || 0) > 0 && (!practicalInput?.ready || status !== 'ready'));
       needsPracticalReview = needsPracticalReview || !!pending;
+      if (partial) silgiObj = window.SubjectivePractical.serializeRecords(scopedFormula,
+        Object.entries(silgiObj).map(([event, value]) => ({ event, value })),
+        card.querySelector('[data-subjective-selection]')?.value);
 
       const suText = card.querySelector('.score-suneung')?.textContent || '0';
       const su = Number(suText) || 0;
@@ -91,8 +96,8 @@
         상담_내신점수: naVal,
         상담_실기기록: Object.keys(silgiObj).length ? silgiObj : null,
         // 미완성 입력도 보존하되 계산되지 않은 점수를 0점이나 이전 총점으로 저장하지 않는다.
-        상담_실기반영점수: pending ? null : silgiNum,
-        상담_계산총점: pending ? null : total,
+        상담_실기반영점수: partial || pending ? null : silgiNum,
+        상담_계산총점: partial || pending ? null : total,
         메모: memoVal,
       });
     });

@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="assets/css/toast.css">
   <link rel="stylesheet" href="assets/css/modal.css">
   <link rel="stylesheet" href="assets/css/combobox.css">
-  <link rel="stylesheet" href="calculator.css">
+  <link rel="stylesheet" href="calculator.css?v=subjective20260912">
 </head>
 <body data-page="calculator" data-title="통합 계산기" data-category="최종 지원">
   <div class="app-shell" id="appShell">
@@ -196,6 +196,30 @@
     </div>
   </div>
 
+  <!-- 상담멘트 모달 -->
+  <div class="modal-backdrop" id="consultationDraftModal">
+    <div class="modal-panel consult-modal">
+      <header class="scores-modal-head">
+        <div class="scores-head-main">
+          <div class="scores-name-row">
+            <span class="sc-avatar sc-avatar-m"><i class="ph-light ph-chats-circle"></i></span>
+            <span class="sc-name-text" id="consultModalTitle">상담멘트 생성</span>
+          </div>
+          <div class="scores-chip-row" id="consultModalMeta"></div>
+        </div>
+        <button class="scores-close-btn" data-close-modal="consultationDraftModal" aria-label="닫기"><i class="ph-light ph-x"></i></button>
+      </header>
+      <div class="modal-body consult-modal-body">
+        <div class="consult-mode-tabs" id="consultModeTabs"></div>
+        <div class="consult-safety-note" id="consultSafetyNote"></div>
+        <pre class="consult-draft-text" id="consultDraftText">버튼을 선택하면 내부용/외부용 상담멘트가 자동 생성됩니다.</pre>
+        <div class="consult-actions">
+          <button type="button" class="btn-secondary" id="consultCopyBtn"><i class="ph-light ph-copy"></i> 복사</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 공통 자산 (host shell) -->
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
@@ -203,15 +227,18 @@
   <script src="assets/js/modal.js"></script>
   <script src="assets/js/utils.js?v=competition20260714"></script>
   <script src="assets/js/competition-rate-observer.js?v=20260714"></script>
-  <script src="assets/js/bootstrap.js"></script>
+  <script src="assets/js/bootstrap.js?v=subjective20260912"></script>
   <script src="assets/js/combobox.js"></script>
   <script src="utils/examSchedule.js"></script>
   <link rel="stylesheet" href="calculator/scoring.css?v=practical20260907">
+  <link rel="stylesheet" href="calculator/subjective-practical.css?v=subjective20260912">
   <script src="utils/practical-requirements.js?v=practical20260907"></script>
   <script src="utils/practical-input.js?v=exam20260908"></script>
-  <script src="calculator/grid.js?v=gym20260911"></script>
-  <script src="calculator/scoring.js?v=gym20260911"></script>
-  <script src="calculator/dialogs.js?v=practical20260907"></script>
-  <script src="calculator.js?v=high2-20260909"></script>
+  <script src="utils/subjective-practical.js?v=subjective20260912"></script>
+  <script src="calculator/subjective-practical.js?v=subjective20260912"></script>
+  <script src="calculator/grid.js?v=subjective20260912"></script>
+  <script src="calculator/scoring.js?v=subjective20260912"></script>
+  <script src="calculator/dialogs.js?v=subjective20260912"></script>
+  <script src="calculator.js?v=subjective20260912"></script>
 </body>
 </html>

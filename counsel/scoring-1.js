@@ -20,6 +20,7 @@
     });
     const indicator = document.querySelector('.save-indicator');
     if (indicator) indicator.textContent = '저장 대기 · 실기 기록과 계산 상태를 확인해 주세요.';
+    window.CounselSubjectivePractical?.state(card, status);
   }
   function bindInputAutosave(card) {
     card.querySelectorAll('.input-row input').forEach(inp => {
@@ -27,6 +28,7 @@
         scheduleRecalc(card);
       });
     });
+    card.querySelector('[data-subjective-selection]')?.addEventListener('change', triggerAutoSave);
     // 메모는 recalc 없이 저장만
     const memo = card.querySelector('.uni-memo');
     if (memo) {
@@ -80,8 +82,14 @@
     silgiInputs.forEach(i => {
       if (i.value && i.value.trim() !== '') entered.push({ event: i.dataset.event, value: i.value.trim() });
     });
-    const input = window.PracticalInput.prepare({ ...formula, 학년도: year }, student.gender, entered);
-    if (!input.ready) { setCardPracticalState(card, input.reason); triggerAutoSave(); return; }
+    const scopedFormula = { ...formula, 학년도: year };
+    const partial = window.SubjectivePractical?.getPolicy(scopedFormula);
+    const input = (window.SubjectivePractical || window.PracticalInput).prepare(scopedFormula, student.gender, entered);
+    if (!input.ready) {
+      setCardPracticalState(card, input.reason);
+      window.CounselSubjectivePractical?.state(card, input.reason, input.message);
+      triggerAutoSave(); return;
+    }
     setCardPracticalState(card, 'calculating');
     const isCurrent = () => card.isConnected && card.dataset.practicalVersion === version &&
       STATE.selectedStudent === student && document.getElementById('yearSel').value === year &&
@@ -100,11 +108,15 @@
         const d = await api('/silgi/calculate', {
           method: 'POST',
           body: JSON.stringify({
-            F_data: formula,
+            F_data: scopedFormula,
             S_data: { gender: student.gender, practicals: input.records },
           }),
         });
         if (!isCurrent()) return;
+        if (partial) {
+          window.CounselSubjectivePractical.render(card, scopedFormula, d);
+          triggerAutoSave(); return;
+        }
         silgiScore = window.PracticalInput.resultScore(d);
         absenceNotice = window.PracticalInput.absenceMessage(d.result);
         directScoreNotice = d.result.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '';

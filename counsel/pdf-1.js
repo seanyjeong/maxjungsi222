@@ -217,7 +217,7 @@
     /* 콘텐츠 밀도 기반 자동 축소 — 카드 틀은 고정, 내용만 scale down */
     const recCount = (c.records && c.records.length) || 0;
     const memoScore = c.memo ? Math.min(3, Math.ceil(c.memo.length / 40)) : 0;
-    const density = recCount + memoScore;
+    const density = recCount + memoScore + (c.partial ? 3 : 0);
     const densityClass = density >= 7 ? ' very-dense' : density >= 4 ? ' dense' : '';
 
     return `
@@ -229,7 +229,7 @@
             <div class="dept">${c.dept}</div>
           </div>
         </div>
-        <div class="metrics">
+        ${c.partial ? '' : `<div class="metrics">
           <div class="metric">
             <div class="k">상위 10%</div>
             <div class="v">${pdfFmt(c.top10, 1)}</div>
@@ -242,15 +242,19 @@
             <div class="k">MAX 총점컷</div>
             <div class="v">${pdfFmt(c.max, 1)}</div>
           </div>
-        </div>
+        </div>`}
         ${ratiosBlock}
         ${subjectsBlock}
         <div class="breakdown">
           <div class="row"><div class="k">수능 점수</div><div class="v">${pdfFmt(c.suneung, 2)}</div></div>
           ${c.naesin != null && c.naesin > 0 ? `<div class="row"><div class="k">내신 점수</div><div class="v">${pdfFmt(c.naesin, 2)}</div></div>` : ''}
-          ${c.practical != null && c.practical > 0 ? `<div class="row"><div class="k">실기 점수</div><div class="v">${pdfFmt(c.practical, 2)}</div></div>` : ''}
-          <div class="row total"><div class="k">총점</div><div class="v">${pdfFmt(c.total, 2)}</div></div>
+          ${c.partial ? `<div class="row"><div class="k">${c.partial.label} / ${c.partial.maximum}점</div><div class="v">${pdfFmt(c.partial.score, 2)}</div></div>
+            <div class="row"><div class="k">수능+객관실기 합계</div><div class="v">${pdfFmt(c.partial.subtotal, 2)}</div></div>` :
+            c.practical != null && c.practical > 0 ? `<div class="row"><div class="k">실기 점수</div><div class="v">${pdfFmt(c.practical, 2)}</div></div>` : ''}
+          <div class="row total"><div class="k">${c.partial ? '최종총점' : '총점'}</div><div class="v">${pdfFmt(c.partial ? null : c.total, 2)}</div></div>
         </div>
+        ${c.partial ? `<div class="sub-block"><div class="label">${c.partial.selectionLabel}: ${c.partial.selection || '선택 안 함'}</div>
+          <div style="font-size:10px;line-height:1.5">${c.partial.excludedText}<br>${c.partial.ineligible ? '실기 미응시 · 모집요강상 불합격 대상입니다.<br>' : ''}부분합으로 총점컷 비교·합격 판단을 하지 않습니다.</div></div>` : ''}
         ${practicalBlock}
         ${memo}
       </div>
@@ -300,7 +304,8 @@
     const silgiText = card.querySelector('.score-silgi')?.textContent || '0';
     const silgiMatch = silgiText.match(/[\d.]+/);
     const practical = silgiMatch ? parseFloat(silgiMatch[0]) : 0;
-    const total = parseFloat(card.querySelector('.score-total')?.textContent) || 0;
+    const totalValue = parseFloat(card.querySelector('.score-total')?.textContent);
+    const total = Number.isFinite(totalValue) ? totalValue : null;
     const naesinInput = card.querySelector('[data-field="naeshin"]')?.value?.trim() || null;
     const memo = card.querySelector('.uni-memo')?.value?.trim() || null;
 
@@ -309,6 +314,7 @@
       const lab = row.querySelector('.label')?.textContent?.trim();
       if (!lab || lab === '내신') return;
       const inp = row.querySelector('input');
+      if (!inp) return;
       const v = inp?.value?.trim() || '';
       const out = row.querySelector('.score-out');
       const outText = out?.textContent || '';
@@ -325,6 +331,17 @@
     /* 반영 비율 + 수능 반영 과목 — formula / filter-data에서 가져옴 */
     const uid = card.dataset.uid;
     const formula = uid && year ? STATE.formulaCache[`${uid}-${year}`] : null;
+    const scopedFormula = { ...formula, 학년도: year };
+    const policy = window.SubjectivePractical?.getPolicy(scopedFormula);
+    const objectiveCard = card.querySelector('.uni-card');
+    const objectiveValue = objectiveCard?.dataset.practicalStatus === 'objective-ready' ?
+      Number(objectiveCard.dataset.objectiveScore) : null;
+    const objective = Number.isFinite(objectiveValue) ? objectiveValue : null;
+    const partial = policy ? { label: policy.label, maximum: policy.maximum, score: objective,
+      ineligible: objectiveCard?.dataset.objectiveIneligible === 'true',
+      subtotal: window.SubjectivePractical.subtotal(suneung, objective), selectionLabel: policy.selectionLabel,
+      selection: window.SubjectivePractical.selection(scopedFormula, card.querySelector('[data-subjective-selection]')?.value),
+      excludedText: window.SubjectivePractical.excludedText(policy) } : null;
     const dept = uid ? STATE.allFilterData.find(d => String(d.U_ID) === String(uid)) : null;
 
     const ratios = [];
@@ -356,8 +373,8 @@
 
     return {
       univ: uniName, dept: deptName,
-      top10, branch, max,
-      suneung, naesin, practical, total,
+      top10: partial ? null : top10, branch: partial ? null : branch, max: partial ? null : max,
+      suneung, naesin, practical: partial ? null : practical, total: partial ? null : total, partial,
       naesinRaw: naesinInput,
       records,
       memo,

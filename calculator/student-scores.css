@@ -1,0 +1,221 @@
+/* ── 학생 이름 셀 클릭 hint ── */
+.student-name-cell { cursor: pointer; transition: background 140ms var(--ease); }
+.student-name-cell:hover { background: var(--accent-soft); }
+.student-name-cell:hover .name { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── 학생 성적표 모달 (프리미엄) ── */
+.scores-modal {
+  max-width: 580px;
+  width: 94vw;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.scores-modal-head {
+  padding: 20px 22px 16px;
+  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 100%);
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dark .scores-modal-head {
+  background: linear-gradient(180deg, rgba(15,118,110,0.18) 0%, var(--surface) 100%);
+}
+.scores-head-main { flex: 1; min-width: 0; }
+
+/* 이름 + 아바타 */
+.scores-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0;
+}
+.sc-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+}
+.sc-avatar-m { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); }
+.sc-avatar-f { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%); }
+.sc-name-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.sc-gender-chip {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 99px;
+  font-family: 'Geist Mono', monospace;
+}
+.sc-gender-m { background: rgba(14,165,233,0.12); color: #0284c7; }
+.sc-gender-f { background: var(--accent-soft); color: var(--accent-strong); }
+
+/* chip row */
+.scores-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.sc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.sc-chip i { font-size: 13px; color: var(--text-3); }
+
+/* 닫기 버튼 */
+.scores-close-btn {
+  width: 30px; height: 30px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-3);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 140ms var(--ease), color 140ms var(--ease), border-color 140ms var(--ease);
+  flex-shrink: 0;
+}
+.scores-close-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--text-3);
+}
+.scores-close-btn i { font-size: 16px; }
+
+/* body */
+.scores-modal-body { padding: 18px 22px 20px; }
+.scores-wrap { display: flex; flex-direction: column; gap: 14px; }
+.scores-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+.scores-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.scores-table thead th {
+  padding: 9px 6px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: 'Geist Mono', monospace;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.scores-table thead th:first-child { text-align: left; padding-left: 14px; }
+.scores-table tbody td {
+  padding: 10px 6px;
+  text-align: center;
+  color: var(--text);
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-soft);
+}
+.scores-table tbody tr:last-child td { border-bottom: 0; }
+.scores-table tbody tr:hover td { background: var(--accent-soft); }
+
+/* 영역 라벨 (좌측) */
+.scores-table th.sc-label {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+  vertical-align: middle;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.scores-table th.sc-label > i {
+  color: var(--accent);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.sc-label-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  font-family: inherit;
+}
+.sc-label .sc-sub {
+  margin-top: 1px;
+  font-size: 10.5px;
+  color: var(--text-3);
+  font-weight: 500;
+  font-family: 'Geist Mono', monospace;
+}
+.sc-dash { color: var(--text-3); font-weight: 400; }
+
+/* 등급 pill */
+.sc-grade-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 24px;
+  padding: 0 8px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.sc-grade-top { background: var(--accent-soft); color: var(--accent-strong); }
+.sc-grade-mid { background: rgba(217,119,6,0.12); color: #b45309; }
+.sc-grade-low { background: var(--surface-2); color: var(--text-3); }
+.dark .sc-grade-mid { background: rgba(217,119,6,0.22); color: #fbbf24; }
+
+/* 입력유형 bar */
+.scores-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+}
+.sc-meta-label {
+  color: var(--text-3);
+  font-family: 'Geist Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+.sc-input-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.sc-input-raw { background: rgba(217,119,6,0.12); color: #b45309; border: 1px solid rgba(217,119,6,0.3); }
+.sc-input-official { background: var(--accent-soft); color: var(--accent-strong); border: 1px solid var(--accent-ring); }
+.dark .sc-input-raw { background: rgba(217,119,6,0.22); color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+
+.modal-empty { padding: 40px 20px; text-align: center; color: var(--text-3); }
+.modal-empty i { font-size: 36px; display: block; margin-bottom: 10px; color: var(--text-3); }
+.modal-empty p { margin: 0; font-size: 13px; }

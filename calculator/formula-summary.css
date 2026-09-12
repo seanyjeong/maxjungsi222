@@ -1,0 +1,74 @@
+/* ---------- Formula strip ---------- */
+.formula-strip {
+  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 22px;
+  margin-bottom: 14px;
+  animation: strip-in 0.3s var(--ease-out);
+}
+@keyframes strip-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.formula-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.formula-uni {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+.formula-uni strong {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.formula-uni .sep-dot { color: var(--text-3); }
+.formula-uni > span:last-child { color: var(--text-2); font-weight: 500; }
+.gun-pill {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formula-stats {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.stat {
+  padding: 0 14px;
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 70px;
+}
+.stat:last-child { border-right: 0; }
+.stat[hidden] { display: none; }
+.stat-label {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+.stat-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.stat-primary .stat-value { color: var(--accent-strong); }
