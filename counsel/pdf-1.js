@@ -246,12 +246,12 @@
         ${ratiosBlock}
         ${subjectsBlock}
         <div class="breakdown">
-          <div class="row"><div class="k">${c.calculationNotice ? '1단계 수능 점수' : '수능 점수'}</div><div class="v">${pdfFmt(c.suneung, 2)}</div></div>
+          <div class="row"><div class="k">${c.calculationNotice ? '1단계 수능 점수' : '수능 점수'}</div><div class="v">${pdfFmt(c.suneung, c.scoreDigits || 2)}</div></div>
           ${c.naesin != null && c.naesin > 0 ? `<div class="row"><div class="k">내신 점수</div><div class="v">${pdfFmt(c.naesin, 2)}</div></div>` : ''}
           ${c.partial ? `<div class="row"><div class="k">${c.partial.label} / ${c.partial.maximum}점</div><div class="v">${pdfFmt(c.partial.score, 2)}</div></div>
             <div class="row"><div class="k">수능+객관실기 합계</div><div class="v">${pdfFmt(c.partial.subtotal, 2)}</div></div>` :
             c.practical != null && c.practical > 0 ? `<div class="row"><div class="k">실기 점수</div><div class="v">${pdfFmt(c.practical, 2)}</div></div>` : ''}
-          <div class="row total"><div class="k">${c.partial ? '최종총점' : '총점'}</div><div class="v">${pdfFmt(c.partial ? null : c.total, 2)}</div></div>
+          <div class="row total"><div class="k">${c.partial ? '최종총점' : '총점'}</div><div class="v">${pdfFmt(c.partial ? null : c.total, c.scoreDigits || 2)}</div></div>
         </div>
         ${c.partial ? `<div class="sub-block"><div class="label">${c.partial.selectionLabel ? c.partial.selectionLabel + ": " + (c.partial.selection || "선택 안 함") : "골프 회차별 객관평가"}</div>
           <div style="font-size:10px;line-height:1.5">${c.partial.excludedText}<br>${c.partial.ineligible ? '실기 미응시 · 모집요강상 불합격 대상입니다.<br>' : ''}부분합으로 총점컷 비교·합격 판단을 하지 않습니다.</div></div>` : ''}
@@ -375,6 +375,7 @@
 
     return {
       univ: uniName, dept: deptName,
+      scoreDigits: window.AdmissionsScoreFormat?.digits(scopedFormula) || 2,
       top10: partial || calculationNotice ? null : top10, branch: partial || calculationNotice ? null : branch, max: partial || calculationNotice ? null : max,
       suneung, naesin, practical: partial || calculationNotice ? null : practical, total: partial || calculationNotice ? null : total, partial, calculationNotice,
       naesinRaw: naesinInput,

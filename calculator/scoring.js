@@ -127,7 +127,7 @@ function recalculateTotal(tr, silgiScore = null) {
 
     const total = suneungScore + silgiScore + naeshinScore;
     const totalEl = tr.querySelector('.score-total');
-    if (totalEl) totalEl.textContent = total.toFixed(2);
+    if (totalEl) totalEl.textContent = window.AdmissionsScoreFormat.format(total, currentFormula);
     const bar = tr.querySelector('.total-bar .fill');
     if (bar) {
       const pct = Math.min(100, (total / currentMaxTotal) * 100);
