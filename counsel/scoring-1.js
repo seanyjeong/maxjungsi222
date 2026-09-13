@@ -153,7 +153,7 @@
     const suneung = Number(suText) || 0;
     const total = suneung + naeshinScore + silgiScore;
     const totalEl = card.querySelector('.score-total');
-    if (totalEl) totalEl.textContent = total.toFixed(2);
+    if (totalEl) totalEl.textContent = window.AdmissionsScoreFormat.format(total, scopedFormula);
 
     // MAX컷 대비 diff 업데이트 (uni-diff-row)
     const dept = STATE.allFilterData.find(d => String(d.U_ID) === String(uid));

@@ -59,7 +59,7 @@ function renderRowHtml(student, suneungScore, formula) {
         <span class="gender-dot ${genderClass}"></span><span class="name">${esc(student.student_name)}</span>
         <span class="student-info">${esc(student.gender)} · ${esc(student.school_name || '정보없음')}</span>
       </td>
-      <td class="score-cell score-suneung">${suneungScore.toFixed(2)}</td>
+      <td class="score-cell score-suneung">${window.AdmissionsScoreFormat.format(suneungScore, formula)}</td>
       ${selectionCell}
       ${naeshinCell}
       ${silgiCells}
@@ -67,7 +67,7 @@ function renderRowHtml(student, suneungScore, formula) {
         <td class="score-cell score-objective-subtotal">—</td>` : '<td class="score-cell score-silgi total-silgi">0.00 <span class="deduction zero">(0감)</span></td>'}
       <td>
         <div class="total-wrap">
-          <span class="score-cell score-total">${partial || window.AdmissionsPracticalInput?.stageNotice(formula) ? '—' : suneungScore.toFixed(2)}</span>
+          <span class="score-cell score-total">${partial || window.AdmissionsPracticalInput?.stageNotice(formula) ? '—' : window.AdmissionsScoreFormat.format(suneungScore, formula)}</span>
           ${partial ? '' : `<span class="total-bar"><span class="fill" style="width:${totalPct.toFixed(1)}%"></span></span>`}
         </div>
       </td>

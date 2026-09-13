@@ -55,11 +55,11 @@
     }
 
     const breakdownRows = [
-      `<div class="uni-breakdown-row"><span class="label">수능 점수</span><span class="value score-suneung">${suneungScore.toFixed(2)}</span></div>`,
+      `<div class="uni-breakdown-row"><span class="label">수능 점수</span><span class="value score-suneung">${window.AdmissionsScoreFormat.format(suneungScore, scopedFormula)}</span></div>`,
     ];
     if (reflectsNaeshin) breakdownRows.push(`<div class="uni-breakdown-row"><span class="label">내신 점수</span><span class="value score-naeshin">0.00</span></div>`);
     if (reflectsSilgi) breakdownRows.push(`<div class="uni-breakdown-row"><span class="label">실기 점수</span><span class="value score-silgi">0.00<span class="deduct">(0감)</span></span></div>`);
-    breakdownRows.push(`<div class="uni-breakdown-row total"><span class="label">총점</span><span class="value score-total">${suneungScore.toFixed(2)}</span></div>`);
+    breakdownRows.push(`<div class="uni-breakdown-row total"><span class="label">총점</span><span class="value score-total">${window.AdmissionsScoreFormat.format(suneungScore, scopedFormula)}</span></div>`);
 
     shell.innerHTML = `
       <article class="uni-card">
