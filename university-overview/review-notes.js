@@ -213,13 +213,13 @@ window.UniversityReviewNotes = {
       sources: [{"title":"2027 공식 모집요강","url":"https://ipsi.yongin.ac.kr/ipsi/guide/jungsi/mo_jungsi_20260902_0858.pdf"}],
     },
     114: {
-      status: "실기 상대평가 · 수능 환산 검증",
-      kind: "reviewed",
+      status: "실기 상대평가 · 탐구 환산 확인 중",
+      kind: "provisional",
       practicalEvaluation: "relative",
       practicalFollowUp: false,
-      csatStatus: "verified-provisional-table",
+      csatStatus: "pending-inquiry-denominator",
       summary: "나군 30명, 1단계 4배수. 국어·수학·탐구 중 영역별 최고점 대비 유리한 2영역을 각 50% 반영해 600점으로 환산하고 영어 0~5점을 별도 가산합니다. 실기는 상대평가로, 등록 실기표는 상담용 추정 기준입니다.",
-      followUp: "실기 상세표는 작업 대기에서 제외합니다. 탐구 2과목 변환표는 2027 수능 성적 발표 후 공식표로 갱신하며, 현재는 기존 상담용 표를 적용합니다.",
+      followUp: "사탐·과탐 혼합 수능점수는 잠정값입니다. 탐구 최고점 적용 방식은 공식 확인 중이며, 2027 탐구변환표 발표 후 함께 재검산합니다. 현재는 기존 상담용 표를 적용합니다. 실기 상세표는 작업 대기에서 제외합니다.",
       sources: [{"title":"2027 공식 모집요강","url":"https://admission.ewha.ac.kr/upload/GUIDES/20260901162227VPFXS9.pdf"}],
     },
     115: {

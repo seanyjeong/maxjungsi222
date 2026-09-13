@@ -277,13 +277,13 @@
 
       // show formula strip
       formulaGun.textContent = gunSelect.value || '—';
-      formulaUni.textContent = currentFormula.대학명 || '—';
+      formulaUni.innerHTML = esc(currentFormula.대학명 || '—') + (window.renderSchoolTags?.(currentFormula.tags, year) || '');
       const deptOpt = departmentSelect.getOptions().find(o => String(o.value) === String(U_ID));
       formulaDept.textContent = currentFormula.학과명 || (deptOpt ? deptOpt.label : '—');
       statQuota.textContent   = (currentFormula.모집정원 ?? currentFormula.모집인원 ?? '—') + '명';
       const naeshinRatio = Number(currentFormula.내신 || 0);
       const silgiRatio   = Number(currentFormula.실기 || 0);
-      const etcRatio     = Number(currentFormula.기타 || 0);
+      const etcRatio     = Number(currentFormula.기타 || 0) || 0;
       const suneungRatio = Math.max(0, 100 - naeshinRatio - silgiRatio - etcRatio);
       statSuneung.textContent = suneungRatio + '%';
       statNaeshin.textContent = naeshinRatio + '%';
