@@ -8,8 +8,8 @@ function renderHeader(formula) {
     let html = '<tr>';
     html += '<th class="name-col">#</th>';
     html += '<th class="name-col">학생</th>';
-    html += '<th class="col-suneung"><span class="col-tag"></span>수능 점수</th>';
-    if (partial) html += `<th>${partial.selectionLabel}</th>`;
+    html += `<th class="col-suneung"><span class="col-tag"></span>${window.AdmissionsPracticalInput?.stageNotice(formula) ? '1단계 수능 점수' : '수능 점수'}</th>`;
+    if (partial?.choices.length) html += `<th>${partial.selectionLabel}</th>`;
     if (naeshinRatio > 0) {
       html += `<th class="col-naeshin"><span class="col-tag"></span>내신 (${naeshinRatio}%)</th>`;
     }
@@ -19,6 +19,7 @@ function renderHeader(formula) {
     });
     html += `<th class="col-silgi"><span class="col-tag"></span>${partial ? partial.label + ' / ' + partial.maximum + '점' : '실기 총점'}</th>`;
     if (partial) html += '<th>수능+객관실기 합계</th><th>최종총점 (주관평가 제외)</th>';
+    else if (window.AdmissionsPracticalInput?.stageNotice(formula)) html += '<th>최종총점 · 2단계 환산 대기</th>';
     else html += `<th class="col-total sortable is-active" id="sort-by-total"><span class="col-tag"></span>총점 / ${Number(formula.총점) || 1000} <i class="ph-fill ph-caret-down sort-i"></i></th>`;
     if (partial) html += '<th class="consult-col">상담멘트</th>';
     html += '</tr>';
@@ -36,7 +37,7 @@ function renderHeader(formula) {
 function renderRowHtml(student, suneungScore, formula) {
     const genderClass = student.gender === '여' ? 'f' : 'm';
     const partial = window.SubjectivePractical?.getPolicy(formula);
-    const selectionCell = partial ? `<td><select class="subjective-selection" data-subjective-selection aria-label="${esc(student.student_name)} ${partial.selectionLabel}" aria-describedby="subjectiveCalculationNote">
+    const selectionCell = partial?.choices.length ? `<td><select class="subjective-selection" data-subjective-selection aria-label="${esc(student.student_name)} ${partial.selectionLabel}" aria-describedby="subjectiveCalculationNote">
       <option value="">선택 안 함</option>${partial.choices.map(value => `<option value="${value}">${value}</option>`).join('')}</select></td>` : '';
     let naeshinCell = '';
     if (Number(formula.내신 || 0) > 0) {
@@ -45,7 +46,9 @@ function renderRowHtml(student, suneungScore, formula) {
     const practicalEvents = window.SubjectivePractical?.eventNames(formula) || [...new Set((formula.실기배점 || []).map(r => r.종목명))];
     let silgiCells = '';
     practicalEvents.forEach(ev => {
-      silgiCells += `<td><input type="text" class="practical-input" data-event="${esc(ev)}" aria-label="${esc(student.student_name)} ${esc(ev)} 기록" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}"></td>`;
+      const attributes = `class="practical-input" data-event="${esc(ev)}" aria-label="${esc(student.student_name)} ${esc(ev)} 기록"`;
+      const fallback = `<input type="text" ${attributes} placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}">`;
+      silgiCells += `<td>${window.AdmissionsPracticalInput?.control(formula, student.gender, ev, attributes, fallback) || fallback}</td>`;
       silgiCells += `<td class="score-cell score-silgi" data-event-score="${esc(ev)}">—</td>`;
     });
 
@@ -64,7 +67,7 @@ function renderRowHtml(student, suneungScore, formula) {
         <td class="score-cell score-objective-subtotal">—</td>` : '<td class="score-cell score-silgi total-silgi">0.00 <span class="deduction zero">(0감)</span></td>'}
       <td>
         <div class="total-wrap">
-          <span class="score-cell score-total">${partial ? '—' : suneungScore.toFixed(2)}</span>
+          <span class="score-cell score-total">${partial || window.AdmissionsPracticalInput?.stageNotice(formula) ? '—' : suneungScore.toFixed(2)}</span>
           ${partial ? '' : `<span class="total-bar"><span class="fill" style="width:${totalPct.toFixed(1)}%"></span></span>`}
         </div>
       </td>

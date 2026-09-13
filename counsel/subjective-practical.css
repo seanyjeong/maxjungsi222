@@ -10,6 +10,12 @@
   border: 1px solid var(--border, #d6d3d1); border-radius: var(--r-xs, 6px);
   background: var(--surface, #fff); color: var(--text, #292524); font: inherit;
 }
+.uni-inputs select[data-event] {
+  min-width: 0; width: 100%; min-height: 44px; padding: 8px;
+  border: 1px solid var(--border); border-radius: var(--r-xs);
+  background: var(--surface); color: var(--text); font: inherit;
+}
+.uni-inputs select[data-event]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .subjective-practical select:focus-visible {
   outline: 2px solid var(--accent, #0f766e); outline-offset: 2px;
 }

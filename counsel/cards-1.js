@@ -39,10 +39,13 @@
     if (reflectsSilgi) {
       if (silgiEvents.length) {
         silgiEvents.forEach((ev, index) => {
+          const inputAttributes = `id="practical-${formula.U_ID}-${index}" data-event="${ev}"`;
+          const control = window.AdmissionsPracticalInput?.control(scopedFormula, STATE.selectedStudent?.gender, ev, inputAttributes,
+            `<input ${inputAttributes} type="text" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}">`);
           inputRowsHtml += `
             <div class="input-row">
               <label class="label" for="practical-${formula.U_ID}-${index}">${ev}</label>
-              <input id="practical-${formula.U_ID}-${index}" type="text" placeholder="${ev === '기계체조' ? '학교에서 받은 점수' : '기록'}" data-event="${ev}">
+              ${control || `<input ${inputAttributes} type="text" placeholder="기록">`}
               <span class="score-out empty">-</span>
             </div>`;
         });
@@ -91,7 +94,8 @@
     if (savedItem) {
       const naInput = shell.querySelector('[data-field="naeshin"]');
       if (naInput && savedItem.상담_내신점수 != null) naInput.value = savedItem.상담_내신점수;
-      const savedSilgi = safeParse(savedItem.상담_실기기록, {});
+      const originalSilgi = safeParse(savedItem.상담_실기기록, {});
+      const savedSilgi = window.AdmissionsPracticalInput?.restore(scopedFormula, STATE.selectedStudent?.gender, originalSilgi) || originalSilgi;
       if (savedSilgi && typeof savedSilgi === 'object') {
         shell.querySelectorAll('[data-event]').forEach(inp => {
           if (Object.hasOwn(savedSilgi, inp.dataset.event)) inp.value = savedSilgi[inp.dataset.event];

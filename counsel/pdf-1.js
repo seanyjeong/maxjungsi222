@@ -229,7 +229,7 @@
             <div class="dept">${c.dept}</div>
           </div>
         </div>
-        ${c.partial ? '' : `<div class="metrics">
+        ${c.partial || c.calculationNotice ? '' : `<div class="metrics">
           <div class="metric">
             <div class="k">상위 10%</div>
             <div class="v">${pdfFmt(c.top10, 1)}</div>
@@ -246,15 +246,16 @@
         ${ratiosBlock}
         ${subjectsBlock}
         <div class="breakdown">
-          <div class="row"><div class="k">수능 점수</div><div class="v">${pdfFmt(c.suneung, 2)}</div></div>
+          <div class="row"><div class="k">${c.calculationNotice ? '1단계 수능 점수' : '수능 점수'}</div><div class="v">${pdfFmt(c.suneung, 2)}</div></div>
           ${c.naesin != null && c.naesin > 0 ? `<div class="row"><div class="k">내신 점수</div><div class="v">${pdfFmt(c.naesin, 2)}</div></div>` : ''}
           ${c.partial ? `<div class="row"><div class="k">${c.partial.label} / ${c.partial.maximum}점</div><div class="v">${pdfFmt(c.partial.score, 2)}</div></div>
             <div class="row"><div class="k">수능+객관실기 합계</div><div class="v">${pdfFmt(c.partial.subtotal, 2)}</div></div>` :
             c.practical != null && c.practical > 0 ? `<div class="row"><div class="k">실기 점수</div><div class="v">${pdfFmt(c.practical, 2)}</div></div>` : ''}
           <div class="row total"><div class="k">${c.partial ? '최종총점' : '총점'}</div><div class="v">${pdfFmt(c.partial ? null : c.total, 2)}</div></div>
         </div>
-        ${c.partial ? `<div class="sub-block"><div class="label">${c.partial.selectionLabel}: ${c.partial.selection || '선택 안 함'}</div>
+        ${c.partial ? `<div class="sub-block"><div class="label">${c.partial.selectionLabel ? c.partial.selectionLabel + ": " + (c.partial.selection || "선택 안 함") : "골프 회차별 객관평가"}</div>
           <div style="font-size:10px;line-height:1.5">${c.partial.excludedText}<br>${c.partial.ineligible ? '실기 미응시 · 모집요강상 불합격 대상입니다.<br>' : ''}부분합으로 총점컷 비교·합격 판단을 하지 않습니다.</div></div>` : ''}
+        ${c.calculationNotice ? `<div class="sub-block">${c.calculationNotice}</div>` : ''}
         ${practicalBlock}
         ${memo}
       </div>
@@ -313,7 +314,7 @@
     card.querySelectorAll('.input-row').forEach(row => {
       const lab = row.querySelector('.label')?.textContent?.trim();
       if (!lab || lab === '내신') return;
-      const inp = row.querySelector('input');
+      const inp = row.querySelector('input, select[data-event]');
       if (!inp) return;
       const v = inp?.value?.trim() || '';
       const out = row.querySelector('.score-out');
@@ -332,6 +333,7 @@
     const uid = card.dataset.uid;
     const formula = uid && year ? STATE.formulaCache[`${uid}-${year}`] : null;
     const scopedFormula = { ...formula, 학년도: year };
+    const calculationNotice = window.AdmissionsPracticalInput?.stageNotice(scopedFormula);
     const policy = window.SubjectivePractical?.getPolicy(scopedFormula);
     const objectiveCard = card.querySelector('.uni-card');
     const objectiveValue = objectiveCard?.dataset.practicalStatus === 'objective-ready' ?
@@ -373,8 +375,8 @@
 
     return {
       univ: uniName, dept: deptName,
-      top10: partial ? null : top10, branch: partial ? null : branch, max: partial ? null : max,
-      suneung, naesin, practical: partial ? null : practical, total: partial ? null : total, partial,
+      top10: partial || calculationNotice ? null : top10, branch: partial || calculationNotice ? null : branch, max: partial || calculationNotice ? null : max,
+      suneung, naesin, practical: partial || calculationNotice ? null : practical, total: partial || calculationNotice ? null : total, partial, calculationNotice,
       naesinRaw: naesinInput,
       records,
       memo,
