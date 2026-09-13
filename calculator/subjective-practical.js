@@ -2,6 +2,7 @@
 window.CalculatorSubjectivePractical = (() => {
   function formulaNotice(formula) {
     const policy = window.SubjectivePractical.getPolicy(formula);
+    const pending = window.AdmissionsPracticalInput?.stageNotice(formula);
     let note = document.getElementById('subjectiveCalculationNote');
     if (!note) {
       note = document.createElement('section');
@@ -9,13 +10,18 @@ window.CalculatorSubjectivePractical = (() => {
       note.className = 'calculator-subjective-note';
       document.getElementById('formulaStrip')?.after(note);
     }
-    note.hidden = !policy;
+    note.hidden = !policy && !pending;
     const totalLegend = document.querySelector('#resultsLegend .dot-total')?.parentElement;
-    if (totalLegend) totalLegend.hidden = !!policy;
+    if (totalLegend) totalLegend.hidden = !!policy || !!pending;
+    if (pending) {
+      note.textContent = pending;
+      const cuts = document.getElementById('formulaCuts'); if (cuts) cuts.hidden = true;
+      return;
+    }
     if (!policy) return;
     note.innerHTML = `<strong>${policy.label} ${policy.maximum}점만 계산</strong>
       <p>${window.SubjectivePractical.excludedText(policy)}</p><p>${policy.inputHint}</p>
-      <p>학생별 종목 선택은 객관점수에 영향을 주지 않습니다. 수능+객관실기 합계는 최종총점·컷 비교·순위에 사용하지 않습니다.</p>`;
+      <p>${policy.choices.length ? '학생별 종목 선택은 객관점수에 영향을 주지 않습니다. ' : ''}수능+객관실기 합계는 최종총점·컷 비교·순위에 사용하지 않습니다.</p>`;
     const cuts = document.getElementById('formulaCuts');
     if (cuts) cuts.hidden = true;
   }
@@ -47,11 +53,12 @@ window.CalculatorSubjectivePractical = (() => {
   }
   function draft(tr, formula) {
     const policy = window.SubjectivePractical.getPolicy(formula);
+    const pending = window.AdmissionsPracticalInput?.stageNotice(formula);
     const selection = window.SubjectivePractical.selection(formula, tr.querySelector('[data-subjective-selection]')?.value);
     const score = tr.dataset.practicalStatus === 'objective-ready' ? Number(tr.dataset.objectiveScore) : null;
     const suneung = Number(tr.querySelector('.score-suneung').textContent);
     const sum = window.SubjectivePractical.subtotal(suneung, score);
-    return [`${policy.selectionLabel}: ${selection || '선택 안 함'}`,
+    return [policy.choices.length ? `${policy.selectionLabel}: ${selection || '선택 안 함'}` : '',
       `수능 점수: ${suneung.toFixed(2)}점`,
       `${policy.label}: ${score == null ? '기록 확인 필요' : score.toFixed(2) + '점 / ' + policy.maximum + '점'}`,
       `수능+객관실기 합계: ${sum == null ? '미산출' : sum.toFixed(2) + '점'}`,

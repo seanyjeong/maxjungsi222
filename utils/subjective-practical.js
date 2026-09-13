@@ -1,13 +1,14 @@
 'use strict';
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./practical-input'));
-  else root.SubjectivePractical = factory(root.PracticalInput);
-})(typeof window === 'undefined' ? globalThis : window, function (practicalInput) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./practical-input'), require('./admissions-practical-input'));
+  else root.SubjectivePractical = factory(root.PracticalInput, root.AdmissionsPracticalInput);
+})(typeof window === 'undefined' ? globalThis : window, function (practicalInput, admissionsInput) {
   const YEAR = 2027;
   const FEATURE = 'subjectivePractical2027Reviewed';
   const SELECTION_KEY = '_subjectiveSelection';
   const INELIGIBLE_MESSAGE = '실기 미응시 · 모집요강상 불합격 대상입니다.';
   const POLICIES = {
+    131: admissionsInput?.golfPolicy,
     104: { label: '기초실기', maximum: 300, unscoredMaximum: 300, genders: ['남', '여'],
       events: [{ name: '제자리멀리뛰기', maximum: 150 }, { name: '지그재그런', maximum: 150 }],
       choices: ['축구', '농구', '체조'], selectionLabel: '전공실기 종목',
@@ -32,11 +33,13 @@
   function eventNames(formula, gender) {
     const policy = getPolicy(formula);
     if (policy) return policy.events.map(event => event.name);
+    const special = admissionsInput?.eventNames(formula);
+    if (special) return special;
     return [...new Set((formula?.실기배점 || []).filter(row => !gender || row.성별 === gender).map(row => row.종목명))];
   }
   function prepare(formula, gender, practicals) {
     const policy = getPolicy(formula);
-    if (!policy) return practicalInput.prepare(formula, gender, practicals);
+    if (!policy) return admissionsInput?.prepare(formula, gender, practicals) || practicalInput.prepare(formula, gender, practicals);
     const names = eventNames(formula);
     const relevant = practicals.filter(row => names.includes(row.event));
     const records = names.map(event => ({ event, value: String(relevant.find(row => row.event === event)?.value ?? '').trim() }));
@@ -45,7 +48,8 @@
     if (new Set(relevant.map(row => row.event)).size !== relevant.length) {
       return { ready: false, reason: 'invalid', records, names, message: '종목별 기록을 하나씩 입력해 주세요.' };
     }
-    const invalid = records.some(({ value }) => value && (Number(formula.U_ID) === 105
+    const invalid = records.some(({ value }) => value && (Number(formula.U_ID) === 131
+      ? !['A', 'B', 'C', 'D', '미응시'].includes(value.toUpperCase()) : Number(formula.U_ID) === 105
       ? !(['F', '미응시'].includes(value.toUpperCase()) || /^\d+(?:\.\d+)?$/.test(value) && [110, 115, 120, 125, 130].includes(Number(value)))
       : value !== '미응시' && (!/^\d+(?:\.\d+)?$/.test(value) || !Number.isFinite(Number(value)) || Number(value) <= 0)));
     if (invalid) return { ready: false, reason: 'invalid', records, names, message: policy.inputHint };

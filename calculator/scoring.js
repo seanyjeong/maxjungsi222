@@ -94,7 +94,7 @@ async function recalculateSilgiAndTotal(tr) {
     const totalSilgiCell = tr.querySelector('.total-silgi');
     const totalDed = silgiResult?.breakdown?.total_deduction_level || 0;
     const dedClass = totalDed > 0 ? 'deduction' : 'deduction zero';
-    const notice = window.PracticalInput.absenceMessage(silgiResult) ||
+    const notice = window.PracticalInput.absenceMessage(silgiResult) || (silgiResult?.breakdown?.provisional ? '하위 급간 임시표 적용' : '') ||
       (silgiResult?.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '');
     totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} <span class="${dedClass}" role="status">(${notice || totalDed + '감'})</span>`;
 
@@ -104,6 +104,7 @@ async function recalculateSilgiAndTotal(tr) {
 
 function recalculateTotal(tr, silgiScore = null) {
     const currentFormula = getFormula(), currentMaxTotal = getMaximum();
+    if (window.AdmissionsPracticalInput?.stageNotice(currentFormula)) return;
     if (window.SubjectivePractical?.getPolicy(currentFormula)) return;
     if (tr.dataset.practicalStatus && tr.dataset.practicalStatus !== 'ready') return;
     const suneungScore = Number(tr.querySelector('.score-suneung')?.textContent || 0);

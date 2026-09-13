@@ -3,20 +3,30 @@ window.CounselSubjectivePractical = (() => {
   const policyApi = () => window.SubjectivePractical;
   function mount(shell, formula, saved, year) {
     const scoped = { ...formula, 학년도: year }, policy = policyApi().getPolicy(scoped);
+    const pending = window.AdmissionsPracticalInput?.stageNotice(scoped);
+    if (pending) {
+      const card = shell.querySelector('.uni-card'), notice = document.createElement('p');
+      notice.className = 'subjective-practical'; notice.textContent = pending;
+      card.querySelector('.uni-inputs')?.before(notice);
+      card.querySelector('.score-suneung').parentElement.querySelector('.label').textContent = '1단계 수능 점수';
+      card.querySelector('.score-total').textContent = '—';
+      shell.querySelectorAll('.uni-metrics, .uni-diff').forEach(node => { node.style.display = 'none'; });
+      card.querySelectorAll('[data-event]').forEach(input => { input.disabled = true; });
+    }
     if (!policy) return;
     const card = shell.querySelector('.uni-card');
     card.dataset.subjectivePartial = 'true';
     const section = document.createElement('section');
     section.className = 'subjective-practical';
     const id = `subjective-${formula.U_ID}-${year}`;
-    section.innerHTML = `<label for="${id}">${policy.selectionLabel}</label>
+    section.innerHTML = `${policy.choices.length ? `<label for="${id}">${policy.selectionLabel}</label>
       <select id="${id}" data-subjective-selection aria-describedby="${id}-note">
         <option value="">선택 안 함</option>${policy.choices.map(value => `<option value="${value}">${value}</option>`).join('')}
-      </select><p id="${id}-note">${policyApi().excludedText(policy)}</p>
+      </select>` : ''}<p id="${id}-note">${policyApi().excludedText(policy)}</p>
       <p>${policy.inputHint}</p><p>수능과 객관실기의 합계만 표시합니다. 최종총점·총점컷 비교는 제공하지 않습니다.</p>`;
     card.querySelector('.uni-inputs')?.before(section);
     const select = section.querySelector('select');
-    select.value = policyApi().selection(scoped, saved?.[policyApi().SELECTION_KEY]);
+    if (select) select.value = policyApi().selection(scoped, saved?.[policyApi().SELECTION_KEY]);
     card.querySelector('.score-silgi').classList.add('score-objective');
     card.querySelector('.score-silgi').parentElement.querySelector('.label').textContent = `${policy.label} / ${policy.maximum}점`;
     const row = document.createElement('div');

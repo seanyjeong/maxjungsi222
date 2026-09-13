@@ -38,3 +38,11 @@ test('an unresolved total unit is withheld and a fixed inquiry denominator remai
   assert.deepEqual(model.items, [{ label: '전형 총점', value: '환산 단위 확인 중' }]);
   assert(model.notes.includes('탐구는 2과목 합을 2로 나누어 반영합니다.'));
 });
+
+test('golf avoids an overall specialty selector and Seoul explains the withheld total',()=>{
+ const golf=information.build({U_ID:131,학년도:2027,총점:1000,실기총점:700,기타설정:{subjectivePractical2027Reviewed:true}},subjective);
+ assert(golf.items.some(row=>row.value==='골프 객관평가 360점'));
+ assert(!golf.notes.some(note=>note.includes('중 선택')));
+ const snu=information.build({총점:1000,실기총점:200},subjective,{withholdTotal:true,withholdReason:'2단계 환산 대기',practicalDisplay:'원점수 100점 → 최종 20점'});
+ assert.deepEqual(snu.items.map(row=>row.value),['2단계 환산 대기','원점수 100점 → 최종 20점']);
+});

@@ -23,8 +23,8 @@
     window.CounselSubjectivePractical?.state(card, status);
   }
   function bindInputAutosave(card) {
-    card.querySelectorAll('.input-row input').forEach(inp => {
-      inp.addEventListener('input', () => {
+    card.querySelectorAll('.input-row input, .input-row select[data-event]').forEach(inp => {
+      inp.addEventListener(inp.tagName === 'SELECT' ? 'change' : 'input', () => {
         scheduleRecalc(card);
       });
     });
@@ -119,7 +119,7 @@
         }
         silgiScore = window.PracticalInput.resultScore(d);
         absenceNotice = window.PracticalInput.absenceMessage(d.result);
-        directScoreNotice = d.result.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '';
+        directScoreNotice = d.result.breakdown?.provisional ? '하위 급간 임시표 적용' : d.result.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '';
         {
           const br = d.result.breakdown || {};
           if (Array.isArray(br.events)) {
