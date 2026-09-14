@@ -31,6 +31,9 @@ def setup(page: Page) -> dict[str, Any]:
         rows = [{"U_ID": 105, "university": "숙명여자대학교", "department": "체육교육과", "gun": "나", "광역": "서울", "교직": "O"},
                 {"U_ID": 150, "university": "순천대학교", "department": "예체능분야", "gun": "다", "광역": "전남", "교직": "X"}]
         rows[0]["department"] = f"체육교육과 {year}"
+        if state.get("history_rows"):
+            rows.extend({"U_ID": uid, "university": name, "department": "체육", "gun": "나"}
+                        for uid, name in [(102, "세종대학교"), (111, "용인대학교"), (70, "호서대학교"), (204, "호서대학교")])
         if "/schools/" in path:
             payload = {"success": True, "list": rows}
         elif "/cutoffs/" in path:
@@ -38,6 +41,8 @@ def setup(page: Page) -> dict[str, Any]:
                                                       {"U_ID": 150, "모집인원": "수시이월", "수능비율": "100", "실기비율": "0"}]}
         elif "/filter-data/" in path:
             payload = {"success": True, "data": [{"U_ID": 105, "국어_raw": "40", "수학_raw": "-", "영어_raw": "30", "탐구_raw": "30", "탐구수_raw": "1"}]}
+            if state.get("history_rows"):
+                payload["data"].extend({"U_ID": uid, "한국사_raw": "가산점"} for uid in [102, 111, 70, 204])
         elif path.endswith("/formula-details"):
             if state["fail"]:
                 route.fulfill(status=500, content_type="application/json", body='{"message":"검증용 오류"}')
@@ -77,6 +82,30 @@ def test_partial_information_and_full_intervals_are_visible(browser: Browser, ba
     expect(page.locator("#mdCuts")).to_contain_text("2026학년도 총점컷")
     expect(page.locator("#mdSubjGrid")).to_contain_text("미반영")
     assert state["writes"] == state["errors"] == []
+    page.close()
+
+
+def test_reviewed_history_labels_match_list_and_details_only_in_2027(browser: Browser, base_url: str) -> None:
+    page = browser.new_page()
+    state = setup(page)
+    state["history_rows"] = True
+    page.goto(base_url + "/university_overview.html", wait_until="domcontentloaded")
+    for uid, expected in [(102, "필수응시"), (111, "필수응시"), (70, "미반영"), (204, "미반영")]:
+        row = page.locator(f'#tbody tr[data-uid="{uid}"]')
+        expect(row.locator(f'[title="한국사: {expected}"]')).to_be_visible()
+        row.click()
+        expect(page.locator('#mdSubjGrid .subj-cell').filter(has_text="한국사")).to_contain_text(expected)
+        page.locator('#mdClose').click()
+    page.locator('#yearSel .combo-display').click()
+    page.locator('#yearSel [data-value="2026"]').click()
+    expect(page.locator('#sumYear')).to_have_text('2026')
+    for uid in [102, 111, 70, 204]:
+        row = page.locator(f'#tbody tr[data-uid="{uid}"]')
+        expect(row.locator('[title="한국사: 가산점"]')).to_be_visible()
+        row.click()
+        expect(page.locator('#mdSubjGrid .subj-cell').filter(has_text="한국사")).to_contain_text("가산점")
+        page.locator('#mdClose').click()
+    assert state['writes'] == state['errors'] == []
     page.close()
 
 
