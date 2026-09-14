@@ -30,3 +30,22 @@ test('relative practicals and unpublished Incheon tables have distinct follow-up
     assert.equal(schools[uid].practicalFollowUp, true);
   }
 });
+
+test('Keimyung retains the fourth decimal in cards and PDF only for its reviewed 2027 formula', () => {
+  const fs = require('node:fs'), vm = require('node:vm'), scope = {};
+  const formula = {U_ID: 195, 학년도: 2027, 기타설정: '{"keimyung2027UnitNormalized":true}'};
+  assert.equal(format(85.625, formula), '85.6250');
+  assert.equal(format(84.625, {...formula, 학년도: 2026}), '84.63');
+  assert.equal(format(84.625, {...formula, 기타설정: null}), '84.63');
+  vm.runInNewContext(fs.readFileSync(require.resolve('../counsel/pdf-1'), 'utf8'), scope);
+  const html = scope.pdfRenderCard({records: [], suneung: 85.625, total: 85.625, scoreDigits: 4}, 0);
+  assert(html.includes('85.6250'));
+});
+test('browser score configuration loads before the formatter on both calculation pages', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  for (const entry of ['counsel.html', 'calculator.html']) {
+    const html = fs.readFileSync(path.join(__dirname, '..', entry), 'utf8');
+    assert(html.indexOf('config/admissions-score-format.js') >= 0);
+    assert(html.indexOf('config/admissions-score-format.js') < html.indexOf('utils/admissions-score-format.js'));
+  }
+});
