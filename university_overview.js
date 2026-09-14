@@ -104,6 +104,7 @@
     return schools.map(s => {
       const c = cutMap.get(s.U_ID) || {};
       const f = filMap.get(s.U_ID) || {};
+      const review = window.UniversityInformation.getReview(window.UniversityReviewNotes, s.U_ID, STATE.year);
       const toNum = v => (v != null && v !== '' && !isNaN(Number(v))) ? Number(v) : null;
       return {
         U_ID: s.U_ID,
@@ -121,7 +122,7 @@
           수학: f.수학_raw || '',
           영어: f.영어_raw || '',
           탐구: f.탐구_raw || '',
-          한국사: f.한국사_raw || '',
+          한국사: review?.historyDisplay || f.한국사_raw || '',
           탐구수: f.탐구수_raw || '',
         },
         실기목록: (f.실기종목_display || f.practical_events || ''),
