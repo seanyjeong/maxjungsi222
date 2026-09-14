@@ -94,9 +94,9 @@ async function recalculateSilgiAndTotal(tr) {
     const totalSilgiCell = tr.querySelector('.total-silgi');
     const totalDed = silgiResult?.breakdown?.total_deduction_level || 0;
     const dedClass = totalDed > 0 ? 'deduction' : 'deduction zero';
-    const notice = window.PracticalInput.absenceMessage(silgiResult) || (silgiResult?.breakdown?.provisional ? '하위 급간 임시표 적용' : '') ||
+    const notice = window.PracticalInput.absenceMessage(silgiResult) || window.PracticalInput.resultNotice(silgiResult) || (silgiResult?.breakdown?.provisional ? '하위 급간 임시표 적용' : '') ||
       (silgiResult?.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '');
-    totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} <span class="${dedClass}" role="status">(${notice || totalDed + '감'})</span>`;
+    totalSilgiCell.innerHTML = `${silgiScore.toFixed(2)} <span class="${dedClass}${notice ? ' policy-notice' : ''}" role="status">(${notice || totalDed + '감'})</span>`;
 
     recalculateTotal(tr, silgiScore);
     sortResultsTable();
