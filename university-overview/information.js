@@ -1,8 +1,8 @@
 'use strict';
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.UniversityInformation = factory();
-})(typeof window === 'undefined' ? globalThis : window, function () {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('../config/inquiry-followups-2027'));
+  else root.UniversityInformation = factory(root.InquiryFollowupConfig);
+})(typeof window === 'undefined' ? globalThis : window, function (inquiryConfig) {
   function object(value) {
     if (typeof value === 'string') {
       try { return JSON.parse(value) || {}; } catch { return {}; }
@@ -43,7 +43,7 @@
     if (review?.stageOneOnly) return {
       stageOneOnly: true,
       items: [{ label: '표시 점수', value: review.stageLabel }, { label: '1단계 선발', value: review.stageSelection }],
-      notes: [review.stageFormula], english: gradeRows(formula.english_scores), history: gradeRows(formula.history_scores), extra: '',
+      notes: [review.stageFormula, review.stageComparison].filter(Boolean), english: gradeRows(formula.english_scores), history: gradeRows(formula.history_scores), extra: '',
     };
     const total = numeric(formula.총점), practical = numeric(formula.실기총점);
     const policy = subjective?.getPolicy(formula) || null;
@@ -71,7 +71,21 @@
   }
 
   function getReview(catalog, uid, year) {
-    return Number(year) === Number(catalog?.year) ? catalog.schools?.[String(uid)] || null : null;
+    if (Number(year) !== Number(catalog?.year)) return null;
+    const review = catalog.schools?.[String(uid)] || null;
+    const inquiryFollowUp = inquiryNotice(uid, year);
+    if (!inquiryFollowUp) return review;
+    return { status: inquiryFollowUp.needsReview ? '탐구 환산 방식 확인 필요' : '탐구변환표 갱신 안내', kind: 'follow-up', summary: '', ...review, inquiryFollowUp };
+  }
+
+  function inquiryNotice(uid, year) {
+    if (Number(year) !== inquiryConfig?.year) return null;
+    const id = Number(uid), active = inquiryConfig.active.includes(id);
+    const missingTable = inquiryConfig.missingTable.includes(id), missingSetting = inquiryConfig.missingSetting.includes(id);
+    if (!active && !missingTable && !missingSetting) return null;
+    const current = missingTable ? inquiryConfig.missingTableNotice : missingSetting ? inquiryConfig.missingSettingNotice : inquiryConfig.current;
+    const provenance = id === 23 ? inquiryConfig.yonseiPedagogy : active && ![19, 22].includes(id) ? inquiryConfig.provenance : '';
+    return { current, followUp: inquiryConfig.followUp, provenance, needsReview: missingTable || missingSetting, source: inquiryConfig.listSource };
   }
 
   return { build, getReview, gradeRows, selectionSummary, numeric };
