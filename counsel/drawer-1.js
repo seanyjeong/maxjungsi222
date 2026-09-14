@@ -86,7 +86,14 @@
     });
   }
 
+  function drawerStagePolicy(d) {
+    const policy = window.AdmissionsStageConfig;
+    return Number(d.U_ID) === policy?.uid && Number(document.getElementById('yearSel').value) === policy.year ? policy : null;
+  }
+
   function reflectPctString(d) {
+    const stage = drawerStagePolicy(d);
+    if (stage) return stage.selection;
     const parts = [];
     if (d.수능 > 0) parts.push(`수 ${d.수능}%`);
     if (d.내신 > 0) parts.push(`내신 ${d.내신}%`);
@@ -97,6 +104,8 @@
 
   /* 수능 반영과목 HTML 만들기 */
   function subjectsHtml(d) {
+    const stage = drawerStagePolicy(d);
+    if (stage) return `<div class="cand-subjects"><span class="k">수능</span><span class="subj note">${stage.formula}</span></div>`;
     const subjects = [
       { label: '국', raw: d.국어_raw },
       { label: '수', raw: d.수학_raw },
@@ -197,6 +206,7 @@
       }
 
       body.innerHTML = list.map(d => {
+        const stage = drawerStagePolicy(d);
         const regionTxt = [d.지역, d.시구].filter(Boolean).join(' ') || '-';
         const events = d.practical_events ? d.practical_events.replace(/,/g, ', ') : '-';
         const branchCut = (d.branch_suneung_cut != null && d.branch_suneung_cut !== '') ? Number(d.branch_suneung_cut).toFixed(2) : '-';
@@ -216,12 +226,12 @@
               ${d.교직 === 'O' ? '<span class="chip">교직</span>' : d.교직 === '△' ? '<span class="chip">교직 일부</span>' : ''}
             </div>
             <div class="cand-score-bar">
-              <span class="label">환산</span>
+              <span class="label">${stage?.label || '환산'}</span>
               <span class="value" data-score-out="${d.U_ID}"><span class="loading-spinner"><i class="ph-light ph-circle-notch"></i> …</span></span>
-              <span class="uni-diff" data-diff-out="${d.U_ID}" style="visibility:hidden">-</span>
+              ${stage ? '' : `<span class="uni-diff" data-diff-out="${d.U_ID}" style="visibility:hidden">-</span>`}
             </div>
             ${subjectsHtml(d)}
-            <div class="cand-events">
+            ${stage ? '' : `<div class="cand-events">
               <span class="k">실기종목</span>
               <i class="ph-light ph-barbell"></i>
               ${events}
@@ -230,6 +240,7 @@
               <div><span>지점 수능컷</span><span>${branchCut}</span></div>
               <div><span>MAX 수능컷</span><span>${maxCut}</span></div>
             </div>
+            `}
             <div class="cand-actions">
               <button class="cand-add-btn" data-gun="${gun}"><i class="ph-light ph-bookmark-simple"></i>관심학교 담기</button>
             </div>

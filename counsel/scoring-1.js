@@ -6,10 +6,10 @@
      둘 다 1.5초 debounce 후 /counseling/wishlist/bulk-save
   */
 
-  function setCardPracticalState(card, status) {
+  function setCardPracticalState(card, status, message) {
     card.dataset.practicalStatus = status;
     const score = card.querySelector('.score-silgi');
-    if (score) { score.textContent = window.PracticalInput.messages[status]; score.setAttribute('role', 'status'); }
+    if (score) { score.textContent = message || window.PracticalInput.messages[status]; score.setAttribute('role', 'status'); }
     const total = card.querySelector('.score-total');
     if (total) total.textContent = '—';
     const diff = card.closest('.uni-card-shell')?.querySelector('.uni-diff');
@@ -56,6 +56,10 @@
     const formula = STATE.formulaCache[`${uid}-${year}`];
     const student = STATE.selectedStudent;
     if (!formula || !student) return;
+    if (window.AdmissionsPracticalInput?.stagePolicy({ ...formula, 학년도: year })) {
+      card.dataset.practicalStatus = 'stage-one-ready';
+      return;
+    }
 
     // 1) 내신 — raw 값 그대로 (클라 환산 X, 선생이 이미 환산된 값 입력)
     let naeshinScore = 0;
@@ -86,7 +90,7 @@
     const partial = window.SubjectivePractical?.getPolicy(scopedFormula);
     const input = (window.SubjectivePractical || window.PracticalInput).prepare(scopedFormula, student.gender, entered);
     if (!input.ready) {
-      setCardPracticalState(card, input.reason);
+      setCardPracticalState(card, input.reason, input.message);
       window.CounselSubjectivePractical?.state(card, input.reason, input.message);
       triggerAutoSave(); return;
     }

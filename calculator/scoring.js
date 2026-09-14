@@ -1,9 +1,9 @@
 'use strict';
 window.createCalculatorScoring = function ({ resultsTbody, getFormula, getStudents, getMaximum, getSort }) {
-function setPracticalState(tr, status) {
+function setPracticalState(tr, status, message) {
     tr.dataset.practicalStatus = status;
     const cell = tr.querySelector('.total-silgi');
-    if (cell) { cell.textContent = window.PracticalInput.messages[status]; cell.setAttribute('role', 'status'); }
+    if (cell) { cell.textContent = message || window.PracticalInput.messages[status]; cell.setAttribute('role', 'status'); }
     const total = tr.querySelector('.score-total');
     if (total) total.textContent = '—';
     const fill = tr.querySelector('.total-bar .fill');
@@ -33,7 +33,7 @@ function bindInputListeners() {
 async function recalculateSilgiAndTotal(tr) {
     const currentFormula = getFormula(), currentStudents = getStudents();
     const version = tr.dataset.practicalVersion = String(Number(tr.dataset.practicalVersion || 0) + 1);
-    if (!currentFormula) return;
+    if (!currentFormula || window.AdmissionsPracticalInput?.stagePolicy(currentFormula)) return;
     const studentId = tr.dataset.studentId;
     const student = currentStudents.find(s => String(s.student_id) === String(studentId));
     if (!student) return;
@@ -45,7 +45,7 @@ async function recalculateSilgiAndTotal(tr) {
 
     const input = (window.SubjectivePractical || window.PracticalInput).prepare(currentFormula, student.gender, practicals);
     if (!input.ready) {
-      setPracticalState(tr, input.reason);
+      setPracticalState(tr, input.reason, input.message);
       window.CalculatorSubjectivePractical?.state(tr, input.reason, input.message);
       sortResultsTable(); return;
     }
@@ -137,22 +137,31 @@ function recalculateTotal(tr, silgiScore = null) {
 
 function sortResultsTable() {
     const sortDir = getSort();
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(getFormula());
+    const selector = stage ? '.score-suneung' : '.score-total';
+    const score = row => {
+      const text = row.querySelector(selector)?.textContent?.trim();
+      return text ? Number(text) : NaN;
+    };
     const rows = Array.from(resultsTbody.querySelectorAll('tr'));
     rows.sort((a, b) => {
-      const aS = Number(a.querySelector('.score-total')?.textContent || 0);
-      const bS = Number(b.querySelector('.score-total')?.textContent || 0);
+      const aS = score(a), bS = score(b);
       if (!Number.isFinite(aS)) return Number.isFinite(bS) ? 1 : 0;
       if (!Number.isFinite(bS)) return -1;
       return sortDir === 'desc' ? (bS - aS) : (aS - bS);
     });
+    const ranking = stage ? rows.map(score).filter(Number.isFinite).sort((a, b) => b - a) : [];
+    const ranks = new Map();
+    ranking.forEach((value, index) => { if (!ranks.has(value)) ranks.set(value, index + 1); });
     rows.forEach((row, i) => {
       resultsTbody.appendChild(row);
       const rankCell = row.querySelector('.rank-cell');
       if (rankCell) {
         const badge = rankCell.querySelector('.rank-badge');
-        const valid = Number.isFinite(Number(row.querySelector('.score-total')?.textContent));
-        badge.textContent = valid ? String(i + 1).padStart(2, '0') : '—';
-        rankCell.classList.toggle('is-top', valid && i < 3);
+        const valid = Number.isFinite(score(row));
+        const rank = stage ? ranks.get(score(row)) : i + 1;
+        badge.textContent = valid ? String(rank).padStart(2, '0') : '—';
+        rankCell.classList.toggle('is-top', valid && rank <= 3);
       }
     });
   }

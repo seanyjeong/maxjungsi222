@@ -6,7 +6,8 @@
   function profile(formula) {
     let settings = formula?.기타설정;
     if (typeof settings === 'string') { try { settings = JSON.parse(settings); } catch { return null; } }
-    return Number(formula?.학년도) === config.year && settings?.[config.feature] === true ? config.profiles[Number(formula.U_ID)] : null;
+    const policy = config.profiles[Number(formula?.U_ID)];
+    return Number(formula?.학년도) === config.year && settings?.[policy?.feature || config.feature] === true ? policy : null;
   }
   function truncate(value, digits) {
     const [whole, decimal = ''] = value.split('.');
@@ -20,7 +21,8 @@
     let reason = !['남', '여'].includes(gender) || records.some(row => !names.includes(row.event)) ||
       new Set(records.map(row => row.event)).size !== records.length ? 'invalid' : '';
     const normalized = names.map(event => {
-      const row = records.find(item => item.event === event), value = row?.value || '';
+      const row = records.find(item => item.event === event);
+      const raw = row?.value || '', value = policy.finalAliases?.[raw.toUpperCase()] || raw;
       if (!value) { reason ||= 'incomplete'; return {event, value}; }
       if (value === '미응시') { reason = 'absent'; return {event, value}; }
       if ((policy.eventFinalCodes?.[event] || policy.finalCodes || config.finalCodes).includes(value.toUpperCase())) return {event, value: value.toUpperCase()};
@@ -30,18 +32,18 @@
       if (isTime && policy.timeDigits !== undefined && /[1-9]/.test((value.split('.')[1] || '').slice(policy.timeDigits))) reason ||= 'precision';
       return {event, value: truncate(value, policy.digits?.[event])};
     });
-    return {ready: !reason, reason, records: normalized, names, profiled: true, message: config.messages[reason] || ''};
+    return {ready: !reason, reason, records: normalized, names, profiled: true, message: reason === 'invalid' && policy.finalMessage ? policy.finalMessage : config.messages[reason] || ''};
   }
   function notices(formula, gender, events) {
     if (!profile(formula)) return [];
     const uid = Number(formula.U_ID), notes = new Set();
     for (const row of events || []) {
       const value = Number(row.normalized_record ?? row.record), numeric = String(row.record ?? '').trim() !== '' && Number.isFinite(value);
-      if (!numeric) continue;
       for (const rule of config.conditionalRules) {
         const limit = name => typeof rule[name] === 'object' ? rule[name][gender] : rule[name];
         if (!rule.ids.includes(uid) || rule.event && rule.event !== row.event || rule.gender && rule.gender !== gender ||
             rule.time && !config.timeEvents.includes(row.event)) continue;
+        if (rule.records ? !rule.records.includes(String(row.normalized_record ?? row.record)) : !numeric) continue;
         if (rule.minimum !== undefined && value < limit('minimum') || rule.below !== undefined && value >= limit('below') ||
             rule.above !== undefined && value <= limit('above') || rule.equal !== undefined && value !== limit('equal') ||
             rule.scoreBelow !== undefined && (row.score == null || row.score >= rule.scoreBelow)) continue;

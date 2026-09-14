@@ -116,8 +116,9 @@
         city: s.시구 || '',
         selection_rules: s.selection_rules,
         계산유형: s.계산유형 || '',
+        stageOneOnly: !!review?.stageOneOnly,
         // ── 반영 과목 (counsel 과 동일한 _raw 필드) ──
-        raw: {
+        raw: review?.stageOneOnly ? window.AdmissionsStageConfig.subjects : {
           국어: f.국어_raw || '',
           수학: f.수학_raw || '',
           영어: f.영어_raw || '',
@@ -300,12 +301,12 @@
         <td class="col-univ uni-dept"><button class="school-detail-link" type="button"><span class="univ-name">${window.escapeHtml ? window.escapeHtml(r.univ) : r.univ}${(window.renderSchoolTags && window.renderSchoolTags(r.tags)) || ''}</span><span class="dept-name">${window.escapeHtml ? window.escapeHtml(r.dept) : r.dept}</span></button></td>
         <td>${STATUS_HTML[r.교직] || '<span class="status x">-</span>'}</td>
         <td class="num" style="white-space:nowrap">${window.escapeHtml(String(r.seats_raw ?? '—'))}${(window.formatQuotaDiff && window.formatQuotaDiff(r.seats_raw, r.seats_prev)) || ''}</td>
-        <td class="ratio">${r.suneung != null ? r.suneung + '%' : '—'}</td>
+        <td class="ratio">${r.stageOneOnly ? '1단계 100%' : r.suneung != null ? r.suneung + '%' : '—'}</td>
         <td class="ratio">${r.naesin != null && r.naesin > 0 ? r.naesin + '%' : '—'}</td>
-        <td class="ratio">${r.silgi != null && r.silgi > 0 ? r.silgi + '%' : '—'}</td>
+        <td class="ratio">${r.stageOneOnly ? '2단계' : r.silgi != null && r.silgi > 0 ? r.silgi + '%' : '—'}</td>
         <td class="ratio">${formatDangye(r.단계별)}</td>
         <td class="col-subj">${subjectBadgesHtml(r.raw)}</td>
-        <td class="col-silgi"><span class="silgi-events" title="${window.escapeHtml(r.실기목록)}">${formatSilgiList(r.실기목록, r.실기목록_diffNote)}</span></td>
+        <td class="col-silgi"><span class="silgi-events" title="${window.escapeHtml(r.실기목록)}">${r.stageOneOnly ? '2단계 실기 안내' : formatSilgiList(r.실기목록, r.실기목록_diffNote)}</span></td>
       </tr>
     `).join('');
     tbody.querySelectorAll('tr[data-uid]').forEach(tr => {

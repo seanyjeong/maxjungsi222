@@ -1,12 +1,12 @@
 'use strict';
 (function(root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.AdmissionsPracticalInput = factory();
-})(typeof window === 'undefined' ? globalThis : window, function() {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('../config/admissions-stage-2027'));
+  else root.AdmissionsPracticalInput = factory(root.AdmissionsStageConfig);
+})(typeof window === 'undefined' ? globalThis : window, function(stageConfig) {
   const YEAR = 2027, FEATURE = 'remainingPractical2027Reviewed';
   const CHONNAM = 115, GOLF = 131;
-  const STAGE_PENDING = 96;
-  const STAGE_NOTICE = '서울대 수능은 1단계 점수입니다. 2단계 환산에는 합격자 최고·최저점이 필요하며 실기 세부요강은 10월 12일 이후 발표 예정입니다. 최종총점은 산출하지 않습니다.';
+  const STAGE_PENDING = stageConfig.uid;
+  const STAGE_NOTICE = stageConfig.notice;
   const GOLF_SHOTS = ['드라이버샷', '우드샷(3번우드)', '아이언샷', '어프로치'];
   const CHONNAM_EVENTS = ['100m달리기', '지그재그런', '체조', '축구', '축구골인'];
   const GYMNASTICS = {
@@ -70,5 +70,6 @@
       message: invalid ? '체조 동작·등급과 축구 골인 여부, 정상 기록을 확인해 주세요.' : '3종목 기록, 체조 동작·등급, 축구 골인 여부를 모두 입력해 주세요.'};
   }
   function stageNotice(formula) { return active(formula, STAGE_PENDING) ? STAGE_NOTICE : ''; }
-  return {active, golfPolicy, eventNames, options, control, restore, prepare, stageNotice};
+  function stagePolicy(formula) { return active(formula, STAGE_PENDING) ? stageConfig : null; }
+  return {active, golfPolicy, eventNames, options, control, restore, prepare, stageNotice, stagePolicy};
 });

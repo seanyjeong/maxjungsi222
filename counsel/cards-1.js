@@ -6,10 +6,11 @@
     shell.className = 'uni-card-shell';
     shell.dataset.uid = formula.U_ID;
 
-    const reflectsNaeshin = Number(formula.내신 || 0) > 0;
-    const reflectsSilgi = Number(formula.실기 || 0) > 0;
-    const reflectsExtra = Number(formula.기타 || 0) > 0;
     const scopedFormula = { ...formula, 학년도: document.getElementById('yearSel').value };
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(scopedFormula);
+    const reflectsNaeshin = !stage && Number(formula.내신 || 0) > 0;
+    const reflectsSilgi = !stage && Number(formula.실기 || 0) > 0;
+    const reflectsExtra = !stage && Number(formula.기타 || 0) > 0;
 
     let silgiEvents = [];
     if (reflectsSilgi && STATE.selectedStudent?.gender && Array.isArray(formula.실기배점)) {
@@ -19,7 +20,8 @@
     }
 
     const pctBadges = [];
-    if (Number(formula.수능 || 0) > 0) pctBadges.push(`수능 ${formula.수능}%`);
+    if (stage) pctBadges.push(stage.selection);
+    else if (Number(formula.수능 || 0) > 0) pctBadges.push(`수능 ${formula.수능}%`);
     if (reflectsNaeshin) pctBadges.push(`내신 ${formula.내신}%`);
     if (reflectsSilgi) pctBadges.push(`실기 ${formula.실기}%`);
     if (reflectsExtra) pctBadges.push(`기타 ${formula.기타}%`);
@@ -55,11 +57,11 @@
     }
 
     const breakdownRows = [
-      `<div class="uni-breakdown-row"><span class="label">수능 점수</span><span class="value score-suneung">${window.AdmissionsScoreFormat.format(suneungScore, scopedFormula)}</span></div>`,
+      `<div class="uni-breakdown-row"><span class="label">${stage?.label || '수능 점수'}</span><span class="value score-suneung">${window.AdmissionsScoreFormat.format(suneungScore, scopedFormula)}</span></div>`,
     ];
     if (reflectsNaeshin) breakdownRows.push(`<div class="uni-breakdown-row"><span class="label">내신 점수</span><span class="value score-naeshin">0.00</span></div>`);
     if (reflectsSilgi) breakdownRows.push(`<div class="uni-breakdown-row"><span class="label">실기 점수</span><span class="value score-silgi">0.00<span class="deduct">(0감)</span></span></div>`);
-    breakdownRows.push(`<div class="uni-breakdown-row total"><span class="label">총점</span><span class="value score-total">${window.AdmissionsScoreFormat.format(suneungScore, scopedFormula)}</span></div>`);
+    if (!stage) breakdownRows.push(`<div class="uni-breakdown-row total"><span class="label">총점</span><span class="value score-total">${window.AdmissionsScoreFormat.format(suneungScore, scopedFormula)}</span></div>`);
 
     shell.innerHTML = `
       <article class="uni-card">
@@ -71,16 +73,18 @@
           </div>
           <button class="uni-delete" title="삭제"><i class="ph-light ph-x"></i></button>
         </div>
-        <div class="uni-metrics">
+        ${stage ? '' : `<div class="uni-metrics">
           <div class="uni-metric top10"><span class="label">상위 10%</span><span class="value">…</span></div>
           <div class="uni-metric"><span class="label">지점 총점컷</span><span class="value">-</span></div>
           <div class="uni-metric max"><span class="label">MAX 총점컷</span><span class="value">-</span></div>
         </div>
+        `}
         <div class="uni-breakdown">${breakdownRows.join('')}</div>
-        <div class="uni-diff-row">
+        ${stage ? `<p class="detail-note">${stage.formula}</p><p class="detail-note">${stage.followUp}</p>` : `<div class="uni-diff-row">
           <span class="label">MAX컷 대비</span>
           <span class="uni-diff" style="visibility:hidden">-</span>
         </div>
+        `}
         ${inputRowsHtml ? `<div class="uni-inputs">${inputRowsHtml}</div>` : ''}
         <textarea class="uni-memo" placeholder="상담 메모..."></textarea>
         <div class="uni-actions">
@@ -90,6 +94,16 @@
       </article>
     `;
 
+    if (stage) {
+      shell.querySelector('.uni-card').dataset.practicalStatus = 'stage-one-ready';
+      // 기존 2단계 상담값은 숨긴 상태로 보존하며 1단계 점수에서 재계산하지 않는다.
+      shell.stageOneStored = savedItem ? {
+        상담_내신점수: savedItem.상담_내신점수 ?? null,
+        상담_실기기록: safeParse(savedItem.상담_실기기록, null),
+        상담_실기반영점수: savedItem.상담_실기반영점수 ?? null,
+        상담_계산총점: savedItem.상담_계산총점 ?? null,
+      } : null;
+    }
     window.CounselSubjectivePractical?.mount(shell, formula, safeParse(savedItem?.상담_실기기록, {}), scopedFormula.학년도);
     if (savedItem) {
       const naInput = shell.querySelector('[data-field="naeshin"]');

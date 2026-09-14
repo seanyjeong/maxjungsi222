@@ -369,10 +369,12 @@
   }
 
   // ---------- rendering ----------
-  const { renderHeader, renderRowHtml } = window.createCalculatorGrid({ esc, resultsThead, sortRows: () => sortResultsTable(), sortState: { get value() { return sortDir; }, set value(value) { sortDir = value; } }, getMaximum: () => currentMaxTotal });
+  const { renderHeader, renderRowHtml } = window.createCalculatorGrid({ esc, resultsThead, sortRows: () => { sortResultsTable(); updateResultCountHint(resultsTbody.querySelectorAll('tr').length); }, sortState: { get value() { return sortDir; }, set value(value) { sortDir = value; } }, getMaximum: () => currentMaxTotal });
 
   function updateResultCountHint(n) {
-    resultCountHint.textContent = `${n}명 · ${window.SubjectivePractical?.getPolicy(currentFormula) ? '객관점수 부분산출 · 순위 없음' : '총점 내림차순'}`;
+    const label = window.AdmissionsPracticalInput?.stagePolicy(currentFormula)?.label || '총점';
+    const direction = sortDir === 'asc' ? '오름차순' : '내림차순';
+    resultCountHint.textContent = `${n}명 · ${window.SubjectivePractical?.getPolicy(currentFormula) ? '객관점수 부분산출 · 순위 없음' : `${label} ${direction}`}`;
   }
 
   // ---------- live recalculation ----------
