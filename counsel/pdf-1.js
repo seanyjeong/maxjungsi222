@@ -246,16 +246,16 @@
         ${ratiosBlock}
         ${subjectsBlock}
         <div class="breakdown">
-          <div class="row"><div class="k">${c.calculationNotice ? '1단계 수능 점수' : '수능 점수'}</div><div class="v">${pdfFmt(c.suneung, c.scoreDigits || 2)}</div></div>
+          <div class="row"><div class="k">${c.stage?.label || '수능 점수'}</div><div class="v">${pdfFmt(c.suneung, c.scoreDigits || 2)}</div></div>
           ${c.naesin != null && c.naesin > 0 ? `<div class="row"><div class="k">내신 점수</div><div class="v">${pdfFmt(c.naesin, 2)}</div></div>` : ''}
           ${c.partial ? `<div class="row"><div class="k">${c.partial.label} / ${c.partial.maximum}점</div><div class="v">${pdfFmt(c.partial.score, 2)}</div></div>
             <div class="row"><div class="k">수능+객관실기 합계</div><div class="v">${pdfFmt(c.partial.subtotal, 2)}</div></div>` :
             c.practical != null && c.practical > 0 ? `<div class="row"><div class="k">실기 점수</div><div class="v">${pdfFmt(c.practical, 2)}</div></div>` : ''}
-          <div class="row total"><div class="k">${c.partial ? '최종총점' : '총점'}</div><div class="v">${pdfFmt(c.partial ? null : c.total, c.scoreDigits || 2)}</div></div>
+          ${c.stage ? '' : `<div class="row total"><div class="k">${c.partial ? '최종총점' : '총점'}</div><div class="v">${pdfFmt(c.partial ? null : c.total, c.scoreDigits || 2)}</div></div>`}
         </div>
         ${c.partial ? `<div class="sub-block"><div class="label">${c.partial.selectionLabel ? c.partial.selectionLabel + ": " + (c.partial.selection || "선택 안 함") : "골프 회차별 객관평가"}</div>
           <div style="font-size:10px;line-height:1.5">${c.partial.excludedText}<br>${c.partial.ineligible ? '실기 미응시 · 모집요강상 불합격 대상입니다.<br>' : ''}부분합으로 총점컷 비교·합격 판단을 하지 않습니다.</div></div>` : ''}
-        ${c.calculationNotice ? `<div class="sub-block">${c.calculationNotice}</div>` : ''}
+        ${c.stage ? `<div class="sub-block"><strong>${c.stage.selection}</strong><p>${c.stage.formula}</p><p>${c.stage.followUp}</p></div>` : ''}
         ${practicalBlock}
         ${memo}
       </div>
@@ -333,7 +333,8 @@
     const uid = card.dataset.uid;
     const formula = uid && year ? STATE.formulaCache[`${uid}-${year}`] : null;
     const scopedFormula = { ...formula, 학년도: year };
-    const calculationNotice = window.AdmissionsPracticalInput?.stageNotice(scopedFormula);
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(scopedFormula);
+    const calculationNotice = stage?.notice;
     const policy = window.SubjectivePractical?.getPolicy(scopedFormula);
     const objectiveCard = card.querySelector('.uni-card');
     const objectiveValue = objectiveCard?.dataset.practicalStatus === 'objective-ready' ?
@@ -347,13 +348,14 @@
     const dept = uid ? STATE.allFilterData.find(d => String(d.U_ID) === String(uid)) : null;
 
     const ratios = [];
-    if (formula) {
+    if (stage) ratios.push({ k: '수능', v: 100 });
+    else if (formula) {
       const add = (k, v) => { const n = Number(v || 0); if (n > 0) ratios.push({ k, v: n }); };
       add('수능', formula.수능); add('내신', formula.내신); add('실기', formula.실기); add('기타', formula.기타);
     }
 
     const subjects = [];
-    if (dept) {
+    if (dept && !stage) {
       const list = [
         { label: '국', raw: dept.국어_raw },
         { label: '수', raw: dept.수학_raw },
@@ -377,9 +379,9 @@
       univ: uniName, dept: deptName,
       scoreDigits: window.AdmissionsScoreFormat?.digits(scopedFormula) || 2,
       top10: partial || calculationNotice ? null : top10, branch: partial || calculationNotice ? null : branch, max: partial || calculationNotice ? null : max,
-      suneung, naesin, practical: partial || calculationNotice ? null : practical, total: partial || calculationNotice ? null : total, partial, calculationNotice,
+      suneung, naesin: stage ? null : naesin, practical: partial || calculationNotice ? null : practical, total: partial || calculationNotice ? null : total, partial, calculationNotice, stage,
       naesinRaw: naesinInput,
-      records,
+      records: stage ? [] : records,
       memo,
       ratios, subjects,
     };

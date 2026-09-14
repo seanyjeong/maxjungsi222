@@ -2,26 +2,28 @@
 window.createCalculatorGrid = function ({ esc, resultsThead, sortRows, sortState, getMaximum }) {
 function renderHeader(formula) {
     const naeshinRatio = Number(formula.내신 || 0);
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(formula);
     const partial = window.SubjectivePractical?.getPolicy(formula);
     const practicalEvents = window.SubjectivePractical?.eventNames(formula) || [...new Set((formula.실기배점 || []).map(r => r.종목명))];
 
     let html = '<tr>';
     html += '<th class="name-col">#</th>';
     html += '<th class="name-col">학생</th>';
-    html += `<th class="col-suneung"><span class="col-tag"></span>${window.AdmissionsPracticalInput?.stageNotice(formula) ? '1단계 수능 점수' : '수능 점수'}</th>`;
-    if (partial?.choices.length) html += `<th>${partial.selectionLabel}</th>`;
-    if (naeshinRatio > 0) {
-      html += `<th class="col-naeshin"><span class="col-tag"></span>내신 (${naeshinRatio}%)</th>`;
+    html += stage ? `<th class="col-suneung sortable is-active" id="sort-by-total"><span class="col-tag"></span>${esc(stage.label)} <i class="ph-fill ph-caret-down sort-i"></i></th>` : '<th class="col-suneung"><span class="col-tag"></span>수능 점수</th>';
+    if (!stage) {
+      if (partial?.choices.length) html += `<th>${partial.selectionLabel}</th>`;
+      if (naeshinRatio > 0) {
+        html += `<th class="col-naeshin"><span class="col-tag"></span>내신 (${naeshinRatio}%)</th>`;
+      }
+      practicalEvents.forEach(ev => {
+        html += `<th class="col-silgi"><span class="col-tag"></span>${esc(ev)} · 기록</th>`;
+        html += `<th class="col-silgi">${partial ? '객관점수' : '점수 (감점)'}</th>`;
+      });
+      html += `<th class="col-silgi"><span class="col-tag"></span>${partial ? partial.label + ' / ' + partial.maximum + '점' : '실기 총점'}</th>`;
+      if (partial) html += '<th>수능+객관실기 합계</th><th>최종총점 (주관평가 제외)</th>';
+      else html += `<th class="col-total sortable is-active" id="sort-by-total"><span class="col-tag"></span>총점 / ${Number(formula.총점) || 1000} <i class="ph-fill ph-caret-down sort-i"></i></th>`;
+      if (partial) html += '<th class="consult-col">상담멘트</th>';
     }
-    practicalEvents.forEach(ev => {
-      html += `<th class="col-silgi"><span class="col-tag"></span>${esc(ev)} · 기록</th>`;
-      html += `<th class="col-silgi">${partial ? '객관점수' : '점수 (감점)'}</th>`;
-    });
-    html += `<th class="col-silgi"><span class="col-tag"></span>${partial ? partial.label + ' / ' + partial.maximum + '점' : '실기 총점'}</th>`;
-    if (partial) html += '<th>수능+객관실기 합계</th><th>최종총점 (주관평가 제외)</th>';
-    else if (window.AdmissionsPracticalInput?.stageNotice(formula)) html += '<th>최종총점 · 2단계 환산 대기</th>';
-    else html += `<th class="col-total sortable is-active" id="sort-by-total"><span class="col-tag"></span>총점 / ${Number(formula.총점) || 1000} <i class="ph-fill ph-caret-down sort-i"></i></th>`;
-    if (partial) html += '<th class="consult-col">상담멘트</th>';
     html += '</tr>';
     resultsThead.innerHTML = html;
 
@@ -36,6 +38,7 @@ function renderHeader(formula) {
 
 function renderRowHtml(student, suneungScore, formula) {
     const genderClass = student.gender === '여' ? 'f' : 'm';
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(formula);
     const partial = window.SubjectivePractical?.getPolicy(formula);
     const selectionCell = partial?.choices.length ? `<td><select class="subjective-selection" data-subjective-selection aria-label="${esc(student.student_name)} ${partial.selectionLabel}" aria-describedby="subjectiveCalculationNote">
       <option value="">선택 안 함</option>${partial.choices.map(value => `<option value="${value}">${value}</option>`).join('')}</select></td>` : '';
@@ -53,13 +56,15 @@ function renderRowHtml(student, suneungScore, formula) {
     });
 
     const totalPct = Math.min(100, (suneungScore / getMaximum()) * 100);
-    return `
+    const studentCells = `
       <td class="rank-cell"><span class="rank-badge">—</span></td>
       <td class="student-name-cell">
         <span class="gender-dot ${genderClass}"></span><span class="name">${esc(student.student_name)}</span>
         <span class="student-info">${esc(student.gender)} · ${esc(student.school_name || '정보없음')}</span>
       </td>
-      <td class="score-cell score-suneung">${window.AdmissionsScoreFormat.format(suneungScore, formula)}</td>
+      <td class="score-cell score-suneung">${window.AdmissionsScoreFormat.format(suneungScore, formula)}</td>`;
+    if (stage) return studentCells;
+    return `${studentCells}
       ${selectionCell}
       ${naeshinCell}
       ${silgiCells}

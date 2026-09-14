@@ -70,10 +70,11 @@
       const status = card.querySelector('.uni-card')?.dataset.practicalStatus;
       const formula = STATE.formulaCache[`${uid}-${year}`];
       const scopedFormula = { ...formula, 학년도: year };
+      const stage = window.AdmissionsPracticalInput?.stagePolicy(scopedFormula);
       const partial = window.SubjectivePractical?.getPolicy(scopedFormula);
-      const practicalInput = formula && (window.SubjectivePractical || window.PracticalInput).prepare(scopedFormula,
+      const practicalInput = !stage && formula && (window.SubjectivePractical || window.PracticalInput).prepare(scopedFormula,
         STATE.selectedStudent.gender, Object.entries(silgiObj).map(([event, value]) => ({ event, value })));
-      const pending = partial ? status !== 'objective-ready' : (status && status !== 'ready') ||
+      const pending = stage ? false : partial ? status !== 'objective-ready' : (status && status !== 'ready') ||
         (Number(formula?.실기 || 0) > 0 && (!practicalInput?.ready || status !== 'ready'));
       needsPracticalReview = needsPracticalReview || !!pending;
       if (partial) silgiObj = window.SubjectivePractical.serializeRecords(scopedFormula,
@@ -93,11 +94,11 @@
         모집군,
         대학학과_ID: uid,
         상담_수능점수: su,
-        상담_내신점수: naVal,
-        상담_실기기록: Object.keys(silgiObj).length ? silgiObj : null,
-        // 미완성 입력도 보존하되 계산되지 않은 점수를 0점이나 이전 총점으로 저장하지 않는다.
-        상담_실기반영점수: partial || pending ? null : silgiNum,
-        상담_계산총점: partial || pending ? null : total,
+        상담_내신점수: stage ? card.stageOneStored?.상담_내신점수 ?? null : naVal,
+        상담_실기기록: stage ? card.stageOneStored?.상담_실기기록 ?? null : Object.keys(silgiObj).length ? silgiObj : null,
+        // 1단계 전환 전 저장값은 보존하고, 새 2단계 점수와 미완성 점수는 생성하지 않는다.
+        상담_실기반영점수: stage ? card.stageOneStored?.상담_실기반영점수 ?? null : partial || pending ? null : silgiNum,
+        상담_계산총점: stage ? card.stageOneStored?.상담_계산총점 ?? null : partial || pending ? null : total,
         메모: memoVal,
       });
     });

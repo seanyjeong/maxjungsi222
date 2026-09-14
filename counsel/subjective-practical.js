@@ -3,16 +3,6 @@ window.CounselSubjectivePractical = (() => {
   const policyApi = () => window.SubjectivePractical;
   function mount(shell, formula, saved, year) {
     const scoped = { ...formula, 학년도: year }, policy = policyApi().getPolicy(scoped);
-    const pending = window.AdmissionsPracticalInput?.stageNotice(scoped);
-    if (pending) {
-      const card = shell.querySelector('.uni-card'), notice = document.createElement('p');
-      notice.className = 'subjective-practical'; notice.textContent = pending;
-      card.querySelector('.uni-inputs')?.before(notice);
-      card.querySelector('.score-suneung').parentElement.querySelector('.label').textContent = '1단계 수능 점수';
-      card.querySelector('.score-total').textContent = '—';
-      shell.querySelectorAll('.uni-metrics, .uni-diff').forEach(node => { node.style.display = 'none'; });
-      card.querySelectorAll('[data-event]').forEach(input => { input.disabled = true; });
-    }
     if (!policy) return;
     const card = shell.querySelector('.uni-card');
     card.dataset.subjectivePartial = 'true';

@@ -7,7 +7,7 @@
   function reviewHtml(review, year) {
     if (!review) return '';
     const summaries = Array.isArray(review.summary) ? review.summary : [review.summary];
-    const followUp = Array.isArray(review.followUp) ? review.followUp : [review.followUp];
+    const followUp = review.stageOneOnly ? [] : Array.isArray(review.followUp) ? review.followUp : [review.followUp];
     const sources = (review.sources || []).filter(source => /^https:\/\//.test(source.url || ''));
     return `<h3 class="detail-section-title">${esc(year)}학년도 반영 내용</h3>
       <p class="review-status">${esc(review.status)}</p>
@@ -16,24 +16,36 @@
       ${sources.length ? `<div class="review-sources">${sources.map(source => `<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.title || '공식 모집요강')} <span class="sr-only">새 창</span></a>`).join(' · ')}</div>` : ''}`;
   }
 
-  function gradeTable(label, rows) {
+  function gradeTable(label, rows, stageOneOnly) {
     if (!rows.length) return '';
-    return `<details class="score-grades"><summary>${esc(label)} 등급별 환산점수</summary>
+    return `<details class="score-grades"><summary>${esc(label)} 등급별 ${stageOneOnly ? '감점' : '환산점수'}</summary>
       <div class="detail-table-scroll"><table><thead><tr><th scope="col">등급</th>${rows.map(row => `<th scope="col">${row.grade}</th>`).join('')}</tr></thead>
-      <tbody><tr><th scope="row">점수</th>${rows.map(row => `<td>${row.score}</td>`).join('')}</tr></tbody></table></div></details>`;
+      <tbody><tr><th scope="row">${stageOneOnly ? '감점' : '점수'}</th>${rows.map(row => `<td>${row.score}</td>`).join('')}</tr></tbody></table></div></details>`;
   }
 
   function renderInformation(formula, review) {
     const model = info().build(formula, window.SubjectivePractical, review);
-    el('mdScoreInfo').innerHTML = `<h3 class="detail-section-title">전형·환산 안내</h3>
+    el('mdScoreInfo').innerHTML = `<h3 class="detail-section-title">${model.stageOneOnly ? '1단계 수능 안내' : '전형·환산 안내'}</h3>
       <dl class="score-facts">${model.items.map(item => `<div><dt>${esc(item.label)}</dt><dd>${esc(item.value)}</dd></div>`).join('')}</dl>
       ${model.notes.map(note => `<p class="detail-note">${esc(note)}</p>`).join('')}
-      <p class="detail-note">총점과 실기 배점은 가산·감점 전 기준입니다. 등급별 환산점수에는 학교별 반영비율과 산식이 추가 적용될 수 있습니다.</p>
-      ${gradeTable('영어', model.english)}${gradeTable('한국사', model.history)}
+      ${model.stageOneOnly ? '' : '<p class="detail-note">총점과 실기 배점은 가산·감점 전 기준입니다. 등급별 환산점수에는 학교별 반영비율과 산식이 추가 적용될 수 있습니다.</p>'}
+      ${gradeTable('영어', model.english, model.stageOneOnly)}${gradeTable('한국사', model.history, model.stageOneOnly)}
       ${model.extra ? `<details class="school-extra"><summary>상세 반영 안내</summary><p>${esc(model.extra)}</p></details>` : ''}`;
   }
 
   function renderPractical(formula, gender) {
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(formula);
+    const table = el('mdSilgiTbody').closest('table');
+    const title = el('mdGenderToggle').parentElement;
+    table.hidden = !!stage;
+    title.hidden = !!stage;
+    if (stage) {
+      el('mdSilgiTbody').textContent = '';
+      el('mdPracticalLevels').textContent = '';
+      el('mdPracticalNotice').innerHTML = `<details class="school-extra"><summary>2단계 실기 안내</summary>
+        <p>${esc(stage.practicalSummary)}</p><p>${esc(stage.notice)}</p></details>`;
+      return;
+    }
     const model = window.UniversityPractical.build(formula, gender, {
       hardcoded: window.SILGI_HARDCODED, subjectivePolicy: window.SubjectivePractical,
     });
@@ -97,15 +109,17 @@
       const quota = esc(row.seats_raw ?? '—');
       const quotaUnit = info().numeric(row.seats_raw) == null ? '' : '명';
       el('mdSub').innerHTML = `${esc(year)}학년도 · ${esc([row.region, row.city].filter(Boolean).join(' '))} · ${esc(row.gun)}군 · 모집 ${quota}${quotaUnit} · 교직 ${esc(row.교직)}`;
-      const chips = [['수능', row.suneung], ['내신', row.naesin], ['실기', row.silgi]].filter(([, ratio]) => ratio > 0).map(([name, ratio]) => `${name} ${ratio}%`);
-      if (row.단계별 && row.단계별 !== '-') chips.push(`1단계 ${formatDangye(row.단계별)}`);
+      const chips = review?.stageOneOnly ? [review.stageSelection] : [['수능', row.suneung], ['내신', row.naesin], ['실기', row.silgi]].filter(([, ratio]) => ratio > 0).map(([name, ratio]) => `${name} ${ratio}%`);
+      if (!review?.stageOneOnly && row.단계별 && row.단계별 !== '-') chips.push(`1단계 ${formatDangye(row.단계별)}`);
       el('mdChips').innerHTML = chips.map(chip => `<span class="meta-chip">${esc(chip)}</span>`).join('');
       el('mdReview').hidden = !review;
       el('mdReview').innerHTML = reviewHtml(review, year);
       renderSubjects(row);
-      renderCuts(row, year);
+      el('mdCuts').closest('.detail-section').hidden = !!review?.stageOneOnly;
+      if (review?.stageOneOnly) el('mdCuts').textContent = '';
+      else renderCuts(row, year);
       el('mdScoreInfo').textContent = '전형 정보를 불러오는 중…';
-      el('mdPracticalNotice').textContent = '';
+      el('mdPracticalNotice').textContent = review?.stageOneOnly ? window.AdmissionsStageConfig.followUp : '';
       el('mdPracticalLevels').textContent = '';
       el('mdSilgiTbody').innerHTML = '<tr><td colspan="4" class="empty-msg">배점표를 불러오는 중…</td></tr>';
       document.querySelectorAll('#mdGenderToggle button').forEach(button => { button.disabled = true; });
@@ -121,6 +135,10 @@
         if (generation !== requestId || String(year) !== String(getYear())) return;
         currentFormula = formulaCache[key];
         renderInformation(currentFormula, review);
+        if (window.AdmissionsPracticalInput?.stagePolicy(currentFormula)) {
+          renderPractical(currentFormula, currentGender);
+          return;
+        }
         const genders = window.UniversityPractical.build(currentFormula, currentGender, {
           hardcoded: window.SILGI_HARDCODED, subjectivePolicy: window.SubjectivePractical,
         }).genders;

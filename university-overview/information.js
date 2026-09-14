@@ -40,6 +40,11 @@
   }
 
   function build(formula, subjective, review) {
+    if (review?.stageOneOnly) return {
+      stageOneOnly: true,
+      items: [{ label: '표시 점수', value: review.stageLabel }, { label: '1단계 선발', value: review.stageSelection }],
+      notes: [review.stageFormula], english: gradeRows(formula.english_scores), history: gradeRows(formula.history_scores), extra: '',
+    };
     const total = numeric(formula.총점), practical = numeric(formula.실기총점);
     const policy = subjective?.getPolicy(formula) || null;
     const items = [];

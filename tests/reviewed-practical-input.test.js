@@ -3,7 +3,7 @@ const test = require('node:test'), assert = require('node:assert/strict');
 const input = require('../utils/practical-input');
 const reviewed = require('../utils/reviewed-practical-input');
 const config = require('../config/reviewed-practical-2027');
-const formula = uid => ({U_ID: uid, 학년도: 2027, 기타설정: {[config.feature]: true}});
+const formula = uid => ({U_ID: uid, 학년도: 2027, 기타설정: {[config.profiles[uid]?.feature || config.feature]: true}});
 const rows = (uid, values) => config.profiles[uid].events.map((event, index) => ({event, value: String(values[index])}));
 
 test('reviewed schools require every event and reject invalid measured records before requesting a score', () => {
@@ -51,5 +51,21 @@ test('only source-ambiguous records are marked provisional after the complete Se
 test('historical and unreviewed formulas retain their existing input contract', () => {
   assert.equal(reviewed.prepare({...formula(111), 학년도: 2026}, '남', []), null);
   assert.equal(reviewed.prepare({...formula(111), 기타설정: {}}, '남', []), null);
-  assert.equal(reviewed.prepare(formula(155), '남', []), null);
+  assert.equal(reviewed.prepare({...formula(155), 기타설정: {[config.feature]: true}}, '남', []), null);
+});
+
+test('Anyang requires confirmed two-foul tokens and keeps its own year and policy boundary', () => {
+  for (const token of ['2회파울', '2회 파울', '2F', '2f']) {
+    const result = input.prepare(formula(155), '남', rows(155, [token, 210]));
+    assert.equal(result.ready, true);
+    assert.equal(result.records[0].value, '2회파울');
+    assert.deepEqual(reviewed.notices(formula(155), '남', [{event: '제자리멀리뛰기', record: result.records[0].value, score: 0}]), ['anyangFoul']);
+  }
+  for (const token of ['F', '파울', '실격']) {
+    const result = input.prepare(formula(155), '여', rows(155, [token, 150]));
+    assert.equal(result.ready, false);
+    assert.match(result.message, /2회파울.*2F/);
+  }
+  assert.equal(reviewed.prepare({...formula(155), 학년도: 2026}, '남', []), null);
+  assert.equal(reviewed.prepare({...formula(155), 기타설정: {}}, '남', []), null);
 });

@@ -2,7 +2,7 @@
 window.CalculatorSubjectivePractical = (() => {
   function formulaNotice(formula) {
     const policy = window.SubjectivePractical.getPolicy(formula);
-    const pending = window.AdmissionsPracticalInput?.stageNotice(formula);
+    const stage = window.AdmissionsPracticalInput?.stagePolicy(formula);
     let note = document.getElementById('subjectiveCalculationNote');
     if (!note) {
       note = document.createElement('section');
@@ -10,12 +10,21 @@ window.CalculatorSubjectivePractical = (() => {
       note.className = 'calculator-subjective-note';
       document.getElementById('formulaStrip')?.after(note);
     }
-    note.hidden = !policy && !pending;
+    note.hidden = !policy && !stage;
     const totalLegend = document.querySelector('#resultsLegend .dot-total')?.parentElement;
-    if (totalLegend) totalLegend.hidden = !!policy || !!pending;
-    if (pending) {
-      note.textContent = pending;
-      const cuts = document.getElementById('formulaCuts'); if (cuts) cuts.hidden = true;
+    if (totalLegend) totalLegend.hidden = !!policy || !!stage;
+    const practicalLegend = document.querySelector('#resultsLegend .dot-silgi')?.parentElement;
+    if (practicalLegend) practicalLegend.hidden = !!stage;
+    const totalStat = document.getElementById('statTotal')?.parentElement;
+    if (totalStat) totalStat.hidden = !!stage;
+    if (stage) {
+      note.innerHTML = `<strong>${stage.selection}</strong><p>${stage.formula}</p><p>${stage.followUp}</p>`;
+      document.getElementById('statSuneung').textContent = '100%';
+      ['statNaeshinWrap', 'statSilgiWrap', 'statEtcWrap', 'formulaCuts'].forEach(id => {
+        const node = document.getElementById(id); if (node) node.hidden = true;
+      });
+      const subjects = document.getElementById('subjectRatios');
+      if (subjects) subjects.textContent = '';
       return;
     }
     if (!policy) return;
