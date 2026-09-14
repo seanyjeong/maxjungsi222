@@ -79,6 +79,8 @@ table.univ-table { width: 100%; border-collapse: collapse; font-size: 12.5px; ta
 .univ-table td.uni-dept { text-align: left; }
 .univ-table td.uni-dept .univ-name { font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
 .univ-table td.uni-dept .dept-name { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+.univ-table .review-summary { display: block; margin-top: 4px; color: var(--text-2); font-size: 10.5px; font-weight: 400; white-space: normal; word-break: keep-all; }
+.inquiry-follow-up { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .univ-table td.num { font-family: 'Geist Mono', monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .univ-table td.ratio { color: var(--text-2); font-family: 'Geist Mono', monospace; font-size: 11.5px; }
 

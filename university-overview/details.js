@@ -13,6 +13,7 @@
       <p class="review-status">${esc(review.status)}</p>
       ${summaries.filter(Boolean).map(note => `<p>${esc(note)}</p>`).join('')}
       ${followUp.filter(Boolean).map(note => `<p class="review-follow-up"><strong>확인할 사항</strong> ${esc(note)}</p>`).join('')}
+      ${review.inquiryFollowUp ? `<div class="inquiry-follow-up"><strong>탐구변환표 · 발표 후 갱신</strong><p>${esc(review.inquiryFollowUp.current)}</p><p>${esc(review.inquiryFollowUp.followUp)}</p>${review.inquiryFollowUp.provenance ? `<p>${esc(review.inquiryFollowUp.provenance)}</p>` : ''}<a href="${esc(review.inquiryFollowUp.source)}" target="_blank" rel="noopener noreferrer">탐구변환표 전체 후속 목록</a></div>` : ''}
       ${sources.length ? `<div class="review-sources">${sources.map(source => `<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.title || '공식 모집요강')} <span class="sr-only">새 창</span></a>`).join(' · ')}</div>` : ''}`;
   }
 

@@ -46,3 +46,32 @@ test('golf avoids an overall specialty selector and Seoul explains the withheld 
  const snu=information.build({총점:1000,실기총점:200},subjective,{withholdTotal:true,withholdReason:'2단계 환산 대기',practicalDisplay:'원점수 100점 → 최종 20점'});
  assert.deepEqual(snu.items.map(row=>row.value),['2단계 환산 대기','원점수 100점 → 최종 20점']);
 });
+
+test('annual inquiry notices preserve reviewed rules and distinguish missing settings from publication updates', () => {
+  const original = {status: '확인한 실기', summary: '객관평가만 계산', practicalFollowUp: false};
+  const catalog = {year: 2027, schools: {105: original}};
+  const reviewed = information.getReview(catalog, 105, 2027);
+  assert.equal(reviewed.status, original.status);
+  assert.equal(reviewed.practicalFollowUp, false);
+  assert.equal(original.inquiryFollowUp, undefined);
+  assert.match(reviewed.inquiryFollowUp.current, /기존 탐구변환표/);
+  assert.equal(reviewed.inquiryFollowUp.needsReview, false);
+  for (const uid of [81, 174]) {
+    const review = information.getReview(catalog, uid, 2027);
+    assert.match(review.inquiryFollowUp.current, /표준점수/);
+    assert.equal(review.inquiryFollowUp.needsReview, true);
+    assert.match(review.status, /확인 필요/);
+  }
+  for (const uid of [165, 166, 167]) assert.match(information.getReview(catalog, uid, 2027).inquiryFollowUp.current, /백분위/);
+  assert.match(information.getReview(catalog, 23, 2027).inquiryFollowUp.provenance, /출처·연도/);
+  assert.equal(information.getReview(catalog, 131, 2027), null);
+  assert.equal(information.getReview(catalog, 105, 2026), null);
+});
+
+test('all 32 published follow-up targets have notices, without declaring their formulas reviewed', () => {
+  const catalog = {year: 2027, schools: {}};
+  const expected = [3,4,5,6,13,19,22,23,67,68,71,77,78,79,80,81,105,114,116,117,119,120,128,134,158,159,165,166,167,174,182,183];
+  const actual = Array.from({length: 205}, (_, id) => id).filter(id => information.getReview(catalog, id, 2027));
+  assert.deepEqual(actual, expected);
+  for (const id of actual) assert.equal(information.getReview(catalog, id, 2027).kind, 'follow-up');
+});
