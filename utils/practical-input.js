@@ -1,16 +1,20 @@
 'use strict';
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./practical-requirements'));
-  else root.PracticalInput = factory(root.PracticalRequirements);
-})(typeof window === 'undefined' ? globalThis : window, function (profiles) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./practical-requirements'), require('./reviewed-practical-input'));
+  else root.PracticalInput = factory(root.PracticalRequirements, root.ReviewedPracticalInput);
+})(typeof window === 'undefined' ? globalThis : window, function (profiles, reviewed) {
   const messages = {
     incomplete: '실기 기록을 모두 입력해 주세요.',
     alternative: '일반 종목과 우천 대체 종목 중 하나만 입력해 주세요.',
     invalid: '입력한 실기 기록을 확인해 주세요.',
     failed: '점수를 계산하지 못했습니다. 잠시 후 다시 시도해 주세요.',
     calculating: '점수를 계산하고 있어요.',
+    absent: '미응시 종목이 있어 최종총점을 산출하지 않습니다.',
+    precision: '호서대 달리기는 소수 둘째 자리까지 확인된 기록을 입력해 주세요.',
   };
   function prepare(formula, gender, practicals) {
+    const checked = reviewed?.prepare(formula, gender, practicals);
+    if (checked) return checked;
     const records = practicals.map(record => ({ event: record.event, value: String(record.value ?? '').trim() }));
     const known = Number(formula.학년도) === 2027 ? profiles[Number(formula.U_ID)] : null;
     const tableNames = [...new Set((formula.실기배점 || []).filter(row => row.성별 === gender).map(row => row.종목명))];
@@ -48,5 +52,5 @@
     return status === 'all' ? '전 종목 미응시 · 불합격 대상' :
       status === 'partial' ? '미응시 종목 0점 반영' : '';
   }
-  return { prepare, resultScore, absenceMessage, messages };
+  return { prepare, resultScore, absenceMessage, resultNotice: result => reviewed?.resultNotice(result) || '', messages };
 });

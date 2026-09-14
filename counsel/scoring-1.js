@@ -119,7 +119,7 @@
         }
         silgiScore = window.PracticalInput.resultScore(d);
         absenceNotice = window.PracticalInput.absenceMessage(d.result);
-        directScoreNotice = d.result.breakdown?.provisional ? '하위 급간 임시표 적용' : d.result.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '';
+        directScoreNotice = window.PracticalInput.resultNotice(d.result) || (d.result.breakdown?.provisional ? '하위 급간 임시표 적용' : d.result.breakdown?.direct_score_events?.length ? '기계체조 입력 점수 반영' : '');
         {
           const br = d.result.breakdown || {};
           if (Array.isArray(br.events)) {
@@ -146,7 +146,7 @@
     card.dataset.practicalStatus = 'ready';
 
     const silgiEl = card.querySelector('.score-silgi');
-    if (silgiEl) silgiEl.innerHTML = `${silgiScore.toFixed(2)}<span class="deduct" role="status">(${absenceNotice || directScoreNotice || deductLevel + '감'})</span>`;
+    if (silgiEl) silgiEl.innerHTML = `${silgiScore.toFixed(2)}<span class="deduct${directScoreNotice ? ' policy-notice' : ''}" role="status">(${absenceNotice || directScoreNotice || deductLevel + '감'})</span>`;
 
     // 3) 총점 = 수능 + 내신 + 실기
     const suText = card.querySelector('.score-suneung')?.textContent || '0';

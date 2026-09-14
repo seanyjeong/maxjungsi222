@@ -7,3 +7,13 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+
+.uni-card .uni-breakdown-row:has(.policy-notice) { grid-template-columns: 64px minmax(0, 1fr); }
+.uni-card .score-silgi:has(.policy-notice) { text-align: right; justify-self: end; }
+.uni-card .score-silgi .policy-notice {
+  display: block;
+  margin-top: 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
