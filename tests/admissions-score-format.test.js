@@ -49,3 +49,21 @@ test('browser score configuration loads before the formatter on both calculation
     assert(html.indexOf('config/admissions-score-format.js') < html.indexOf('utils/admissions-score-format.js'));
   }
 });
+
+test('Hufs, Pukyong and Pusan scores keep reviewed precision through cards and PDF', () => {
+  const fs = require('node:fs'), vm = require('node:vm'), scope = {};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../counsel/pdf-1'), 'utf8'), scope);
+  for (const [uid, feature, value, expected, digits] of [
+    [165, 'hufsCsat2027Reviewed', 883.73145, '883.731450', 6],
+    [166, 'hufsCsat2027Reviewed', 887.5886, '887.588600', 6],
+    [167, 'hufsCsat2027Reviewed', 887.5886, '887.588600', 6],
+    [173, 'pknuCsat2027Reviewed', 420.55, '420.5500', 4],
+    [174, 'pnuCsat2027Reviewed', 565.3528, '565.3528', 4],
+  ]) {
+    const formula = {U_ID: uid, 학년도: 2027, 기타설정: {[feature]: true}};
+    assert.equal(format(value, formula), expected);
+    assert.equal(format(value, {...formula, 학년도: 2026}), value.toFixed(2));
+    assert.equal(format(value, {...formula, 기타설정: {}}), value.toFixed(2));
+    assert(scope.pdfRenderCard({records: [], suneung: value, total: value, scoreDigits: digits}, 0).includes(expected));
+  }
+});

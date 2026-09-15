@@ -8,6 +8,7 @@
     const state = options.state;
     const elements = options.elements;
     const fmtNum = options.formatNumber;
+    const fmtScore = value => window.CounselingByUniversityHelpers.formatAdmissionsScore(value, state);
     const getDraft = options.getDraft;
     const esc = () => window.escapeHtml || (value => String(value == null ? '' : value));
 
@@ -56,10 +57,10 @@
 
       elements.statsStrip.hidden = false;
       elements.statTotal.textContent = `${apps.length}명`;
-      elements.statAvgSuneung.textContent = suneungVals.length ? avg(suneungVals).toFixed(2) : '—';
-      elements.statMaxSuneung.textContent = suneungVals.length ? Math.max(...suneungVals).toFixed(2) : '—';
-      elements.statAvgTotal.textContent = totalVals.length ? avg(totalVals).toFixed(2) : '—';
-      elements.statMaxTotal.textContent = totalVals.length ? Math.max(...totalVals).toFixed(2) : '—';
+      elements.statAvgSuneung.textContent = suneungVals.length ? fmtScore(avg(suneungVals)) : '—';
+      elements.statMaxSuneung.textContent = suneungVals.length ? fmtScore(Math.max(...suneungVals)) : '—';
+      elements.statAvgTotal.textContent = totalVals.length ? fmtScore(avg(totalVals)) : '—';
+      elements.statMaxTotal.textContent = totalVals.length ? fmtScore(Math.max(...totalVals)) : '—';
 
       elements.hintEl.textContent = `${state.year}학년도 · ${state.exam} · ${apps.length}명`;
       renderList();
@@ -116,11 +117,11 @@
               <div class="sub-school">${escapeHtml(applicant.school || '')}</div>
             </td>
             <td class="col-gun"><span class="gun-badge">${escapeHtml(applicant.gun || '-')}</span></td>
-            <td class="col-num">${fmtNum(applicant.suneung_score)}</td>
+            <td class="col-num">${fmtScore(applicant.suneung_score)}</td>
             <td class="col-num">${fmtNum(applicant.naesin_score)}</td>
             ${eventCells}
             <td class="col-num"><span data-sum="${escapeHtml(id)}">${sumHtml(draft)}</span></td>
-            <td class="col-num col-total">${fmtNum(applicant.total_score)}</td>
+            <td class="col-num col-total">${fmtScore(applicant.total_score)}</td>
             <td class="col-memo">
               <input type="text" class="tiny-input memo-input" data-cid="${escapeHtml(id)}" value="${escapeHtml(draft.memo || '')}" placeholder="메모">
             </td>

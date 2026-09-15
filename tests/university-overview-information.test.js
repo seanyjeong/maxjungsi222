@@ -47,7 +47,7 @@ test('golf avoids an overall specialty selector and Seoul explains the withheld 
  assert.deepEqual(snu.items.map(row=>row.value),['2단계 환산 대기','원점수 100점 → 최종 20점']);
 });
 
-test('annual inquiry notices preserve reviewed rules and distinguish missing settings from publication updates', () => {
+test('annual inquiry notices preserve review status after the missing configurations are repaired', () => {
   const original = {status: '확인한 실기', summary: '객관평가만 계산', practicalFollowUp: false};
   const catalog = {year: 2027, schools: {105: original}};
   const reviewed = information.getReview(catalog, 105, 2027);
@@ -56,13 +56,15 @@ test('annual inquiry notices preserve reviewed rules and distinguish missing set
   assert.equal(original.inquiryFollowUp, undefined);
   assert.match(reviewed.inquiryFollowUp.current, /기존 탐구변환표/);
   assert.equal(reviewed.inquiryFollowUp.needsReview, false);
-  for (const uid of [81, 174]) {
+  for (const uid of [81, 174, 165, 166, 167]) {
     const review = information.getReview(catalog, uid, 2027);
-    assert.match(review.inquiryFollowUp.current, /표준점수/);
-    assert.equal(review.inquiryFollowUp.needsReview, true);
-    assert.match(review.status, /확인 필요/);
+    assert.equal(review.inquiryFollowUp.needsReview, false);
+    assert.doesNotMatch(review.inquiryFollowUp.current, /현재는 (표준점수|백분위)로/);
+    assert.equal(review.kind, 'follow-up');
   }
-  for (const uid of [165, 166, 167]) assert.match(information.getReview(catalog, uid, 2027).inquiryFollowUp.current, /백분위/);
+  assert.match(information.getReview(catalog, 81, 2027).inquiryFollowUp.current, /세종캠퍼스/);
+  assert.match(information.getReview(catalog, 174, 2027).inquiryFollowUp.current, /2026.*공식 정정표.*4자리/);
+  assert.equal(information.getReview(catalog, 174, 2027).inquiryFollowUp.provenance, '');
   assert.match(information.getReview(catalog, 23, 2027).inquiryFollowUp.provenance, /출처·연도/);
   assert.equal(information.getReview(catalog, 131, 2027), null);
   assert.equal(information.getReview(catalog, 105, 2026), null);

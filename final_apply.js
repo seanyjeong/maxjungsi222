@@ -21,6 +21,8 @@
     cards: {}, // gun -> { el, combos, formula, deptId }
   };
 
+  const {calcSuneung, calcSilgi, recalc} = window.createFinalApplyScoring(state);
+
   // ---- DOM ----
   const $ = (s, r = document) => r.querySelector(s);
   const hero = $('#hero');
@@ -107,35 +109,6 @@
     return null;
   }
 
-  async function calcSuneung(student, U_ID) {
-    if (!student || !student.scores) return 0;
-    try {
-      const data = await window.api('/jungsi/calculate', {
-        method: 'POST',
-        body: JSON.stringify({
-          U_ID, year: state.year,
-          studentScores: window.convertScoresToSuneungFormat(student.scores),
-        }),
-      });
-      if (data?.success) return Number(data.result?.totalScore || 0);
-    } catch (e) { console.error(e); }
-    return 0;
-  }
-
-  async function calcSilgi(formula, student, practicals) {
-    try {
-      const data = await window.api('/silgi/calculate', {
-        method: 'POST',
-        body: JSON.stringify({
-          F_data: formula,
-          S_data: { gender: student.gender, practicals },
-        }),
-      });
-      if (data?.success) return data.result;
-    } catch (e) { console.error(e); }
-    return null;
-  }
-
   // ---- Hero render ----
   function renderHero() {
     const s = state.selectedStudent;
@@ -183,87 +156,8 @@
   }
 
   // ---- Card render ----
-  function cardTemplate(gun) {
-    return `
-      <div class="gun-card" data-gun="${gun}">
-        <div class="gun-head">
-          <div class="gun-title">
-            <span class="gun-badge">${gun}</span>
-            <span>${gun}군 최종 지원</span>
-            <span class="label-en">GROUP ${['A','B','C'][GUNS.indexOf(gun)]}</span>
-          </div>
-          <button class="btn btn-sm btn-danger-ghost reset-btn" type="button">
-            <i class="ph ph-arrow-counter-clockwise"></i> 초기화
-          </button>
-        </div>
-        <div class="gun-body">
-          <div class="field"><label>대학</label><div class="uni-cb"></div></div>
-          <div class="field"><label>학과</label><div class="dept-cb"></div></div>
-
-          <div class="womens-warning hidden">
-            <i class="ph-fill ph-warning"></i>
-            <span>남학생은 이 대학에 지원할 수 없습니다.</span>
-          </div>
-
-          <div class="dept-dependent hidden">
-            <div class="score-hud empty">
-              <div class="row suneung"><div class="label"><span class="dot"></span>수능 점수</div><div class="value suneung-v mono">0.00</div></div>
-              <div class="row naeshin hidden"><div class="label"><span class="dot"></span>내신 점수</div><div class="value naeshin-v mono">0.00</div></div>
-              <div class="row silgi"><div class="label"><span class="dot"></span>실기 점수</div><div class="value silgi-v mono">0.00<span class="deduction"></span></div></div>
-              <div class="divider"></div>
-              <div class="total"><div class="label">총점</div><div class="value total-v mono">0.00<span class="unit">/1000</span></div></div>
-              <div class="bar"><div class="fill"></div></div>
-              <div class="bar-label"><span class="bar-cur">0</span><span class="bar-max">0</span></div>
-            </div>
-
-            <div class="input-block naeshin-block hidden" style="margin-top:12px;">
-              <div class="block-label">내신 점수 <span class="naeshin-hint" style="color:var(--text-3); font-size:11px;">(입력값 그대로 총점에 반영)</span></div>
-              <input type="number" class="naeshin-input" step="0.01" placeholder="내신 점수 입력" />
-            </div>
-
-            <div class="input-block silgi-block" style="margin-top:12px;">
-              <div class="block-label">실기 기록</div>
-              <div class="silgi-rows"></div>
-            </div>
-
-            <div class="result-grid" style="margin-top:14px;">
-              <div class="field">
-                <label>1단계 결과</label>
-                <div class="stage1-cb"></div>
-              </div>
-              <div class="field">
-                <label>최초 결과</label>
-                <div class="reserve-group">
-                  <div class="initial-cb" style="flex:1;"></div>
-                  <input type="number" class="reserve-number-input hidden" placeholder="번호" />
-                </div>
-              </div>
-              <div class="field">
-                <label>최종 결과</label>
-                <div class="final-cb"></div>
-              </div>
-              <div class="field">
-                <label>최종 등록</label>
-                <div class="register-cb"></div>
-              </div>
-            </div>
-
-            <div class="input-block" style="margin-top:12px;">
-              <div class="block-label">메모</div>
-              <textarea class="memo-input" rows="2" placeholder="상담 메모를 입력하세요…"></textarea>
-            </div>
-          </div>
-
-          <div class="card-placeholder placeholder-block">
-            <i class="ph ph-cursor-click"></i>
-            <div>대학·학과를 선택하면<br/>환산 점수 및 입력 칸이 표시됩니다.</div>
-          </div>
-        </div>
-      </div>`;
-  }
-
   async function renderCards() {
-    gunGrid.innerHTML = GUNS.map(cardTemplate).join('');
+    gunGrid.innerHTML = GUNS.map(gun => window.finalApplyCardTemplate(gun, GUNS)).join('');
     sectionHead.classList.remove('hidden');
     gunGrid.classList.remove('hidden');
 
@@ -364,6 +258,7 @@
     state.cards[gun] = cardData;
 
     async function onUniChange(uni) {
+      cardData.scoreSnapshot = null;
       deptDependent.classList.add('hidden');
       placeholder.classList.remove('hidden');
       warn.classList.toggle('hidden', !(WOMENS_UNIVERSITIES.includes(uni) && state.selectedStudent?.gender === '남'));
@@ -380,6 +275,7 @@
     }
 
     async function onDeptChange(U_ID) {
+      cardData.scoreSnapshot = null;
       if (!U_ID) {
         deptDependent.classList.add('hidden');
         placeholder.classList.remove('hidden');
@@ -443,67 +339,6 @@
     }
   }
 
-  async function recalc(el, gun) {
-    const data = state.cards[gun];
-    if (!data || !data.formula || !data.deptId) return;
-    const formula = data.formula;
-    const student = state.selectedStudent;
-
-    const suneung = await calcSuneung(student, data.deptId);
-    el.querySelector('.suneung-v').textContent = window.fmt2(suneung);
-
-    // Naeshin client calc
-    let naeshin = 0;
-    const hasNaeshin = Number(formula.내신 || 0) > 0;
-    if (hasNaeshin) {
-      const raw = parseFloat(el.querySelector('.naeshin-input').value);
-      if (Number.isFinite(raw) && raw > 0) {
-        const ratio = (Number(formula.내신) || 0) / 100;
-        const total = Number(formula.총점) || 1000;
-        const max = Number(formula.내신만점) || 0;
-        if (max > 0) naeshin = (raw / max) * ratio * total;
-        else naeshin = raw;
-      }
-    }
-    el.querySelector('.naeshin-v').textContent = window.fmt2(naeshin);
-
-    // Silgi via API
-    const practicals = [];
-    el.querySelectorAll('.silgi-input').forEach((inp) => {
-      if (inp.value.trim()) practicals.push({ event: inp.closest('.ghost-input').dataset.event, value: inp.value.trim() });
-    });
-    let silgiScore = 0;
-    let totalDeduct = 0;
-    const perEvent = {};
-    if (practicals.length) {
-      const result = await calcSilgi(formula, student, practicals);
-      if (result) {
-        silgiScore = Number(result.totalScore || 0);
-        totalDeduct = result.breakdown?.total_deduction_level || 0;
-        (result.breakdown?.events || []).forEach((ev) => { perEvent[ev.event] = ev; });
-      }
-    }
-    el.querySelector('.silgi-v').innerHTML = `${window.fmt2(silgiScore)}${totalDeduct ? ` <span class="deduction">(${totalDeduct}감)</span>` : ''}`;
-    el.querySelectorAll('.ghost-input').forEach((row) => {
-      const ev = row.dataset.event;
-      const span = row.querySelector('.event-score');
-      const det = perEvent[ev];
-      if (det && det.score != null) {
-        span.innerHTML = `<strong>${window.fmt2(det.score)}</strong> <span class="deduction">(${det.deduction_level}감)</span>`;
-      } else { span.textContent = '–'; }
-    });
-
-    // Total
-    const total = suneung + naeshin + silgiScore;
-    const max = Number(formula.총점) || 1000;
-    el.querySelector('.total-v').innerHTML = `${window.fmt2(total)}<span class="unit">/${max}</span>`;
-    el.querySelector('.bar-cur').textContent = window.fmt2(total);
-    const pct = Math.max(0, Math.min(100, (total / max) * 100));
-    el.querySelector('.score-hud .bar .fill').style.width = `${pct}%`;
-    el.querySelector('.score-hud').classList.remove('empty');
-  }
-
-  // ---- Select student ----
   async function selectStudent() {
     emptyState.classList.add('hidden');
     renderHero();
@@ -557,20 +392,17 @@
         }
 
         const p = (async () => {
-          let silgiTotal = null, silgiBreakdown = null;
-          if (hasSilgi) {
-            const r = await calcSilgi(card.formula, s, Object.entries(실기기록).map(([ev, v]) => ({ event: ev, value: v })));
-            if (r) { silgiTotal = r.totalScore; silgiBreakdown = r.breakdown; }
-          }
-          const suneungDisp = parseFloat(el.querySelector('.suneung-v').textContent) || 0;
-          const totalDisp = parseFloat(el.querySelector('.total-v').textContent) || 0;
+          const calculated = await recalc(el, gun);
+          if (!calculated) throw new Error('환산 점수를 확인한 후 다시 저장해 주세요.');
+          const silgiTotal = calculated.practicalResult?.totalScore ?? null;
+          const silgiBreakdown = calculated.practicalResult?.breakdown ?? null;
           const body = {
             학생_ID: s.student_id, 학년도: state.year, 모집군: gun,
             대학학과_ID: parseInt(deptId),
-            지원_수능점수: suneungDisp, 지원_내신점수: naeshinVal,
+            지원_수능점수: calculated.suneung, 지원_내신점수: naeshinVal,
             지원_실기기록: hasSilgi ? 실기기록 : null,
             지원_실기총점: silgiTotal, 지원_실기상세: silgiBreakdown,
-            지원_총점: totalDisp,
+            지원_총점: calculated.total,
             결과_1단계: card.stage1Combo.value,
             결과_최초: 최초,
             결과_최종: card.finalCombo.value,

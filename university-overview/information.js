@@ -85,7 +85,8 @@
     if (!active && !missingTable && !missingSetting) return null;
     const current = missingTable ? inquiryConfig.missingTableNotice : missingSetting ? inquiryConfig.missingSettingNotice : inquiryConfig.current;
     const provenance = id === 23 ? inquiryConfig.yonseiPedagogy : active && ![19, 22].includes(id) ? inquiryConfig.provenance : '';
-    return { current, followUp: inquiryConfig.followUp, provenance, needsReview: missingTable || missingSetting, source: inquiryConfig.listSource };
+    return { current, followUp: inquiryConfig.followUp, provenance, needsReview: missingTable || missingSetting,
+      source: inquiryConfig.listSource, ...inquiryConfig.details?.[id] };
   }
 
   return { build, getReview, gradeRows, selectionSummary, numeric };

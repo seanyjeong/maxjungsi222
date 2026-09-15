@@ -39,6 +39,7 @@
     schools: [],
     applicants: [],
     stats: {},
+    scoreFormula: null,
     quota: 0,
     myBranch: '',
     sortBy: 'total_score',
@@ -134,12 +135,25 @@
     deptCombo.enable();
   }
 
+  const formatScore = value => window.AdmissionsScoreFormat.format(value,
+    {...STATE.scoreFormula, U_ID: STATE.U_ID, 학년도: STATE.year});
+  async function fetchScoreFormula(uid, year) {
+    const profile = window.AdmissionsScoreFormatConfig.profiles.find(row => row.uid === Number(uid) && row.year === Number(year));
+    if (!profile) return null;
+    const response = await window.api(`/jungsi/formula-details?U_ID=${encodeURIComponent(uid)}&year=${encodeURIComponent(year)}`);
+    if (!response?.success || !response.formula) throw new Error('점수 표시 기준을 불러오지 못했습니다.');
+    return response.formula;
+  }
+
   // ── 지원자 로드 ──
   async function loadApplicants() {
     if (!STATE.U_ID) return;
     setLoading();
+    const uid = STATE.U_ID, year = STATE.year, exam = STATE.exam;
     try {
-      const r = await window.api(`/jungsi/university-applicants/${STATE.U_ID}/${STATE.year}?exam=${encodeURIComponent(STATE.exam)}`);
+      const [r, scoreFormula] = await Promise.all([window.api(`/jungsi/university-applicants/${STATE.U_ID}/${STATE.year}?exam=${encodeURIComponent(STATE.exam)}`), fetchScoreFormula(uid, year)]);
+      if (STATE.U_ID !== uid || STATE.year !== year || STATE.exam !== exam) return;
+      STATE.scoreFormula = scoreFormula;
       loadingState.hidden = true;
       if (!r || !r.success) throw new Error((r && r.message) || '지원자 로딩 실패');
       STATE.applicants = r.applicants || [];
@@ -199,12 +213,12 @@
       else statTotal.classList.add('competition-extreme');
     }
 
-    statAvgSuneung.textContent = avg(suneungVals).toFixed(2);
-    statMaxSuneung.textContent = (suneungVals.length ? Math.max(...suneungVals) : 0).toFixed(2);
-    statMinSuneung.textContent = (suneungVals.length ? Math.min(...suneungVals) : 0).toFixed(2);
-    statAvgTotal.textContent   = avg(totalVals).toFixed(2);
-    statMaxTotal.textContent   = (totalVals.length ? Math.max(...totalVals) : 0).toFixed(2);
-    statMinTotal.textContent   = (totalVals.length ? Math.min(...totalVals) : 0).toFixed(2);
+    statAvgSuneung.textContent = formatScore(avg(suneungVals));
+    statMaxSuneung.textContent = formatScore(suneungVals.length ? Math.max(...suneungVals) : 0);
+    statMinSuneung.textContent = formatScore(suneungVals.length ? Math.min(...suneungVals) : 0);
+    statAvgTotal.textContent   = formatScore(avg(totalVals));
+    statMaxTotal.textContent   = formatScore(totalVals.length ? Math.max(...totalVals) : 0);
+    statMinTotal.textContent   = formatScore(totalVals.length ? Math.min(...totalVals) : 0);
 
     hintEl.textContent = `${STATE.year}학년도 · ${STATE.exam} · ${totalCount}명`;
     renderTable();
@@ -244,9 +258,11 @@
     const subjCell = (std, pct, grade) =>
       `<span class="sm">표${std || '-'}·백${pct || '-'}</span> <span class="grade-text grade-${grade || '9'}">${grade || '-'}</span>`;
 
+    const precise = window.AdmissionsScoreFormat.digits({...STATE.scoreFormula, U_ID: STATE.U_ID, 학년도: STATE.year}) > 2;
+    const scoreColumns = precise ? '104px 64px 116px' : '64px 64px 76px';
     const cols = showNaeshin
-      ? '36px 70px 64px minmax(120px,0.7fr) 92px 92px 46px 92px 92px 58px minmax(260px,1.5fr) 64px 64px 76px'
-      : '36px 70px 64px minmax(120px,0.7fr) 92px 92px 46px 92px 92px minmax(260px,1.5fr) 64px 64px 76px';
+      ? `36px 70px 64px minmax(120px,0.7fr) 92px 92px 46px 92px 92px 58px minmax(260px,1.5fr) ${scoreColumns}`
+      : `36px 70px 64px minmax(120px,0.7fr) 92px 92px 46px 92px 92px minmax(260px,1.5fr) ${scoreColumns}`;
 
     const head = `
       <div class="applicants-list-head" style="grid-template-columns: ${cols};">
@@ -292,9 +308,9 @@
           <div>${subjCell(a.inquiry2_standard, a.inquiry2_percentile, a.inquiry2_grade)}</div>
           ${showNaeshin ? `<div>${num(a.naeshin_score)}</div>` : ''}
           <div class="col-practical" title="${practicalText}">${practicalText}</div>
-          <div>${num(a.suneung_score)}</div>
+          <div class="col-suneung">${a.suneung_score == null || a.suneung_score === '' ? '-' : formatScore(a.suneung_score)}</div>
           <div>${num(a.practical_score)}</div>
-          <div class="col-total">${num(a.total_score)}</div>
+          <div class="col-total">${a.total_score == null || a.total_score === '' ? '-' : formatScore(a.total_score)}</div>
         </div>
       `;
     }).join('');

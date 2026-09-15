@@ -1,0 +1,182 @@
+
+/* ── 학생 카드 ── */
+.applicant-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 180ms var(--ease);
+}
+.applicant-card:hover {
+  border-color: var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.card-header .rank {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  background: var(--surface);
+  padding: 2px 7px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+.card-header .name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.card-header .school {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-left: auto;
+}
+.card-header .gender-badge {
+  font-size: 10.5px;
+  color: var(--text-2);
+  background: var(--surface-3);
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-weight: 500;
+}
+
+/* 모집군 badge */
+.gun-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: 'Geist Mono', monospace;
+  border: 1px solid var(--accent-ring);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* 점수 행 */
+.score-row {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+  padding: 6px 0;
+  border-top: 1px dashed var(--border-soft);
+}
+.score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 60px;
+  padding: 0 10px;
+  border-right: 1px solid var(--border-soft);
+}
+.score-item:first-child { padding-left: 0; }
+.score-item:last-child { border-right: 0; }
+.score-item .s-label {
+  font-size: 9.5px;
+  color: var(--text-3);
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.score-item .s-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.score-item .s-value.highlight {
+  color: var(--accent-strong);
+  font-size: 15px;
+}
+
+/* 메모 */
+.memo-row {
+  font-size: 11.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+  border-top: 1px dashed var(--border-soft);
+  padding-top: 7px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.memo-row .memo-icon {
+  color: var(--text-3);
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.memo-row .memo-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 생성일시 */
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 10.5px;
+  color: var(--text-3);
+  font-family: 'Geist Mono', monospace;
+}
+
+/* ── 상태 ── */
+.empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-3);
+}
+.empty-state .empty-icon { margin-bottom: 10px; }
+.empty-state .empty-icon i { font-size: 40px; color: var(--text-3); }
+.empty-state .empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 4px;
+}
+.empty-state .empty-sub {
+  font-size: 11.5px;
+  color: var(--text-3);
+  max-width: 420px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.loading-state {
+  padding: 40px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.loading-state i { font-size: 18px; color: var(--accent); }
+.spin { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 반응형 ── */
+@media (max-width: 900px) {
+  .applicants-grid { grid-template-columns: 1fr; }
+  .gun-chips { flex-wrap: wrap; }
+  .stats-strip { justify-content: flex-start; }
+  .stat-sort { margin-left: 0; width: 100%; }
+  .picker-combo-row { flex-direction: column; align-items: flex-start; }
+}
