@@ -65,7 +65,7 @@ test('annual inquiry notices preserve review status after the missing configurat
   assert.match(information.getReview(catalog, 81, 2027).inquiryFollowUp.current, /세종캠퍼스/);
   assert.match(information.getReview(catalog, 174, 2027).inquiryFollowUp.current, /2026.*공식 정정표.*4자리/);
   assert.equal(information.getReview(catalog, 174, 2027).inquiryFollowUp.provenance, '');
-  assert.match(information.getReview(catalog, 23, 2027).inquiryFollowUp.provenance, /출처·연도/);
+  assert.equal(information.getReview(catalog, 23, 2027).inquiryFollowUp.provenance, '');
   assert.equal(information.getReview(catalog, 131, 2027), null);
   assert.equal(information.getReview(catalog, 105, 2026), null);
 });
