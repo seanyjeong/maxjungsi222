@@ -1,0 +1,253 @@
+/* ============================================================ */
+/* counseling_by_university.new.css — 학교별 상담 현황           */
+/* 토큰: Teal (--accent) + Stone 중립색. 하드코딩 금지.          */
+/* ============================================================ */
+
+.main { padding: 0; }
+.page-content { padding: 0 32px 48px; max-width: none; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ── 군 chip ── */
+.gun-chips {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.gun-chip {
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 140ms var(--ease);
+  font-family: inherit;
+  line-height: 1.4;
+}
+.gun-chip:hover {
+  border-color: var(--accent-ring);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.gun-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Picker card (teal 그라디언트) ── */
+.picker-card {
+  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 50%);
+  border: 1px solid var(--accent-ring);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-soft);
+}
+.dark .picker-card {
+  background: linear-gradient(180deg, rgba(15, 118, 110, 0.12) 0%, var(--surface) 50%);
+  border-color: rgba(45, 212, 191, 0.2);
+}
+.picker-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.picker-label { display: flex; align-items: center; gap: 12px; }
+.picker-label > i { font-size: 24px; color: var(--accent); flex-shrink: 0; }
+.picker-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.picker-title em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+.dark .picker-title em { color: var(--accent-strong); }
+.picker-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+.picker-combo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.picker-combo-label {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  flex-shrink: 0;
+  font-family: 'Geist Mono', monospace;
+}
+
+/* ── 컷 바 (맥스컷 / 지점컷) ── */
+.cut-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.cut-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 18px;
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.cut-row.cut-max { background: linear-gradient(90deg, var(--accent-soft) 0%, var(--surface) 80%); }
+.dark .cut-row.cut-max { background: linear-gradient(90deg, rgba(15,118,110,0.18) 0%, var(--surface) 80%); }
+
+.cut-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 90px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.cut-tag i { color: var(--accent); font-size: 14px; }
+.cut-row.cut-max .cut-tag i { color: var(--accent-strong); }
+
+.cut-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.cut-item .lbl {
+  font-style: normal;
+  font-family: 'Geist Mono', monospace;
+  font-size: 10.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.cut-item .val {
+  font-style: normal;
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── 통계 strip ── */
+.stats-strip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.stat-item {
+  padding: 0 14px;
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+}
+.stat-item:last-of-type { border-right: 0; }
+.stat-sort {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.stat-label {
+  font-size: 10.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  font-family: 'Geist Mono', monospace;
+}
+.stat-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.stat-primary .stat-value { color: var(--accent-strong); font-size: 20px; }
+
+/* ── 정렬 pills ── */
+.sort-pills {
+  display: flex;
+  gap: 4px;
+}
+.sort-pill {
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 140ms var(--ease);
+  font-family: inherit;
+}
+.sort-pill:hover {
+  border-color: var(--accent-ring);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.sort-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── 상담 학생 카드 영역 ── */
+.applicants-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.applicants-head {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.applicants-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.applicants-title i { font-size: 16px; color: var(--accent); }
+.applicants-title .dim {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+#applicantsContainer { padding: 0; }
+.applicants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 12px;
+}

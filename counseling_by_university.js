@@ -124,6 +124,7 @@
   async function loadApplicants() {
     if (!STATE.U_ID) return;
     setLoading();
+    STATE.formula = null;
     try {
       const r = await window.api(`/jungsi/counseling/by-university/${STATE.U_ID}/${STATE.year}?${examQuery(STATE.exam)}`);
       loadingState.hidden = true;
@@ -143,6 +144,7 @@
         const f = await window.api(`/jungsi/formula-details?U_ID=${encodeURIComponent(STATE.U_ID)}&year=${encodeURIComponent(STATE.year)}`);
         STATE.formula = (f && f.formula) ? f.formula : f;
         window.__formula = STATE.formula;
+        renderer.displayApplicants();
       } catch (err) {
         console.warn('[formula-details]', err && err.message);
         STATE.formula = null;

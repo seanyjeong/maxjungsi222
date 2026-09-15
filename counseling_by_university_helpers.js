@@ -93,6 +93,12 @@
     return num.toFixed(digits == null ? 2 : digits);
   }
 
+  function formatAdmissionsScore(value, state) {
+    if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return '—';
+    const formula = state.formula && String(state.formula.U_ID) === String(state.U_ID) ? state.formula : null;
+    return window.AdmissionsScoreFormat.format(value, {...formula, U_ID: state.U_ID, 학년도: state.year});
+  }
+
   function getDefaultExamForYear(year) {
     if (typeof window.getDefaultExam === 'function') return window.getDefaultExam(Number(year));
     if (typeof getDefaultExam === 'function') return getDefaultExam(Number(year));
@@ -107,6 +113,7 @@
     buildEventList,
     examQuery,
     formatNumber,
+    formatAdmissionsScore,
     getDefaultExamForYear,
     getDraft,
     recomputeSilgiTotal,

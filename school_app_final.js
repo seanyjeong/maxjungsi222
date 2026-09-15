@@ -37,6 +37,7 @@
     schools: [],
     applicants: [],
     stats: {},
+    scoreFormula: null,
     quota: 0,
     myBranch: '',
     sortBy: 'total_score',
@@ -133,12 +134,25 @@
     deptCombo.enable();
   }
 
+  const formatScore = value => window.AdmissionsScoreFormat.format(value,
+    {...STATE.scoreFormula, U_ID: STATE.U_ID, 학년도: STATE.year});
+  async function fetchScoreFormula(uid, year) {
+    const profile = window.AdmissionsScoreFormatConfig.profiles.find(row => row.uid === Number(uid) && row.year === Number(year));
+    if (!profile) return null;
+    const response = await window.api(`/jungsi/formula-details?U_ID=${encodeURIComponent(uid)}&year=${encodeURIComponent(year)}`);
+    if (!response?.success || !response.formula) throw new Error('점수 표시 기준을 불러오지 못했습니다.');
+    return response.formula;
+  }
+
   // ── 지원자 로드 ──
   async function loadApplicants() {
     if (!STATE.U_ID) return;
     setLoading();
+    const uid = STATE.U_ID, year = STATE.year, exam = STATE.exam;
     try {
-      const r = await window.api(`/jungsi/university-final-applicants/${STATE.U_ID}/${STATE.year}`);
+      const [r, scoreFormula] = await Promise.all([window.api(`/jungsi/university-final-applicants/${STATE.U_ID}/${STATE.year}`), fetchScoreFormula(uid, year)]);
+      if (STATE.U_ID !== uid || STATE.year !== year || STATE.exam !== exam) return;
+      STATE.scoreFormula = scoreFormula;
       loadingState.hidden = true;
       if (!r || !r.success) throw new Error((r && r.message) || '지원자 로딩 실패');
       STATE.applicants = r.applicants || [];
@@ -200,12 +214,12 @@
       else statTotal.classList.add('competition-extreme');
     }
 
-    statAvgSuneung.textContent = avg(suneungVals).toFixed(2);
-    statMaxSuneung.textContent = (suneungVals.length ? Math.max(...suneungVals) : 0).toFixed(2);
-    statMinSuneung.textContent = (suneungVals.length ? Math.min(...suneungVals) : 0).toFixed(2);
-    statAvgTotal.textContent   = avg(totalVals).toFixed(2);
-    statMaxTotal.textContent   = (totalVals.length ? Math.max(...totalVals) : 0).toFixed(2);
-    statMinTotal.textContent   = (totalVals.length ? Math.min(...totalVals) : 0).toFixed(2);
+    statAvgSuneung.textContent = formatScore(avg(suneungVals));
+    statMaxSuneung.textContent = formatScore(suneungVals.length ? Math.max(...suneungVals) : 0);
+    statMinSuneung.textContent = formatScore(suneungVals.length ? Math.min(...suneungVals) : 0);
+    statAvgTotal.textContent   = formatScore(avg(totalVals));
+    statMaxTotal.textContent   = formatScore(totalVals.length ? Math.max(...totalVals) : 0);
+    statMinTotal.textContent   = formatScore(totalVals.length ? Math.min(...totalVals) : 0);
 
     hintEl.textContent = `${STATE.year}학년도 · ${totalCount}명`;
 
@@ -219,7 +233,7 @@
     const passedApps = apps.filter(isPassed);
     const cntPass = passedApps.length;
     const minOf = (arr) => arr.length ? Math.min(...arr) : null;
-    const fmt = (v) => v == null ? null : v.toFixed(2);
+    const fmt = (v) => v == null ? null : formatScore(v);
 
     // 대학·학과별 특수 룰
     const u = STATE.university || '';
@@ -354,13 +368,13 @@
           <div class="total-row">
             <div class="item">
               <span class="label">수능점수</span>
-              <span class="value">${a.suneung_score != null ? Number(a.suneung_score).toFixed(2) : '-'}</span>
+              <span class="value">${a.suneung_score != null ? formatScore(a.suneung_score) : '-'}</span>
             </div>
             ${naeshinHtml}
             ${practicalScoreHtml}
             <div class="item">
               <span class="label">총점</span>
-              <span class="value highlight">${a.total_score != null ? Number(a.total_score).toFixed(2) : '-'}</span>
+              <span class="value highlight">${a.total_score != null ? formatScore(a.total_score) : '-'}</span>
             </div>
           </div>
         </div>
