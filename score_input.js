@@ -95,16 +95,35 @@
     if (row.입력유형 === 'raw')      return { key: 'raw',  icon: 'ph-warning-circle', label: '가채점' };
     return                                  { key: 'none', icon: 'ph-minus-circle',   label: '미입력' };
   }
-  function optionsHtml(opts, selected) {
+  function optionsHtml(opts, selected, excluded) {
     const empty = `<option value="" ${!selected ? 'selected' : ''}>—</option>`;
-    return empty + opts.map(o => `<option value="${esc(o)}" ${selected === o ? 'selected' : ''}>${esc(o)}</option>`).join('');
+    // Keep an existing duplicate visible for correction without silently rewriting saved scores.
+    const duplicate = selected && selected === excluded
+      ? `<option value="${esc(selected)}" selected disabled hidden>${esc(selected)} · 다시 선택</option>` : '';
+    return empty + duplicate + opts.filter(o => o !== excluded)
+      .map(o => `<option value="${esc(o)}" ${selected === o ? 'selected' : ''}>${esc(o)}</option>`).join('');
   }
   function val(v) { return (v == null || v === '') ? '' : v; }
   function numInput(v, name, rowId, max = 3) {
     return `<input class="cell-in num" type="text" inputmode="numeric" maxlength="${max}" data-row="${rowId}" data-field="${name}" value="${esc(val(v))}" placeholder="—">`;
   }
-  function selectCell(opts, v, name, rowId) {
-    return `<select class="cell-sel ${v ? '' : 'is-empty'}" data-row="${rowId}" data-field="${name}">${optionsHtml(opts, v)}</select>`;
+  function selectCell(opts, v, name, rowId, excluded) {
+    return `<select class="cell-sel ${v ? '' : 'is-empty'}" data-row="${rowId}" data-field="${name}">${optionsHtml(opts, v, excluded)}</select>`;
+  }
+  function otherInquiryField(field) {
+    if (field === '탐구1_선택과목') return '탐구2_선택과목';
+    if (field === '탐구2_선택과목') return '탐구1_선택과목';
+    return null;
+  }
+  function hasDuplicateInquiry(row) {
+    return !!row.탐구1_선택과목 && row.탐구1_선택과목 === row.탐구2_선택과목;
+  }
+  function syncInquiryOptions(rowEl, row) {
+    ['탐구1_선택과목', '탐구2_선택과목'].forEach(field => {
+      const select = rowEl.querySelector(`select[data-field="${field}"]`);
+      select.innerHTML = optionsHtml(TAM_OPTS, row[field], row[otherInquiryField(field)]);
+      select.classList.toggle('is-empty', !row[field]);
+    });
   }
 
   function rowHtml(r) {
@@ -130,12 +149,12 @@
 
       <td class="grp-start">${numInput(r['영어_등급'], '영어_등급', id, 1)}</td>
 
-      <td class="grp-start">${selectCell(TAM_OPTS, r['탐구1_선택과목'], '탐구1_선택과목', id)}</td>
+      <td class="grp-start">${selectCell(TAM_OPTS, r['탐구1_선택과목'], '탐구1_선택과목', id, r['탐구2_선택과목'])}</td>
       <td>${numInput(r['탐구1_표준점수'], '탐구1_표준점수', id, 3)}</td>
       <td>${numInput(r['탐구1_백분위'], '탐구1_백분위', id, 3)}</td>
       <td>${numInput(r['탐구1_등급'], '탐구1_등급', id, 1)}</td>
 
-      <td class="grp-start">${selectCell(TAM_OPTS, r['탐구2_선택과목'], '탐구2_선택과목', id)}</td>
+      <td class="grp-start">${selectCell(TAM_OPTS, r['탐구2_선택과목'], '탐구2_선택과목', id, r['탐구1_선택과목'])}</td>
       <td>${numInput(r['탐구2_표준점수'], '탐구2_표준점수', id, 3)}</td>
       <td>${numInput(r['탐구2_백분위'], '탐구2_백분위', id, 3)}</td>
       <td>${numInput(r['탐구2_등급'], '탐구2_등급', id, 1)}</td>
@@ -197,20 +216,16 @@
         el.value = v;
       }
 
-      // 탐1/탐2 중복 방지
-      if (field === '탐구1_선택과목' && v && v === row['탐구2_선택과목']) {
-        row['탐구2_선택과목'] = null;
-        const sel2 = rowEl.querySelector('select[data-field="탐구2_선택과목"]');
-        if (sel2) { sel2.value = ''; sel2.classList.add('is-empty'); }
-      }
-      if (field === '탐구2_선택과목' && v && v === row['탐구1_선택과목']) {
-        row['탐구1_선택과목'] = null;
-        const sel1 = rowEl.querySelector('select[data-field="탐구1_선택과목"]');
-        if (sel1) { sel1.value = ''; sel1.classList.add('is-empty'); }
+      const otherField = otherInquiryField(field);
+      if (otherField && v && v === row[otherField]) {
+        syncInquiryOptions(rowEl, row);
+        toast('이미 다른 탐구에서 선택한 과목입니다.', 'warning');
+        return;
       }
 
       row[field] = v === '' ? null : (el.classList.contains('num') ? Number(v) : v);
       row._dirty = true;
+      if (otherField) syncInquiryOptions(rowEl, row);
 
       if (el.classList.contains('cell-sel')) el.classList.toggle('is-empty', !v);
       rowEl.classList.add('dirty');
@@ -287,6 +302,10 @@
     const items = collectOfficialItems(state.students);
 
     if (!items.length) { toast('변경된 내용이 없습니다', 'info'); return; }
+    if (items.some(hasDuplicateInquiry)) {
+      toast('탐구1과 탐구2는 서로 다른 과목을 선택해 주세요.', 'warning');
+      return;
+    }
 
     const emptyScores = items.filter(hasSubjectButNoScores);
     if (emptyScores.length) {
@@ -368,6 +387,8 @@
       buildStudentScoreRow,
       collectOfficialItems,
       hasAnyInput,
+      optionsHtml,
+      hasDuplicateInquiry,
     };
   }
 })();
