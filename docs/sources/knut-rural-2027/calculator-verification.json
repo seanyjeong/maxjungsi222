@@ -1,0 +1,29 @@
+{
+  "mode": "in_memory_no_db",
+  "results": [
+    {
+      "uid": 205,
+      "gender": "남",
+      "csat": 0,
+      "practical": 400
+    },
+    {
+      "uid": 205,
+      "gender": "여",
+      "csat": 0,
+      "practical": 400
+    },
+    {
+      "uid": 206,
+      "gender": "남",
+      "csat": 0,
+      "practical": 700
+    },
+    {
+      "uid": 206,
+      "gender": "여",
+      "csat": 0,
+      "practical": 700
+    }
+  ]
+}
