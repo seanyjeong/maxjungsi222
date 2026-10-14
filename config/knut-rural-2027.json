@@ -1,0 +1,36 @@
+{
+  "year": 2027,
+  "university": "한국교통대학교",
+  "source": {
+    "title": "2027학년도 정시 신입학 모집요강(배포용).hwp",
+    "published": "2026-09-01",
+    "url": "https://www.ut.ac.kr/cmm/fms/FileDown.do?atchFileId=FILE_000000000291809&fileSn=0",
+    "sha256": "d7e2ec6c6517a3a89b15bdf806e1e1b051496e202ff9521b7a43155f33d1d67b",
+    "values_basis": "user_provided",
+    "review": "배포용 HWP 확보. DocForge 텍스트 추출은 뷰어 안내만 반환하여 본문 독립 검수 미완료."
+  },
+  "quota": null,
+  "quota_reason": "수시 미충원 이월인원이 있을 때만 모집하며 원서 접수 전 입학처 발표",
+  "csat_minimum": false,
+  "eligibility": "농어촌 6년 또는 12년 과정, 특목고·체육고 지원 불가",
+  "school_record_input": "교사가 대학 기준으로 환산한 학생부교과 점수를 입력",
+  "events": ["20m왕복달리기", "윗몸일으키기", "제자리멀리뛰기"],
+  "units": [
+    {
+      "key": "sports_medicine",
+      "source_uid": 39,
+      "department": "스포츠의학과",
+      "admission": "학생부교과(농어촌)",
+      "school_record_percent": 60,
+      "practical_percent": 40
+    },
+    {
+      "key": "sports_industry",
+      "source_uid": 38,
+      "department": "스포츠산업학과",
+      "admission": "실기/실적(농어촌)",
+      "school_record_percent": 30,
+      "practical_percent": 70
+    }
+  ]
+}
